@@ -1,0 +1,109 @@
+{
+  "name": "02",
+  "timestamp": "2025-10-06T07:21:45.237Z",
+  "particles": {
+    "floatIntensity": 0.2,
+    "breathIntensity": 0.42,
+    "dustCount": 5700,
+    "dustSize": 0.6,
+    "dustOpacity": 0.6,
+    "dustColor": "#AF85B7",
+    "pathPointSize": 0.5,
+    "pathPointOpacity": 0.9,
+    "pathPointColor": "#FFFFFF",
+    "sphereRadius": 1600,
+    "systemScale": 1,
+    "rotationSpeed": 0,
+    "rotationTiltXZ": 0,
+    "rotationTiltXY": 0
+  },
+  "path": {
+    "depthIntensity": 0.5,
+    "depthEnhanced": true,
+    "scale": 0.6
+  },
+  "environment": {
+    "bgColor": "#121414",
+    "fogDensity": 0.015,
+    "fogVolumeScale": 1,
+    "pathFogIntensity": 0.1,
+    "pathColor": "#F0B7B7",
+    "dustColor": "#AF85B7",
+    "positionScale": 2,
+    "yScale": 0.6,
+    "cameraDistFactor": 2.5,
+    "ambientLightIntensity": 0.5,
+    "directionalLightIntensity": 0.8
+  },
+  "material": {
+    "path": {
+      "enabled": true,
+      "emissiveIntensity": 0.4,
+      "emissiveColor": "#F0B7B7"
+    },
+    "particles": {
+      "enabled": true,
+      "emissiveIntensity": 0.3,
+      "emissiveColor": "#AF85B7"
+    },
+    "movingLight": {
+      "enabled": true,
+      "emissiveIntensity": 1.5,
+      "emissiveColor": "#FFFFFF"
+    }
+  },
+  "coordinates": {
+    "dataSpace": {
+      "scale": 1,
+      "rotation": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      },
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 0
+      }
+    }
+  },
+  "postprocess": {
+    "enabled": true,
+    "bloom": {
+      "enabled": true,
+      "intensity": 0.8,
+      "threshold": 0.7,
+      "smoothing": 0.5
+    },
+    "hueSaturation": {
+      "enabled": false,
+      "hue": 0,
+      "saturation": 0
+    },
+    "brightnessContrast": {
+      "enabled": false,
+      "brightness": 0,
+      "contrast": 0
+    },
+    "noise": {
+      "enabled": true,
+      "intensity": 0.047
+    },
+    "chromaticAberration": {
+      "enabled": false
+    },
+    "scanline": {
+      "enabled": true,
+      "intensity": 0.71,
+      "density": 82.4
+    }
+  },
+  "camera": {
+    "mode": "perspective",
+    "fov": 75
+  },
+  "animation": {
+    "speedFactor": 1.65,
+    "loop": true
+  }
+}

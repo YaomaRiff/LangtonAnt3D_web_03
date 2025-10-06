@@ -1,0 +1,178 @@
+[
+  {
+    "id": 1,
+    "path": "index.html"
+  },
+  {
+    "id": 2,
+    "path": "package-lock.json"
+  },
+  {
+    "id": 3,
+    "path": "package.json"
+  },
+  {
+    "id": 4,
+    "path": "public/manifest.json"
+  },
+  {
+    "id": 5,
+    "path": "public/style.css"
+  },
+  {
+    "id": 6,
+    "path": "src/components/animation-comp.js"
+  },
+  {
+    "id": 7,
+    "path": "src/components/audio-comp.js"
+  },
+  {
+    "id": 8,
+    "path": "src/components/camera-comp.js"
+  },
+  {
+    "id": 9,
+    "path": "src/components/data-comp.js"
+  },
+  {
+    "id": 10,
+    "path": "src/components/environment-comp.js"
+  },
+  {
+    "id": 11,
+    "path": "src/components/particles-comp.js"
+  },
+  {
+    "id": 12,
+    "path": "src/components/postprocess-comp.js"
+  },
+  {
+    "id": 13,
+    "path": "src/config.js"
+  },
+  {
+    "id": 14,
+    "path": "src/entities/core-ent.js"
+  },
+  {
+    "id": 15,
+    "path": "src/entities/light-ent.js"
+  },
+  {
+    "id": 16,
+    "path": "src/entities/marker-ent.js"
+  },
+  {
+    "id": 17,
+    "path": "src/entities/model-ent.js"
+  },
+  {
+    "id": 18,
+    "path": "src/entities/particles-ent.js"
+  },
+  {
+    "id": 19,
+    "path": "src/event-bus.js"
+  },
+  {
+    "id": 20,
+    "path": "src/main.js"
+  },
+  {
+    "id": 21,
+    "path": "src/shaders/basic-sh.js"
+  },
+  {
+    "id": 22,
+    "path": "src/shaders/crt-sh.js"
+  },
+  {
+    "id": 23,
+    "path": "src/shaders/custom-sh.js"
+  },
+  {
+    "id": 24,
+    "path": "src/shaders/fisheye-sh.js"
+  },
+  {
+    "id": 25,
+    "path": "src/shaders/progress-sh.js"
+  },
+  {
+    "id": 26,
+    "path": "src/systems/animation-sys.js"
+  },
+  {
+    "id": 27,
+    "path": "src/systems/audio-sys.js"
+  },
+  {
+    "id": 28,
+    "path": "src/systems/camera-sys.js"
+  },
+  {
+    "id": 29,
+    "path": "src/systems/controls-util.js"
+  },
+  {
+    "id": 30,
+    "path": "src/systems/data-sys.js"
+  },
+  {
+    "id": 31,
+    "path": "src/systems/filters-sys.js"
+  },
+  {
+    "id": 32,
+    "path": "src/systems/model-sys.js"
+  },
+  {
+    "id": 33,
+    "path": "src/systems/particles-sys.js"
+  },
+  {
+    "id": 34,
+    "path": "src/systems/postprocess-sys.js"
+  },
+  {
+    "id": 35,
+    "path": "src/systems/presets-sys.js"
+  },
+  {
+    "id": 36,
+    "path": "src/systems/ui-sys.js"
+  },
+  {
+    "id": 37,
+    "path": "src/systems/views-sys.js"
+  },
+  {
+    "id": 38,
+    "path": "src/utils/config-printer.js"
+  },
+  {
+    "id": 39,
+    "path": "src/utils/control-map.js"
+  },
+  {
+    "id": 40,
+    "path": "src/utils/dom-utils.js"
+  },
+  {
+    "id": 41,
+    "path": "src/utils/logger.js"
+  },
+  {
+    "id": 42,
+    "path": "src/utils/math-utils.js"
+  },
+  {
+    "id": 43,
+    "path": "src/vite.config.js"
+  },
+  {
+    "id": 44,
+    "path": "tools/snapshot.mjs"
+  }
+]
