@@ -1,8 +1,17 @@
 import { defineConfig } from 'vite'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  // base 的值就是你的 GitHub 仓库名称，前后都带斜杠
-  // 这是部署到 GitHub Pages 子目录的关键
-  base: '/LangtonAnt3D_web_03/'
+export default defineConfig(({ command }) => {
+  if (command === 'build') {
+    // build a project for production
+    return {
+      base: '/LangtonAnt3D_dist/', // 你的部署仓库名
+    }
+  } else {
+    // serve a project for development
+    return {
+      // 在开发模式下，base 路径默认为 '/'，所以这里可以留空或者显式设置为 '/'
+      base: '/',
+    }
+  }
 })
