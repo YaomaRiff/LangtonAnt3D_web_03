@@ -1,7 +1,7 @@
 # Project Snapshot
 - Root: `.`
-- Created: 2025-10-07 11:55:05
-- Files: 36 (ext=[.js, .mjs, .json, .css, .html], maxSize=200000B)
+- Created: 2025-10-07 13:24:52
+- Files: 38 (ext=[.js, .mjs, .json, .css, .html], maxSize=200000B)
 - Force-Excluded: package-lock.json
 
 ---
@@ -43,7 +43,8 @@ LangtonAnt3D_web_03/
 │  │  ├─ ui-presets.js
 │  │  └─ ui-registry.js
 │  ├─ utils/
-│  │  └─ logger.js
+│  │  ├─ logger.js
+│  │  └─ url-resolver.js
 │  ├─ config.js
 │  ├─ event-bus.js
 │  ├─ main.js
@@ -53,6 +54,7 @@ LangtonAnt3D_web_03/
 ├─ index.html
 ├─ package.json
 ├─ snapshot.index.json
+└─ vite.config.js
 ```
 
 ---
@@ -94,7 +96,7 @@ LangtonAnt3D_web_03/
 {
   "name": "langtonant3d-web-03",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -134,7 +136,7 @@ LangtonAnt3D_web_03/
 [
   {
     "name": "双蚂蚁驱动",
-    "path": "/data/data.csv",
+    "path": "data/data.csv",
     "description": "测试用的数据。"
   }
 ]
@@ -1819,6 +1821,7 @@ import config from './config.js';
 import logger from './utils/logger.js';
 import eventBus from './event-bus.js';
 import uiRegistry from './ui/ui-registry.js';
+import { resolveAssetUrl } from './utils/url-resolver.js';
 
 class PresetManager {
   constructor() {
@@ -1880,7 +1883,8 @@ class PresetManager {
 
       logger.info('PresetManager', `正在加载预设: ${presetName}`);
 
-      const response = await fetch(preset.path);
+      // ✅ 2. 使用 resolveAssetUrl 包装路径
+      const response = await fetch(resolveAssetUrl(preset.path));
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -2522,19 +2526,21 @@ class AudioSystem {
     });
   }
 
-  loadAudio(url) {
+   loadAudio(url) {
     if (!url) {
       logger.warn('AudioSystem', '音频 URL 为空');
       return;
     }
 
-    // ✅ 加载音频时创建 AudioListener
     this._ensureListenerCreated();
 
-    logger.info('AudioSystem', `开始加载音频: ${url}`);
+    // ✅ 2. 使用 resolveAssetUrl 包装路径
+    const fetchUrl = resolveAssetUrl(url);
+
+    logger.info('AudioSystem', `开始加载音频: ${fetchUrl}`);
 
     this.audioLoader.load(
-      url,
+      fetchUrl,
       (buffer) => {
         if (this.sound.isPlaying) {
           this.sound.stop();
@@ -3361,6 +3367,7 @@ import * as THREE from 'three';
 import Papa from 'papaparse';
 import logger from '../utils/logger.js';
 import config from '../config.js';
+import { resolveAssetUrl } from '../utils/url-resolver.js';
 
 class DataSystem {
   constructor() {
@@ -3412,19 +3419,20 @@ class DataSystem {
   
   async _loadAvailableDatasets() {
     try {
-      // 您的vite配置中，public目录下的文件可以直接通过/访问
-      const response = await fetch('/data/manifest.json');
+      // ✅ 2. 使用 resolveAssetUrl 包装路径
+      const response = await fetch(resolveAssetUrl('data/manifest.json'));
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       const manifestData = await response.json();
       
       if (Array.isArray(manifestData) && manifestData.length > 0) {
-        this.datasets = manifestData; // ✅ 修改：将数据保存在自己的实例中
+        this.datasets = manifestData;
         config.set('data.availableDatasets', manifestData);
         
         // 设置默认加载的数据为清单中的第一个
-        const defaultPath = manifestData[0].path.replace('/data/', '../data/');
+        // 注意：这里的路径现在是相对于 public 的，不再需要 '../'
+        const defaultPath = manifestData[0].path; 
         config.set('data.csvUrl', defaultPath);
         
         logger.info('DataSystem', `成功加载 ${manifestData.length} 个数据集清单`);
@@ -3433,21 +3441,21 @@ class DataSystem {
       }
     } catch (err) {
       logger.error('DataSystem', `加载数据集清单失败: ${err.message}`);
-      this.datasets = []; // ✅ 修改：失败时也更新一下
+      this.datasets = [];
       config.set('data.availableDatasets', []);
     } finally {
       this.eventBus.emit('datasets-list-updated', this.getAvailableDatasets());
     }
   }
 
-  // ... loadCSV, _processData, _mapToPoints, _adjustCamera, dispose 方法保持不变 ...
   async loadCSV(csvUrl) {
     if (!csvUrl) {
       logger.warn('DataSystem', 'CSV URL 为空');
       return;
     }
 
-    const fetchUrl = csvUrl.replace('../data/', '/data/');
+    // ✅ 3. 同样，解析从 manifest.json 中读到的路径
+    const fetchUrl = resolveAssetUrl(csvUrl);
 
     logger.info('DataSystem', `开始加载 CSV: ${fetchUrl}`);
 
@@ -3456,7 +3464,7 @@ class DataSystem {
       if (!response.ok) {
         throw new Error(`HTTP 错误: ${response.status}`);
       }
-
+      // ... 函数剩余部分保持不变 ...
       const csvText = await response.text();
       
       Papa.parse(csvText, {
@@ -3577,6 +3585,7 @@ import * as THREE from 'three';
 import logger from '../utils/logger.js';
 import config from '../config.js';
 import eventBus from '../event-bus.js';
+import { resolveAssetUrl } from '../utils/url-resolver.js';
 
 class EnvironmentSystem {
   constructor() {
@@ -3618,26 +3627,24 @@ class EnvironmentSystem {
       return;
     }
 
-    const path = skyboxConfig.path;
+    // ✅ 2. 使用 resolveAssetUrl 包装基础路径
+    const basePath = resolveAssetUrl(skyboxConfig.path);
     const urls = [
-      path + 'px.png', path + 'nx.png',
-      path + 'py.png', path + 'ny.png',
-      path + 'pz.png', path + 'nz.png'
+      basePath + 'px.png', basePath + 'nx.png',
+      basePath + 'py.png', basePath + 'ny.png',
+      basePath + 'pz.png', basePath + 'nz.png'
     ];
 
-    logger.debug('EnvironmentSystem', `正在加载天空盒: ${path}`);
+    logger.debug('EnvironmentSystem', `正在加载天空盒: ${basePath}`);
     
     this.cubeTextureLoader.load(
       urls,
       (texture) => {
-        // 设置为场景背景（我们能看到的）
         this.scene.background = texture;
-        // 设置为环境贴图（用于PBR材质的反射）
         this.scene.environment = texture;
-
         logger.info('EnvironmentSystem', '✅ 天空盒加载成功并应用');
       },
-      undefined, // onProgress callback can be ignored
+      undefined,
       (error) => {
         logger.error('EnvironmentSystem', `天空盒加载失败: ${error.message}`);
         this.scene.background = this.fallbackColor;
@@ -6882,6 +6889,31 @@ export default logger;
 
 ```
 
+### src/utils/url-resolver.js
+
+```javascript
+/**
+ * @file url-resolver.js
+ * @description 统一处理应用内资源URL的工具，确保在不同部署环境下路径正确。
+ */
+
+/**
+ * 将相对路径解析为基于部署环境的正确绝对路径。
+ * 它利用 Vite 的 `import.meta.env.BASE_URL` 环境变量。
+ * 开发时 BASE_URL 是 '/'
+ * 构建后 BASE_URL 是 '/LangtonAnt3D_web_03/'
+ * @param {string} path - 相对于 public 目录的资源路径，例如 'data/data.csv' 或 '/presets/01.json'
+ * @returns {string} - 解析后的完整 URL 路径
+ */
+export function resolveAssetUrl(path) {
+  // import.meta.env.BASE_URL 在 vite.config.js 中配置，末尾自带'/'
+  // 确保传入的路径没有开头的'/'，避免出现'//'
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  return `${import.meta.env.BASE_URL}${cleanPath}`;
+}
+
+```
+
 ### tools/snapshot.mjs
 
 ```javascript
@@ -7061,5 +7093,19 @@ function fenceLang(p) {
 
   console.log(`[snapshot] Done: ${rel(OUT)} (${files.length} files)`);
 })();
+
+```
+
+### vite.config.js
+
+```javascript
+import { defineConfig } from 'vite'
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  // base 的值就是你的 GitHub 仓库名称，前后都带斜杠
+  // 这是部署到 GitHub Pages 子目录的关键
+  base: '/LangtonAnt3D_web_03/'
+})
 
 ```

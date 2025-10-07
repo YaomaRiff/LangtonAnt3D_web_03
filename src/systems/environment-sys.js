@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import logger from '../utils/logger.js';
 import config from '../config.js';
 import eventBus from '../event-bus.js';
+import { resolveAssetUrl } from '../utils/url-resolver.js';
 
 class EnvironmentSystem {
   constructor() {
@@ -47,26 +48,24 @@ class EnvironmentSystem {
       return;
     }
 
-    const path = skyboxConfig.path;
+    // ✅ 2. 使用 resolveAssetUrl 包装基础路径
+    const basePath = resolveAssetUrl(skyboxConfig.path);
     const urls = [
-      path + 'px.png', path + 'nx.png',
-      path + 'py.png', path + 'ny.png',
-      path + 'pz.png', path + 'nz.png'
+      basePath + 'px.png', basePath + 'nx.png',
+      basePath + 'py.png', basePath + 'ny.png',
+      basePath + 'pz.png', basePath + 'nz.png'
     ];
 
-    logger.debug('EnvironmentSystem', `正在加载天空盒: ${path}`);
+    logger.debug('EnvironmentSystem', `正在加载天空盒: ${basePath}`);
     
     this.cubeTextureLoader.load(
       urls,
       (texture) => {
-        // 设置为场景背景（我们能看到的）
         this.scene.background = texture;
-        // 设置为环境贴图（用于PBR材质的反射）
         this.scene.environment = texture;
-
         logger.info('EnvironmentSystem', '✅ 天空盒加载成功并应用');
       },
-      undefined, // onProgress callback can be ignored
+      undefined,
       (error) => {
         logger.error('EnvironmentSystem', `天空盒加载失败: ${error.message}`);
         this.scene.background = this.fallbackColor;

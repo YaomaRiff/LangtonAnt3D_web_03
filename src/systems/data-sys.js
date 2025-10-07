@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import Papa from 'papaparse';
 import logger from '../utils/logger.js';
 import config from '../config.js';
+import { resolveAssetUrl } from '../utils/url-resolver.js';
 
 class DataSystem {
   constructor() {
@@ -58,19 +59,20 @@ class DataSystem {
   
   async _loadAvailableDatasets() {
     try {
-      // 您的vite配置中，public目录下的文件可以直接通过/访问
-      const response = await fetch('/data/manifest.json');
+      // ✅ 2. 使用 resolveAssetUrl 包装路径
+      const response = await fetch(resolveAssetUrl('data/manifest.json'));
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       const manifestData = await response.json();
       
       if (Array.isArray(manifestData) && manifestData.length > 0) {
-        this.datasets = manifestData; // ✅ 修改：将数据保存在自己的实例中
+        this.datasets = manifestData;
         config.set('data.availableDatasets', manifestData);
         
         // 设置默认加载的数据为清单中的第一个
-        const defaultPath = manifestData[0].path.replace('/data/', '../data/');
+        // 注意：这里的路径现在是相对于 public 的，不再需要 '../'
+        const defaultPath = manifestData[0].path; 
         config.set('data.csvUrl', defaultPath);
         
         logger.info('DataSystem', `成功加载 ${manifestData.length} 个数据集清单`);
@@ -79,21 +81,21 @@ class DataSystem {
       }
     } catch (err) {
       logger.error('DataSystem', `加载数据集清单失败: ${err.message}`);
-      this.datasets = []; // ✅ 修改：失败时也更新一下
+      this.datasets = [];
       config.set('data.availableDatasets', []);
     } finally {
       this.eventBus.emit('datasets-list-updated', this.getAvailableDatasets());
     }
   }
 
-  // ... loadCSV, _processData, _mapToPoints, _adjustCamera, dispose 方法保持不变 ...
   async loadCSV(csvUrl) {
     if (!csvUrl) {
       logger.warn('DataSystem', 'CSV URL 为空');
       return;
     }
 
-    const fetchUrl = csvUrl.replace('../data/', '/data/');
+    // ✅ 3. 同样，解析从 manifest.json 中读到的路径
+    const fetchUrl = resolveAssetUrl(csvUrl);
 
     logger.info('DataSystem', `开始加载 CSV: ${fetchUrl}`);
 
@@ -102,7 +104,7 @@ class DataSystem {
       if (!response.ok) {
         throw new Error(`HTTP 错误: ${response.status}`);
       }
-
+      // ... 函数剩余部分保持不变 ...
       const csvText = await response.text();
       
       Papa.parse(csvText, {

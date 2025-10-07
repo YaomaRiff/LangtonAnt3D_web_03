@@ -96,19 +96,21 @@ class AudioSystem {
     });
   }
 
-  loadAudio(url) {
+   loadAudio(url) {
     if (!url) {
       logger.warn('AudioSystem', '音频 URL 为空');
       return;
     }
 
-    // ✅ 加载音频时创建 AudioListener
     this._ensureListenerCreated();
 
-    logger.info('AudioSystem', `开始加载音频: ${url}`);
+    // ✅ 2. 使用 resolveAssetUrl 包装路径
+    const fetchUrl = resolveAssetUrl(url);
+
+    logger.info('AudioSystem', `开始加载音频: ${fetchUrl}`);
 
     this.audioLoader.load(
-      url,
+      fetchUrl,
       (buffer) => {
         if (this.sound.isPlaying) {
           this.sound.stop();

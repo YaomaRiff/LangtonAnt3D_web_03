@@ -9,6 +9,7 @@ import config from './config.js';
 import logger from './utils/logger.js';
 import eventBus from './event-bus.js';
 import uiRegistry from './ui/ui-registry.js';
+import { resolveAssetUrl } from './utils/url-resolver.js';
 
 class PresetManager {
   constructor() {
@@ -70,7 +71,8 @@ class PresetManager {
 
       logger.info('PresetManager', `正在加载预设: ${presetName}`);
 
-      const response = await fetch(preset.path);
+      // ✅ 2. 使用 resolveAssetUrl 包装路径
+      const response = await fetch(resolveAssetUrl(preset.path));
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
