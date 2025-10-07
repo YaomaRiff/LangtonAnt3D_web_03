@@ -4,6 +4,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
 并遵从 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [0.1.4]
+
+### 修复 (Fixed)
+- 中间丢失了几个版本
+- 主要做的是建立新的仓库托管dist，分支托管dist失败了
+- 添加了相关的脚本，稍微轻松一点，也怕老是复制黏贴出错
+- 马上要进行大更新
+
 ## [0.1.0]
 
 ### 新增 (Added)
