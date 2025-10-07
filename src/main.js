@@ -26,6 +26,8 @@ import particlesSys from './systems/particles-sys.js';
 import materialSys from './systems/material-sys.js';
 import postprocessSys from './systems/postprocess-sys.js';
 import audioSys from './systems/audio-sys.js';
+import lightingSys from './systems/lighting-sys.js';
+import environmentSys from './systems/environment-sys.js';
 
 // 实体
 import pathEntity from './entities/path-entity.js';
@@ -71,6 +73,12 @@ class Application {
         renderer: this.renderer
       });
 
+      // 4.5 初始化光照系统 (新)
+      lightingSys.init({ scene: this.scene });
+
+       // 4.6 初始化环境系统 (天空盒)
+      environmentSys.init({ scene: this.scene });
+
       // 5. 初始化音频系统（在相机之后）
       audioSys.init({
         eventBus,
@@ -79,6 +87,15 @@ class Application {
 
       // 6. 初始化 UI 容器
       uiContainer.init();
+
+      // 核心修复：优先初始化数据系统
+      // 这样后续的UI系统就能在第一时间拿到数据
+      await dataSys.init({
+        eventBus,
+        scene: this.scene,
+        camera: cameraSys.getActiveCamera(),
+        controls: cameraSys.getControls()
+      });
 
       // 7. 初始化基础 UI
       await uiBasic.init();
@@ -96,14 +113,6 @@ class Application {
 
       // 11. 初始化坐标系统UI
       await uiCoordinates.init({ eventBus });
-
-      // 12. 初始化数据系统
-      dataSys.init({
-        eventBus,
-        scene: this.scene,
-        camera: cameraSys.getActiveCamera(),
-        controls: cameraSys.getControls()
-      });
 
       // 13. 初始化材质系统(必须在实体之前)
       materialSys.init({ eventBus });
@@ -168,8 +177,7 @@ class Application {
 
   _createScene() {
     this.scene = new THREE.Scene();
-    const bgColor = config.get('environment.bgColor') || '#121414';
-    this.scene.background = new THREE.Color(bgColor);
+    // 背景色现在由 environment-sys 管理
     logger.debug('App', '场景已创建');
   }
 
@@ -205,9 +213,9 @@ class Application {
       this._handleResize();
     });
 
-    eventBus.on('bg-color-changed', (color) => {
-      this.scene.background = new THREE.Color(color);
-    });
+    // eventBus.on('bg-color-changed', (color) => {
+    //   this.scene.background = new THREE.Color(color);
+    // });
 
     eventBus.on('show-coordinate-debug', () => {
       const debugInfo = coordinateSystem.debugInfo();
@@ -259,6 +267,8 @@ class Application {
     materialSys.dispose();
     postprocessSys.dispose();
     audioSys.dispose();
+    lightingSys.dispose();
+    environmentSys.dispose();
     pathEntity.dispose();
     movingLight.dispose();
     uiBasic.dispose();

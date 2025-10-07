@@ -1,9 +1,8 @@
 {
-  "name": "02",
-  "timestamp": "2025-10-06T20:10:04.371Z",
+  "name": "03",
+  "timestamp": "2025-10-06T17:01:18.755Z",
   "animation": {
-    "loop": true,
-    "speedFactor": 1.65
+    "loop": true
   },
   "camera": {
     "fov": 75,
@@ -15,6 +14,7 @@
     }
   },
   "environment": {
+    "bgColor": "#121414",
     "pathColor": "#F0B7B7"
   },
   "material": {
@@ -34,7 +34,7 @@
   "particles": {
     "breathIntensity": 0.1,
     "dustColor": "#AF85B7",
-    "dustCount": 6600,
+    "dustCount": 3000,
     "dustOpacity": 0.6,
     "dustSize": 0.6,
     "floatIntensity": 0.2,
@@ -53,24 +53,24 @@
     "brightnessContrast": {
       "brightness": 0,
       "contrast": 0,
-      "enabled": false
+      "enabled": true
     },
     "chromaticAberration": {
       "enabled": false
     },
     "hueSaturation": {
-      "enabled": false,
+      "enabled": true,
       "hue": 0,
-      "saturation": 0
+      "saturation": 0.14
     },
     "noise": {
       "enabled": true,
-      "intensity": 0.088
+      "intensity": 0.02
     },
     "scanline": {
-      "density": 228.4,
+      "density": 66.5,
       "enabled": true,
-      "intensity": 0.28
+      "intensity": 0.77
     }
   }
 }

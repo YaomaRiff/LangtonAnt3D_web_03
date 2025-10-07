@@ -71,7 +71,7 @@ class CameraSystem {
     const far = config.get('camera.far') || 1000;
 
     this.perspectiveCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this.perspectiveCamera.position.set(15, 15, 25);
+    this.perspectiveCamera.position.set(10, 8, 15);
     this.perspectiveCamera.name = 'PerspectiveCamera';
 
     const height = this.orthoFrustumSize;

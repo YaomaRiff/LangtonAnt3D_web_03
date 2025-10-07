@@ -1,7 +1,7 @@
 # Project Snapshot
 - Root: `.`
-- Created: 2025-10-06 16:27:39
-- Files: 32 (ext=[.js, .mjs, .json, .css, .html], maxSize=200000B)
+- Created: 2025-10-07 11:55:05
+- Files: 36 (ext=[.js, .mjs, .json, .css, .html], maxSize=200000B)
 - Force-Excluded: package-lock.json
 
 ---
@@ -9,9 +9,12 @@
 ```text
 LangtonAnt3D_web_03/
 ├─ public/
+│  ├─ data/
+│  │  └─ manifest.json
 │  ├─ presets/
 │  │  ├─ 01.json
-│  │  └─ 02.json
+│  │  ├─ 02.json
+│  │  └─ 03.json
 │  ├─ manifest.json
 │  ├─ style.css
 ├─ src/
@@ -25,6 +28,8 @@ LangtonAnt3D_web_03/
 │  │  ├─ controls-util.js
 │  │  ├─ coordinates-sys.js
 │  │  ├─ data-sys.js
+│  │  ├─ environment-sys.js
+│  │  ├─ lighting-sys.js
 │  │  ├─ material-sys.js
 │  │  ├─ model-sys.js
 │  │  ├─ particles-sys.js
@@ -47,7 +52,7 @@ LangtonAnt3D_web_03/
 │  └─ snapshot.mjs
 ├─ index.html
 ├─ package.json
-└─ snapshot.index.json
+├─ snapshot.index.json
 ```
 
 ---
@@ -62,25 +67,18 @@ LangtonAnt3D_web_03/
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>(OUwNO)Ant</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      overflow: hidden;
-      background: #000;
-    }
-    
-    #app {
-      width: 100vw;
-      height: 100vh;
-      position: relative;
-    }
-  </style>
+  
+  <!-- 样式 -->
+  <link rel="stylesheet" href="/style.css">
+
+  <!-- Favicon and Theme Color (修正位置) -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
+  <meta name="theme-color" content="#ffffff">
 </head>
 <body>
   <div id="app"></div>
@@ -94,7 +92,7 @@ LangtonAnt3D_web_03/
 
 ```json
 {
-  "name": "langtonant3d-web-02",
+  "name": "langtonant3d-web-03",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -130,6 +128,18 @@ LangtonAnt3D_web_03/
 
 ```
 
+### public/data/manifest.json
+
+```json
+[
+  {
+    "name": "双蚂蚁驱动",
+    "path": "/data/data.csv",
+    "description": "测试用的数据。"
+  }
+]
+```
+
 ### public/manifest.json
 
 ```json
@@ -159,18 +169,178 @@ LangtonAnt3D_web_03/
 ```json
 {
   "name": "01",
-  "timestamp": "2025-10-06T08:33:16.992Z",
+  "timestamp": "2025-10-06T20:09:28.849Z",
+  "animation": {
+    "loop": true,
+    "speedFactor": 1.65
+  },
   "camera": {
     "fov": 75,
     "mode": "perspective"
   },
   "coordinates": {
     "dataSpace": {
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
+      "scale": 1
+    }
+  },
+  "environment": {
+    "pathColor": "#F0B7B7"
+  },
+  "material": {
+    "movingLight": {
+      "emissiveIntensity": 1.5,
+      "enabled": true
+    },
+    "particles": {
+      "emissiveIntensity": 0.3,
+      "enabled": true
+    },
+    "path": {
+      "emissiveIntensity": 0.8,
+      "enabled": true
+    }
+  },
+  "particles": {
+    "breathIntensity": 0.1,
+    "dustColor": "#AF85B7",
+    "dustCount": 6600,
+    "dustOpacity": 0.6,
+    "dustSize": 0.6,
+    "floatIntensity": 0.2,
+    "pathPointColor": "#FFFFFF",
+    "pathPointSize": 0.5,
+    "rotationSpeed": 0,
+    "rotationTiltXY": 0,
+    "rotationTiltXZ": 0,
+    "systemScale": 1
+  },
+  "path": {
+    "depthIntensity": 0.5,
+    "scale": 1
+  },
+  "postprocess": {
+    "brightnessContrast": {
+      "brightness": 0,
+      "contrast": 0,
+      "enabled": false
+    },
+    "chromaticAberration": {
+      "enabled": false
+    },
+    "hueSaturation": {
+      "enabled": false,
+      "hue": 0,
+      "saturation": 0
+    },
+    "noise": {
+      "enabled": true,
+      "intensity": 0.088
+    },
+    "scanline": {
+      "density": 228.4,
+      "enabled": true,
+      "intensity": 0.28
+    }
+  }
+}
+```
+
+### public/presets/02.json
+
+```json
+{
+  "name": "02",
+  "timestamp": "2025-10-06T20:10:04.371Z",
+  "animation": {
+    "loop": true,
+    "speedFactor": 1.65
+  },
+  "camera": {
+    "fov": 75,
+    "mode": "perspective"
+  },
+  "coordinates": {
+    "dataSpace": {
+      "scale": 1
+    }
+  },
+  "environment": {
+    "pathColor": "#F0B7B7"
+  },
+  "material": {
+    "movingLight": {
+      "emissiveIntensity": 1.5,
+      "enabled": true
+    },
+    "particles": {
+      "emissiveIntensity": 0.3,
+      "enabled": true
+    },
+    "path": {
+      "emissiveIntensity": 0.8,
+      "enabled": true
+    }
+  },
+  "particles": {
+    "breathIntensity": 0.1,
+    "dustColor": "#AF85B7",
+    "dustCount": 6600,
+    "dustOpacity": 0.6,
+    "dustSize": 0.6,
+    "floatIntensity": 0.2,
+    "pathPointColor": "#FFFFFF",
+    "pathPointSize": 0.5,
+    "rotationSpeed": 0,
+    "rotationTiltXY": 0,
+    "rotationTiltXZ": 0,
+    "systemScale": 1
+  },
+  "path": {
+    "depthIntensity": 0.5,
+    "scale": 1
+  },
+  "postprocess": {
+    "brightnessContrast": {
+      "brightness": 0,
+      "contrast": 0,
+      "enabled": false
+    },
+    "chromaticAberration": {
+      "enabled": false
+    },
+    "hueSaturation": {
+      "enabled": false,
+      "hue": 0,
+      "saturation": 0
+    },
+    "noise": {
+      "enabled": true,
+      "intensity": 0.088
+    },
+    "scanline": {
+      "density": 228.4,
+      "enabled": true,
+      "intensity": 0.28
+    }
+  }
+}
+```
+
+### public/presets/03.json
+
+```json
+{
+  "name": "03",
+  "timestamp": "2025-10-06T17:01:18.755Z",
+  "animation": {
+    "loop": true
+  },
+  "camera": {
+    "fov": 75,
+    "mode": "perspective"
+  },
+  "coordinates": {
+    "dataSpace": {
       "scale": 1
     }
   },
@@ -188,14 +358,14 @@ LangtonAnt3D_web_03/
       "enabled": true
     },
     "path": {
-      "emissiveIntensity": 0.4,
+      "emissiveIntensity": 0.8,
       "enabled": true
     }
   },
   "particles": {
-    "breathIntensity": 0.42,
+    "breathIntensity": 0.1,
     "dustColor": "#AF85B7",
-    "dustCount": 5700,
+    "dustCount": 3000,
     "dustOpacity": 0.6,
     "dustSize": 0.6,
     "floatIntensity": 0.2,
@@ -208,149 +378,31 @@ LangtonAnt3D_web_03/
   },
   "path": {
     "depthIntensity": 0.5,
-    "scale": 0.6
+    "scale": 1
   },
   "postprocess": {
-    "bloom": {
-      "intensity": 0.8,
-      "smoothing": 0.5
-    },
     "brightnessContrast": {
       "brightness": 0,
       "contrast": 0,
-      "enabled": false
+      "enabled": true
     },
     "chromaticAberration": {
       "enabled": false
     },
     "hueSaturation": {
-      "enabled": false,
+      "enabled": true,
       "hue": 0,
-      "saturation": 0
+      "saturation": 0.14
     },
     "noise": {
       "enabled": true,
-      "intensity": 0.047
+      "intensity": 0.02
     },
     "scanline": {
-      "density": 82.4,
+      "density": 66.5,
       "enabled": true,
-      "intensity": 0.71
+      "intensity": 0.77
     }
-  }
-}
-```
-
-### public/presets/02.json
-
-```json
-{
-  "name": "02",
-  "timestamp": "2025-10-06T07:21:45.237Z",
-  "particles": {
-    "floatIntensity": 0.2,
-    "breathIntensity": 0.42,
-    "dustCount": 5700,
-    "dustSize": 0.6,
-    "dustOpacity": 0.6,
-    "dustColor": "#AF85B7",
-    "pathPointSize": 0.5,
-    "pathPointOpacity": 0.9,
-    "pathPointColor": "#FFFFFF",
-    "sphereRadius": 1600,
-    "systemScale": 1,
-    "rotationSpeed": 0,
-    "rotationTiltXZ": 0,
-    "rotationTiltXY": 0
-  },
-  "path": {
-    "depthIntensity": 0.5,
-    "depthEnhanced": true,
-    "scale": 0.6
-  },
-  "environment": {
-    "bgColor": "#121414",
-    "fogDensity": 0.015,
-    "fogVolumeScale": 1,
-    "pathFogIntensity": 0.1,
-    "pathColor": "#F0B7B7",
-    "dustColor": "#AF85B7",
-    "positionScale": 2,
-    "yScale": 0.6,
-    "cameraDistFactor": 2.5,
-    "ambientLightIntensity": 0.5,
-    "directionalLightIntensity": 0.8
-  },
-  "material": {
-    "path": {
-      "enabled": true,
-      "emissiveIntensity": 0.4,
-      "emissiveColor": "#F0B7B7"
-    },
-    "particles": {
-      "enabled": true,
-      "emissiveIntensity": 0.3,
-      "emissiveColor": "#AF85B7"
-    },
-    "movingLight": {
-      "enabled": true,
-      "emissiveIntensity": 1.5,
-      "emissiveColor": "#FFFFFF"
-    }
-  },
-  "coordinates": {
-    "dataSpace": {
-      "scale": 1,
-      "rotation": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      },
-      "position": {
-        "x": 0,
-        "y": 0,
-        "z": 0
-      }
-    }
-  },
-  "postprocess": {
-    "enabled": true,
-    "bloom": {
-      "enabled": true,
-      "intensity": 0.8,
-      "threshold": 0.7,
-      "smoothing": 0.5
-    },
-    "hueSaturation": {
-      "enabled": false,
-      "hue": 0,
-      "saturation": 0
-    },
-    "brightnessContrast": {
-      "enabled": false,
-      "brightness": 0,
-      "contrast": 0
-    },
-    "noise": {
-      "enabled": true,
-      "intensity": 0.047
-    },
-    "chromaticAberration": {
-      "enabled": false
-    },
-    "scanline": {
-      "enabled": true,
-      "intensity": 0.71,
-      "density": 82.4
-    }
-  },
-  "camera": {
-    "mode": "perspective",
-    "fov": 75
-  },
-  "animation": {
-    "speedFactor": 1.65,
-    "loop": true
   }
 }
 ```
@@ -678,13 +730,7 @@ const DEFAULT_CONFIG = {
     csvUrl: '../data/data.csv',
     antData: [],
     mappedPoints: [],
-    availableDatasets: [
-      {
-        name: '默认数据集',
-        path: '../data/data.csv',
-        description: 'Langton Ant 轨迹数据'
-      }
-    ]
+    availableDatasets: []
   },
   
   animation: {
@@ -697,7 +743,7 @@ const DEFAULT_CONFIG = {
 
   coordinates: {
     dataSpace: {
-      scale: 1.0,
+      scale: 1.4,
       rotation: {
         x: 0,
         y: 0,
@@ -729,6 +775,19 @@ const DEFAULT_CONFIG = {
     }
   },
 
+    lighting: {
+    ambient: {
+      color: '#ffffff',
+      intensity: 0.2
+    },
+    directional: {
+      color: '#ffffff',
+      intensity: 1.0,
+      position: { x: 5, y: 10, z: 7.5 }
+    }
+  },
+
+
   particles: {
     floatIntensity: 0.2,
     breathIntensity: 0.1,
@@ -739,7 +798,7 @@ const DEFAULT_CONFIG = {
     pathPointSize: 0.5,
     pathPointOpacity: 0.9,
     pathPointColor: '#FFFFFF',
-    sphereRadius: 1600,
+    sphereRadius: 1400,
     systemScale: 1.0,
     rotationSpeed: 0,
     rotationTiltXZ: 0,
@@ -753,14 +812,18 @@ const DEFAULT_CONFIG = {
   },
   
   environment: {
-    bgColor: '#121414',
+    //bgColor: '#121414',
+    skybox: {
+      enabled: true,
+      path: '/skybox/Medium_Monochrome_Nebulae/'
+    },
     fogDensity: 0.015,
     fogVolumeScale: 1.0,
     pathFogIntensity: 0.1,
     pathColor: '#F0B7B7',
     dustColor: '#AF85B7',
     positionScale: 2.0,
-    yScale: 0.6,
+    yScale: 1.0,
     cameraDistFactor: 2.5,
     ambientLightIntensity: 0.5,
     directionalLightIntensity: 0.8
@@ -801,7 +864,7 @@ const DEFAULT_CONFIG = {
     fov: 75,
     position: { x: 0, y: 0, z: 10 },
     near: 0.1,
-    far: 1000,
+    far: 2000,
     controls: {
       enabled: true,
       dollySpeed: 1.0,
@@ -1468,6 +1531,8 @@ import particlesSys from './systems/particles-sys.js';
 import materialSys from './systems/material-sys.js';
 import postprocessSys from './systems/postprocess-sys.js';
 import audioSys from './systems/audio-sys.js';
+import lightingSys from './systems/lighting-sys.js';
+import environmentSys from './systems/environment-sys.js';
 
 // 实体
 import pathEntity from './entities/path-entity.js';
@@ -1513,6 +1578,12 @@ class Application {
         renderer: this.renderer
       });
 
+      // 4.5 初始化光照系统 (新)
+      lightingSys.init({ scene: this.scene });
+
+       // 4.6 初始化环境系统 (天空盒)
+      environmentSys.init({ scene: this.scene });
+
       // 5. 初始化音频系统（在相机之后）
       audioSys.init({
         eventBus,
@@ -1521,6 +1592,15 @@ class Application {
 
       // 6. 初始化 UI 容器
       uiContainer.init();
+
+      // 核心修复：优先初始化数据系统
+      // 这样后续的UI系统就能在第一时间拿到数据
+      await dataSys.init({
+        eventBus,
+        scene: this.scene,
+        camera: cameraSys.getActiveCamera(),
+        controls: cameraSys.getControls()
+      });
 
       // 7. 初始化基础 UI
       await uiBasic.init();
@@ -1538,14 +1618,6 @@ class Application {
 
       // 11. 初始化坐标系统UI
       await uiCoordinates.init({ eventBus });
-
-      // 12. 初始化数据系统
-      dataSys.init({
-        eventBus,
-        scene: this.scene,
-        camera: cameraSys.getActiveCamera(),
-        controls: cameraSys.getControls()
-      });
 
       // 13. 初始化材质系统(必须在实体之前)
       materialSys.init({ eventBus });
@@ -1610,8 +1682,7 @@ class Application {
 
   _createScene() {
     this.scene = new THREE.Scene();
-    const bgColor = config.get('environment.bgColor') || '#121414';
-    this.scene.background = new THREE.Color(bgColor);
+    // 背景色现在由 environment-sys 管理
     logger.debug('App', '场景已创建');
   }
 
@@ -1647,9 +1718,9 @@ class Application {
       this._handleResize();
     });
 
-    eventBus.on('bg-color-changed', (color) => {
-      this.scene.background = new THREE.Color(color);
-    });
+    // eventBus.on('bg-color-changed', (color) => {
+    //   this.scene.background = new THREE.Color(color);
+    // });
 
     eventBus.on('show-coordinate-debug', () => {
       const debugInfo = coordinateSystem.debugInfo();
@@ -1701,6 +1772,8 @@ class Application {
     materialSys.dispose();
     postprocessSys.dispose();
     audioSys.dispose();
+    lightingSys.dispose();
+    environmentSys.dispose();
     pathEntity.dispose();
     movingLight.dispose();
     uiBasic.dispose();
@@ -1778,7 +1851,8 @@ class PresetManager {
     try {
       const presetFiles = [
         '01.json',
-        '02.json'
+        '02.json',
+        '03.json'
       ];
 
       this.availablePresets = presetFiles.map(filename => ({
@@ -2645,7 +2719,7 @@ class CameraSystem {
     const far = config.get('camera.far') || 1000;
 
     this.perspectiveCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this.perspectiveCamera.position.set(15, 15, 25);
+    this.perspectiveCamera.position.set(10, 8, 15);
     this.perspectiveCamera.name = 'PerspectiveCamera';
 
     const height = this.orthoFrustumSize;
@@ -3281,7 +3355,7 @@ export default coordinateSystem;
 /**
  * @file data-sys.js
  * @description 数据加载系统 - CSV解析与坐标映射
- * ✅ 修复：删除 yScale 压缩，使用各向同性映射 + 优化相机初始距离
+ * ✅ 修复: 初始化时动态加载数据源清单 (manifest.json)，并提供主动查询方法。
  */
 import * as THREE from 'three';
 import Papa from 'papaparse';
@@ -3297,11 +3371,13 @@ class DataSystem {
     this.initialized = false;
     
     this.rawData = [];
+    this.datasets = []; // ✅ 新增：用一个内部变量存储数据集列表
   }
 
-  init({ eventBus, scene, camera, controls }) {
+  // init 方法保持 async 不变
+  async init({ eventBus, scene, camera, controls }) {
     if (this.initialized) {
-      logger.warn('DataSystem', '数据系统已经初始化过了');
+      // logger.warn('DataSystem', '数据系统已经初始化过了'); // 暂时注释掉，因为我们修复了重复调用的问题
       return this;
     }
 
@@ -3315,6 +3391,8 @@ class DataSystem {
         this.loadCSV(csvUrl);
       });
 
+      await this._loadAvailableDatasets();
+
       this.initialized = true;
       logger.info('DataSystem', '数据系统初始化完成');
 
@@ -3325,16 +3403,56 @@ class DataSystem {
     }
   }
 
+  /**
+   * ✅ 新增：提供一个公共的 getter 方法
+   */
+  getAvailableDatasets() {
+    return this.datasets;
+  }
+  
+  async _loadAvailableDatasets() {
+    try {
+      // 您的vite配置中，public目录下的文件可以直接通过/访问
+      const response = await fetch('/data/manifest.json');
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const manifestData = await response.json();
+      
+      if (Array.isArray(manifestData) && manifestData.length > 0) {
+        this.datasets = manifestData; // ✅ 修改：将数据保存在自己的实例中
+        config.set('data.availableDatasets', manifestData);
+        
+        // 设置默认加载的数据为清单中的第一个
+        const defaultPath = manifestData[0].path.replace('/data/', '../data/');
+        config.set('data.csvUrl', defaultPath);
+        
+        logger.info('DataSystem', `成功加载 ${manifestData.length} 个数据集清单`);
+      } else {
+        throw new Error('清单格式无效或为空');
+      }
+    } catch (err) {
+      logger.error('DataSystem', `加载数据集清单失败: ${err.message}`);
+      this.datasets = []; // ✅ 修改：失败时也更新一下
+      config.set('data.availableDatasets', []);
+    } finally {
+      this.eventBus.emit('datasets-list-updated', this.getAvailableDatasets());
+    }
+  }
+
+  // ... loadCSV, _processData, _mapToPoints, _adjustCamera, dispose 方法保持不变 ...
   async loadCSV(csvUrl) {
     if (!csvUrl) {
       logger.warn('DataSystem', 'CSV URL 为空');
       return;
     }
 
-    logger.info('DataSystem', `开始加载 CSV: ${csvUrl}`);
+    const fetchUrl = csvUrl.replace('../data/', '/data/');
+
+    logger.info('DataSystem', `开始加载 CSV: ${fetchUrl}`);
 
     try {
-      const response = await fetch(csvUrl);
+      const response = await fetch(fetchUrl);
       if (!response.ok) {
         throw new Error(`HTTP 错误: ${response.status}`);
       }
@@ -3388,32 +3506,26 @@ class DataSystem {
         points: mappedPoints 
       });
       
-      // ✅ 新增：通知数据处理完成
       this.eventBus.emit('data-processing-completed');
-    } catch (err) {
+    } catch (err)
+ {
       logger.error('DataSystem', `数据处理失败: ${err.message}`);
       this.eventBus.emit('data-load-error', err);
     }
   }
 
-  /**
-   * ✅ 核心修复：删除 yScale，使用各向同性映射
-   */
   _mapToPoints(data) {
     const positionScale = config.get('environment.positionScale') || 2.0;
 
     return data.map(row => {
       return new THREE.Vector3(
         row.x * positionScale,
-        row.y * positionScale,  // ✅ 统一缩放
+        row.y * positionScale,
         row.z * positionScale
       );
     });
   }
 
-  /**
-   * ✅ 修复：调整相机到合适距离并锁定旋转中心为世界原点
-   */
   _adjustCamera(points) {
     if (!points || points.length === 0) return;
 
@@ -3425,7 +3537,6 @@ class DataSystem {
     const size = box.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
 
-    // ✅ 使用更合理的距离系数
     const cameraDistFactor = 2.5;
     const distance = maxDim * cameraDistFactor;
 
@@ -3452,6 +3563,188 @@ class DataSystem {
 
 const dataSys = new DataSystem();
 export default dataSys;
+
+```
+
+### src/systems/environment-sys.js
+
+```javascript
+/**
+ * @file environment-sys.js
+ * @description 环境系统 - 负责管理天空盒、背景和环境反射
+ */
+import * as THREE from 'three';
+import logger from '../utils/logger.js';
+import config from '../config.js';
+import eventBus from '../event-bus.js';
+
+class EnvironmentSystem {
+  constructor() {
+    this.scene = null;
+    this.initialized = false;
+    this.cubeTextureLoader = new THREE.CubeTextureLoader();
+    this.fallbackColor = new THREE.Color('#121414'); // 默认背景色
+  }
+
+  init({ scene }) {
+    if (this.initialized) return this;
+    this.scene = scene;
+
+    this._loadSkybox();
+    this._bindEvents();
+
+    this.initialized = true;
+    logger.info('EnvironmentSystem', '环境系统初始化完成');
+    return this;
+  }
+  
+  _bindEvents() {
+    // 监听背景颜色变化，用于在禁用天空盒时切换
+    eventBus.on('bg-color-changed', (color) => {
+        const skyboxEnabled = config.get('environment.skybox.enabled');
+        if (!skyboxEnabled) {
+            this.fallbackColor.set(color);
+            this.scene.background = this.fallbackColor;
+        }
+    });
+  }
+
+  _loadSkybox() {
+    const skyboxConfig = config.get('environment.skybox');
+
+    if (!skyboxConfig || !skyboxConfig.enabled || !skyboxConfig.path) {
+      logger.warn('EnvironmentSystem', '天空盒未配置或未启用，使用纯色背景');
+      this.scene.background = this.fallbackColor;
+      return;
+    }
+
+    const path = skyboxConfig.path;
+    const urls = [
+      path + 'px.png', path + 'nx.png',
+      path + 'py.png', path + 'ny.png',
+      path + 'pz.png', path + 'nz.png'
+    ];
+
+    logger.debug('EnvironmentSystem', `正在加载天空盒: ${path}`);
+    
+    this.cubeTextureLoader.load(
+      urls,
+      (texture) => {
+        // 设置为场景背景（我们能看到的）
+        this.scene.background = texture;
+        // 设置为环境贴图（用于PBR材质的反射）
+        this.scene.environment = texture;
+
+        logger.info('EnvironmentSystem', '✅ 天空盒加载成功并应用');
+      },
+      undefined, // onProgress callback can be ignored
+      (error) => {
+        logger.error('EnvironmentSystem', `天空盒加载失败: ${error.message}`);
+        this.scene.background = this.fallbackColor;
+      }
+    );
+  }
+
+  dispose() {
+    this.scene.background = null;
+    this.scene.environment = null;
+    this.initialized = false;
+    logger.info('EnvironmentSystem', '环境系统已销毁');
+  }
+}
+
+const environmentSys = new EnvironmentSystem();
+export default environmentSys;
+
+```
+
+### src/systems/lighting-sys.js
+
+```javascript
+/**
+ * @file lighting-sys.js
+ * @description 光照系统 - 管理场景中的环境光与直接光
+ */
+import * as THREE from 'three';
+import logger from '../utils/logger.js';
+import config from '../config.js';
+
+class LightingSystem {
+  constructor() {
+    this.scene = null;
+    this.initialized = false;
+    this.ambientLight = null;
+    this.directionalLight = null;
+  }
+
+  init({ scene }) {
+    if (this.initialized) return this;
+    this.scene = scene;
+
+    // 从配置创建光源
+    this._createLights();
+
+    this.initialized = true;
+    logger.info('LightingSystem', '光照系统初始化完成');
+    return this;
+  }
+
+  _createLights() {
+    // 1. 环境光 (AmbientLight)
+    // 为整个场景提供基础光照，防止模型暗部全黑
+    const ambientConfig = config.get('lighting.ambient');
+    this.ambientLight = new THREE.AmbientLight(
+      ambientConfig.color,
+      ambientConfig.intensity
+    );
+    this.ambientLight.name = 'AmbientLight';
+    this.scene.add(this.ambientLight);
+
+    // 2. 平行光 (DirectionalLight)
+    // 模拟一个无限远的光源（如太阳），产生高光和阴影
+    const dirConfig = config.get('lighting.directional');
+    this.directionalLight = new THREE.DirectionalLight(
+      dirConfig.color,
+      dirConfig.intensity
+    );
+    this.directionalLight.name = 'DirectionalLight';
+    this.directionalLight.position.set(
+      dirConfig.position.x,
+      dirConfig.position.y,
+      dirConfig.position.z
+    );
+    this.scene.add(this.directionalLight);
+
+    logger.debug('LightingSystem', '环境光和平行光已创建');
+  }
+
+  // 未来可以添加更新光照参数的方法，例如通过UI
+  updateAmbient(color, intensity) {
+    if (this.ambientLight) {
+      this.ambientLight.color.set(color);
+      this.ambientLight.intensity = intensity;
+    }
+  }
+  
+  updateDirectional(color, intensity) {
+    if (this.directionalLight) {
+      this.directionalLight.color.set(color);
+      this.directionalLight.intensity = intensity;
+    }
+  }
+
+  dispose() {
+    if (this.ambientLight) this.scene.remove(this.ambientLight);
+    if (this.directionalLight) this.scene.remove(this.directionalLight);
+    this.ambientLight = null;
+    this.directionalLight = null;
+    this.initialized = false;
+    logger.info('LightingSystem', '光照系统已销毁');
+  }
+}
+
+const lightingSys = new LightingSystem();
+export default lightingSys;
 
 ```
 
@@ -3685,7 +3978,7 @@ export function initModelSys({ eventBus, scene }) {
 /**
  * @file particles-sys.js
  * @description 粒子系统 - 球形分布 + 自转 + 呼吸 + 浮动效果
- * ✅ 修改：sphereRadius 默认400，systemScale 默认1.0
+ * ✅ 修改：sphereRadius 默认1600，systemScale 默认1.0
  */
 import * as THREE from 'three';
 import logger from '../utils/logger.js';
@@ -4460,7 +4753,7 @@ class PostprocessSystem {
     });
   }
 
-  // 渲染辉光层 —— 会将仅标记为 glow 的对象渲染到 glowRenderTarget
+    // 渲染辉光层 —— 会将仅标记为 glow 的对象渲染到 glowRenderTarget
   _renderGlowLayer() {
     const camera = this.getCameraFn();
     if (!camera) return;
@@ -4475,31 +4768,47 @@ class PostprocessSystem {
       if (!obj.userData || !obj.userData.glow) return;
       if (!obj.visible) return;
 
-      // 使用对象的 world matrix 将 clone 放到正确位置
-      // 对于 Points 与 Mesh 使用不同处理方式
-      if (obj.type === 'Points' || obj instanceof THREE.Points) {
-        // 原始材质（可能是 PointsMaterial 或自定义）
-        const origMat = obj.material;
-        // 读取 userData 发光信息（优先）
-        const userEmissive = origMat && origMat.userData && origMat.userData.emissive;
-        const emissiveIntensity = (origMat && origMat.userData && origMat.userData.emissiveIntensity) || 1.0;
+      // ================== 新增：处理路径线条 (Line + ShaderMaterial) ==================
+      if (obj.isLine && obj.material && obj.material.isShaderMaterial) {
+        const originalMaterial = obj.material;
+        
+        // 检查uniforms是否存在
+        if (originalMaterial.uniforms.uEmissive && originalMaterial.uniforms.uEmissiveIntensity) {
+          const emitColor = originalMaterial.uniforms.uEmissive.value.clone();
+          const emitIntensity = originalMaterial.uniforms.uEmissiveIntensity.value;
+          
+          // 创建一个简单的LineBasicMaterial用于辉光渲染
+          const glowLineMat = new THREE.LineBasicMaterial({
+            color: emitColor,
+            transparent: true,
+            opacity: Math.min(1.0, emitIntensity * 2.0), // 乘以2让线条辉光更明显
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+          });
 
-        // 备选颜色：material.color 或白色
+          // 共享几何体创建新的Line对象
+          const lineClone = new THREE.Line(obj.geometry, glowLineMat);
+          lineClone.matrix.copy(obj.matrixWorld);
+          lineClone.matrixAutoUpdate = false;
+          this.glowScene.add(lineClone);
+        }
+      } 
+      // ======================== 处理点 (Points) ========================
+      else if (obj.type === 'Points' || obj instanceof THREE.Points) {
+        const origMat = obj.material;
+        const userEmissive = origMat?.userData?.emissive;
+        const emissiveIntensity = origMat?.userData?.emissiveIntensity || 1.0;
+
         let color = new THREE.Color(0xffffff);
         if (userEmissive) {
-          if (userEmissive instanceof THREE.Color) {
-            color.copy(userEmissive);
-          } else {
-            color.set(userEmissive);
-          }
-        } else if (origMat && origMat.color) {
+          color.set(userEmissive);
+        } else if (origMat?.color) {
           color.copy(origMat.color);
         }
 
-        // 基于 Points 创建新的 PointsMaterial 用于辉光渲染
         const glowPointMat = new THREE.PointsMaterial({
           color: color,
-          size: (origMat && origMat.size) ? origMat.size : (config.get('postprocess.particleGlowSize') || 1.0),
+          size: origMat?.size ?? 1.0,
           transparent: true,
           opacity: Math.min(1.0, emissiveIntensity),
           depthWrite: false,
@@ -4507,93 +4816,35 @@ class PostprocessSystem {
           sizeAttenuation: true
         });
 
-        // 构建新的 Points 对象（共享几何）
         const pointsClone = new THREE.Points(obj.geometry, glowPointMat);
         pointsClone.matrix.copy(obj.matrixWorld);
         pointsClone.matrixAutoUpdate = false;
         this.glowScene.add(pointsClone);
-      } else if (obj.isMesh || obj.type === 'Mesh' || obj instanceof THREE.Mesh) {
-        // Mesh 类型
-        // 尽量创建简单的 Mesh 并替换材质为 glowMaterial 的副本
-        const geometry = obj.geometry;
+      } 
+      // ======================== 处理网格 (Mesh) ========================
+      else if (obj.isMesh || obj instanceof THREE.Mesh) {
         const originalMaterial = obj.material;
 
-        // 计算颜色来源：material.userData.emissive > material.emissive > material.color
-        let emitColor = null;
-        if (originalMaterial && originalMaterial.userData && originalMaterial.userData.emissive) {
-          const u = originalMaterial.userData.emissive;
-          emitColor = (u instanceof THREE.Color) ? u.clone() : new THREE.Color(u);
-        } else if (originalMaterial && originalMaterial.emissive) {
-          emitColor = originalMaterial.emissive.clone();
-        } else if (originalMaterial && originalMaterial.color) {
-          emitColor = originalMaterial.color.clone();
-        } else {
-          emitColor = new THREE.Color(0xffffff);
+        let emitColor = new THREE.Color(0xffffff);
+        if (originalMaterial?.userData?.emissive) {
+          emitColor.set(originalMaterial.userData.emissive);
+        } else if (originalMaterial?.emissive) {
+          emitColor.copy(originalMaterial.emissive);
+        } else if (originalMaterial?.color) {
+          emitColor.copy(originalMaterial.color);
         }
 
-        // 发光强度
-        const emitIntensity = (originalMaterial && originalMaterial.userData && originalMaterial.userData.emissiveIntensity) || (originalMaterial && originalMaterial.emissiveIntensity) || 1.0;
+        const emitIntensity = originalMaterial?.emissiveIntensity || 1.0;
 
-        // 创建替代材质
         const mat = this.glowMaterial.clone();
         mat.color.copy(emitColor);
         mat.opacity = Math.min(1.0, emitIntensity);
-        mat.transparent = true;
-        mat.depthWrite = false;
         mat.blending = THREE.AdditiveBlending;
 
-        // 如果原材质是数组（MultiMaterial），我们只做简单处理：使用 same mat
-        const meshClone = new THREE.Mesh(geometry, mat);
+        const meshClone = new THREE.Mesh(obj.geometry, mat);
         meshClone.matrix.copy(obj.matrixWorld);
         meshClone.matrixAutoUpdate = false;
         this.glowScene.add(meshClone);
-      } else {
-        // 其它类型（Light helpers, Sprites 等），尝试通用拷贝并设置材质颜色
-        try {
-          const clone = obj.clone(true);
-
-          // 若有材质则尝试设置
-          if (clone.material) {
-            if (Array.isArray(clone.material)) {
-              clone.material = clone.material.map((m) => {
-                const mat = this.glowMaterial.clone();
-                if (m && m.userData && m.userData.emissive) {
-                  const u = m.userData.emissive;
-                  if (u instanceof THREE.Color) mat.color.copy(u);
-                  else mat.color.set(u);
-                } else if (m && m.color) {
-                  mat.color.copy(m.color);
-                }
-                mat.opacity = (m && m.userData && m.userData.emissiveIntensity) || 1.0;
-                mat.transparent = true;
-                mat.depthWrite = false;
-                mat.blending = THREE.AdditiveBlending;
-                return mat;
-              });
-            } else {
-              const mat = this.glowMaterial.clone();
-              if (clone.material.userData && clone.material.userData.emissive) {
-                const u = clone.material.userData.emissive;
-                if (u instanceof THREE.Color) mat.color.copy(u);
-                else mat.color.set(u);
-              } else if (clone.material.color) {
-                mat.color.copy(clone.material.color);
-              }
-              mat.opacity = (clone.material.userData && clone.material.userData.emissiveIntensity) || 1.0;
-              mat.transparent = true;
-              mat.depthWrite = false;
-              mat.blending = THREE.AdditiveBlending;
-              clone.material = mat;
-            }
-          }
-
-          clone.matrix.copy(obj.matrixWorld);
-          clone.matrixAutoUpdate = false;
-          this.glowScene.add(clone);
-        } catch (e) {
-          // 如果无法拷贝，跳过
-          logger.debug('PostprocessSystem', `跳过无法拷贝对象用于辉光: ${obj.name || obj.type}`);
-        }
       }
     });
 
@@ -4603,11 +4854,12 @@ class PostprocessSystem {
     this.renderer.render(this.glowScene, this.getCameraFn());
     this.renderer.setRenderTarget(null);
 
-    // 更新合成 pass 的 tGlow（使用刚渲染的纹理）
+    // 更新合成 pass 的 tGlow
     if (this.glowCombinePass) {
       this.glowCombinePass.uniforms.tGlow.value = this.glowRenderTarget.texture;
     }
   }
+
 
   render(delta) {
     if (!this.cameraReady || !this.getCameraFn) {
@@ -4701,14 +4953,16 @@ export default postprocessSys;
 ```javascript
 /**
  * @file ui-basic.js
- * @description 基础 UI 控制面板 - 直接绑定到 config._config + 手动更新临时对象
- * ✅ 修复：添加 updateBindings() 方法，在预设加载后手动更新颜色等临时对象
+ * @description 基础 UI 控制面板 - 动态数据源 + 预设加载同步
+ * ✅ 修复:
+ *   1. 数据源下拉框动态生成
+ *   2. 添加 updateBindings() 方法，在预设加载后手动更新颜色等临时对象
  */
 import eventBus from '../event-bus.js';
 import config from '../config.js';
 import logger from '../utils/logger.js';
 import uiContainer from './ui-container.js';
-
+import dataSys from '../systems/data-sys.js';
 class UIBasic {
   constructor() {
     this.controls = new Map();
@@ -4716,14 +4970,12 @@ class UIBasic {
     this._pane = null;
     this._isInitialized = false;
     
-    // ✅ 在 constructor 中获取配置引用
     this.configData = config.getRaw();
     
-    // ✅ 记录所有需要手动更新的临时对象
     this.tempObjects = {
       dustColor: { dustColor: this.configData.particles.dustColor },
       pathColor: { pathColor: this.configData.environment.pathColor },
-      bgColor: { bgColor: this.configData.environment.bgColor },
+      //bgColor: { bgColor: this.configData.environment.bgColor },
       pathPointColor: { pathPointColor: this.configData.particles.pathPointColor },
       rotationSpeed: { rotationSpeed: this.configData.particles.rotationSpeed },
       rotationTiltXZ: { rotationTiltXZ: this.configData.particles.rotationTiltXZ },
@@ -4731,6 +4983,9 @@ class UIBasic {
       pathPointSize: { pathPointSize: this.configData.particles.pathPointSize },
       depthIntensity: { depthIntensity: this.configData.path.depthIntensity }
     };
+
+    // ✅ 用于存放数据源文件夹中的控件
+    this.dataControls = []; 
   }
 
   async init() {
@@ -4746,7 +5001,11 @@ class UIBasic {
       container: uiContainer.getScrollContent()
     });
 
-    this._createDataControls();
+    // ✅ 先创建空的文件夹
+    const dataFolder = this._pane.addFolder({ title: '数据源', expanded: true });
+    this.folders.set('data', dataFolder);
+
+    this._rebuildDataControls(); // ✅ 首次构建
     this._createAnimationControls();
     this._createCameraControls();
     this._createParticleControls();
@@ -4756,36 +5015,46 @@ class UIBasic {
     
     this._isInitialized = true;
 
-    // ✅ 注册到UIRegistry
     const uiRegistry = (await import('./ui-registry.js')).default;
     uiRegistry.register('ui-basic', this);
 
     logger.info('UIBasic', `基础 UI 已初始化 | 控件数量: ${this.controls.size}`);
   }
+  
+  /**
+   * ✅ 核心修改: 重建数据源UI部分
+   */
+  _rebuildDataControls() {
+    const folder = this.folders.get('data');
+    if (!folder) return;
+    
+    // 清空旧控件
+    this.dataControls.forEach(c => c.dispose());
+    this.dataControls = [];
+    this.controls.delete('data.csvUrl');
 
-  _createDataControls() {
-    const folder = this._pane.addFolder({ title: '数据源', expanded: true });
+    // ✅核心修改：数据源从 config 变为直接从 dataSys 查询
+    const datasets = dataSys.getAvailableDatasets();
     
-    const datasets = config.get('data.availableDatasets') || [];
-    
-    if (!datasets || datasets.length === 0) {
-      folder.addBlade({
+    if (datasets.length === 0) {
+      const errorBlade = folder.addBlade({
         view: 'text',
         label: '错误',
         parse: (v) => String(v),
-        value: '未配置 availableDatasets'
+        value: '未找到数据源清单'
       });
-      
+      this.dataControls.push(errorBlade);
       logger.warn('UIBasic', '数据源未配置: availableDatasets 为空');
-      this.folders.set('data', folder);
       return;
     }
     
     const datasetOptions = datasets.reduce((acc, ds) => {
-      acc[ds.name] = ds.path;
+      // tweakpane 的 options 需要 key-value 对
+      // key 是显示名, value 是实际值
+      acc[ds.name] = ds.path.replace('/data/', '../data/');
       return acc;
     }, {});
-    
+
     const csvSelect = folder.addBinding(
       this.configData.data,
       'csvUrl',
@@ -4797,32 +5066,92 @@ class UIBasic {
     
     csvSelect.on('change', (ev) => {
       eventBus.emit('data-load-requested', ev.value);
+      this._updateDatasetDescription(); // ✅ 切换后更新描述
       logger.info('UIBasic', `切换CSV: ${ev.value}`);
     });
     
     this.controls.set('data.csvUrl', csvSelect);
+    this.dataControls.push(csvSelect);
     
-    const currentDataset = datasets.find(ds => ds.path === config.get('data.csvUrl'));
-    if (currentDataset?.description) {
-      folder.addBlade({
-        view: 'text',
-        label: '描述',
-        parse: (v) => String(v),
-        value: currentDataset.description
-      });
-    }
+    const descriptionBlade = folder.addBlade({
+      view: 'text',
+      label: '描述',
+      parse: (v) => String(v),
+      value: ''
+    });
+    this.dataControls.push(descriptionBlade);
+    this.descriptionBlade = descriptionBlade; // 保存引用以便更新
     
+    this._updateDatasetDescription(); // ✅ 首次加载时更新描述
+
     const loadBtn = folder.addButton({ title: '🔄 重新加载' });
     loadBtn.on('click', () => {
       const currentPath = config.get('data.csvUrl');
       eventBus.emit('data-load-requested', currentPath);
       logger.info('UIBasic', `重新加载数据: ${currentPath}`);
     });
-    
-    this.folders.set('data', folder);
-    logger.debug('UIBasic', '数据源控件已创建');
+    this.dataControls.push(loadBtn);
+
+    logger.debug('UIBasic', '数据源控件已重建');
   }
 
+  /**
+   * ✅ 新增辅助方法: 更新数据集描述
+   */
+  _updateDatasetDescription() {
+    if (!this.descriptionBlade) return;
+    
+    const currentPath = config.get('data.csvUrl');
+    // ✅ 数据源也从 dataSys 获取
+    const datasets = dataSys.getAvailableDatasets();
+    const currentDataset = datasets.find(ds => ds.path.replace('/data/', '../data/') === currentPath);
+    
+    if (currentDataset) {
+      this.descriptionBlade.value = currentDataset.description;
+    } else {
+      this.descriptionBlade.value = '---';
+    }
+  }
+
+  // ... _createAnimationControls, _createCameraControls 等其他方法保持不变 ...
+
+  _bindEvents() {
+    // ✅ 监听数据集列表更新事件
+    eventBus.on('datasets-list-updated', () => {
+      logger.info('UIBasic', '接收到数据集更新事件，准备重建UI');
+      this._rebuildDataControls();
+    });
+
+    eventBus.on('step-changed', (step) => {
+      const stepControl = this.controls.get('animation.currentStep');
+      if (stepControl && this.configData.animation.currentStep !== step) {
+        this.configData.animation.currentStep = step;
+        stepControl.refresh();
+      }
+    });
+
+    eventBus.on('animation-state-changed', (animating) => {
+      if (this.configData.animation.animating !== animating) {
+        this.configData.animation.animating = animating;
+      }
+    });
+
+    eventBus.on('camera-mode-switched', (mode) => {
+      if (this.configData.camera.mode !== mode) {
+        this.configData.camera.mode = mode;
+        const modeControl = this.controls.get('camera.mode');
+        if (modeControl) {
+          modeControl.refresh();
+        }
+      }
+    });
+
+    logger.debug('UIBasic', '事件监听已绑定');
+  }
+  
+  // ... updateBindings, refresh, dispose 等方法保持不变 ...
+  
+  // ... 其他创建控件的方法保持不变 ...
   _createAnimationControls() {
     const folder = this._pane.addFolder({ title: '动画控制', expanded: true });
     
@@ -4867,7 +5196,7 @@ class UIBasic {
       eventBus.emit('animation-speed-changed', ev.value);
     });
     
-    this.controls.set('animation.speed', speed);
+    this.controls.set('animation.speedFactor', speed);
     
     const loop = folder.addBinding(
       this.configData.animation,
@@ -4970,7 +5299,6 @@ class UIBasic {
   _createParticleControls() {
     const folder = this._pane.addFolder({ title: '粒子系统', expanded: false });
     
-    // 粒子颜色（使用临时对象）
     const dustColor = folder.addBinding(
       this.tempObjects.dustColor,
       'dustColor',
@@ -5032,7 +5360,6 @@ class UIBasic {
     
     this.controls.set('particles.floatIntensity', floatIntensity);
 
-    // 自转速度（使用临时对象）
     const rotationSpeed = folder.addBinding(
       this.tempObjects.rotationSpeed,
       'rotationSpeed',
@@ -5046,7 +5373,6 @@ class UIBasic {
     
     this.controls.set('particles.rotationSpeed', rotationSpeed);
     
-    // 自转倾斜XZ（使用临时对象）
     const rotationTiltXZ = folder.addBinding(
       this.tempObjects.rotationTiltXZ,
       'rotationTiltXZ',
@@ -5060,7 +5386,6 @@ class UIBasic {
     
     this.controls.set('particles.rotationTiltXZ', rotationTiltXZ);
     
-    // 自转俯仰XY（使用临时对象）
     const rotationTiltXY = folder.addBinding(
       this.tempObjects.rotationTiltXY,
       'rotationTiltXY',
@@ -5087,27 +5412,11 @@ class UIBasic {
     this.controls.set('particles.dustOpacity', dustOpacity);
     
     this.folders.set('particles', folder);
-    logger.debug('UIBasic', '✅ 粒子控件已创建(直接绑定)');
   }
 
   _createPathControls() {
     const folder = this._pane.addFolder({ title: '路径设置', expanded: false });
-
-    // 背景颜色（使用临时对象）
-    const bgColor = folder.addBinding(
-      this.tempObjects.bgColor,
-      'bgColor',
-      { label: '背景颜色' }
-    );
     
-    bgColor.on('change', (ev) => {
-      this.configData.environment.bgColor = ev.value;
-      eventBus.emit('bg-color-changed', ev.value);
-    });
-    
-    this.controls.set('environment.bgColor', bgColor);
-    
-    // 路径颜色（使用临时对象）
     const pathColor = folder.addBinding(
       this.tempObjects.pathColor,
       'pathColor',
@@ -5121,7 +5430,6 @@ class UIBasic {
     
     this.controls.set('environment.pathColor', pathColor);
 
-    // 光点颜色（使用临时对象）
     const pathPointColor = folder.addBinding(
       this.tempObjects.pathPointColor,
       'pathPointColor',
@@ -5135,7 +5443,6 @@ class UIBasic {
     
     this.controls.set('particles.pathPointColor', pathPointColor);
     
-    // 光点大小（使用临时对象）
     const pathPointSize = folder.addBinding(
       this.tempObjects.pathPointSize,
       'pathPointSize',
@@ -5149,7 +5456,6 @@ class UIBasic {
     
     this.controls.set('particles.pathPointSize', pathPointSize);
     
-    // 景深强度（使用临时对象）
     const depthIntensity = folder.addBinding(
       this.tempObjects.depthIntensity,
       'depthIntensity',
@@ -5206,72 +5512,40 @@ class UIBasic {
     });
     
     this.folders.set('audio', folder);
-    logger.debug('UIBasic', '音频控件已创建');
   }
 
-  _bindEvents() {
-    eventBus.on('step-changed', (step) => {
-      const stepControl = this.controls.get('animation.currentStep');
-      if (stepControl && this.configData.animation.currentStep !== step) {
-        this.configData.animation.currentStep = step;
-        stepControl.refresh();
-      }
-    });
-
-    eventBus.on('animation-state-changed', (animating) => {
-      if (this.configData.animation.animating !== animating) {
-        this.configData.animation.animating = animating;
-      }
-    });
-
-    eventBus.on('camera-mode-switched', (mode) => {
-      if (this.configData.camera.mode !== mode) {
-        this.configData.camera.mode = mode;
-        const modeControl = this.controls.get('camera.mode');
-        if (modeControl) {
-          modeControl.refresh();
-        }
-      }
-    });
-
-    logger.debug('UIBasic', '事件监听已绑定');
-  }
-
-  // ✅ 新增：手动更新所有临时对象
   updateBindings() {
-  // 1. 更新临时对象的值
-  this.tempObjects.dustColor.dustColor = this.configData.particles.dustColor;
-  this.tempObjects.pathColor.pathColor = this.configData.environment.pathColor;
-  this.tempObjects.bgColor.bgColor = this.configData.environment.bgColor;
-  this.tempObjects.pathPointColor.pathPointColor = this.configData.particles.pathPointColor;
-  this.tempObjects.rotationSpeed.rotationSpeed = this.configData.particles.rotationSpeed;
-  this.tempObjects.rotationTiltXZ.rotationTiltXZ = this.configData.particles.rotationTiltXZ;
-  this.tempObjects.rotationTiltXY.rotationTiltXY = this.configData.particles.rotationTiltXY;
-  this.tempObjects.pathPointSize.pathPointSize = this.configData.particles.pathPointSize;
-  this.tempObjects.depthIntensity.depthIntensity = this.configData.path.depthIntensity;
-  
-  // 2. ✅ 必须刷新对应的控件
-  const controlsToRefresh = [
-    'particles.dustColor',
-    'environment.pathColor',
-    'environment.bgColor',
-    'particles.pathPointColor',
-    'particles.rotationSpeed',
-    'particles.rotationTiltXZ',
-    'particles.rotationTiltXY',
-    'particles.pathPointSize',
-    'path.depthIntensity'
-  ];
-  
-  controlsToRefresh.forEach(key => {
-    const control = this.controls.get(key);
-    if (control && typeof control.refresh === 'function') {
-      control.refresh();
-    }
-  });
-  
-  logger.debug('UIBasic', '✅ 临时对象已更新并刷新');
-}
+    this.tempObjects.dustColor.dustColor = this.configData.particles.dustColor;
+    this.tempObjects.pathColor.pathColor = this.configData.environment.pathColor;
+    //this.tempObjects.bgColor.bgColor = this.configData.environment.bgColor;
+    this.tempObjects.pathPointColor.pathPointColor = this.configData.particles.pathPointColor;
+    this.tempObjects.rotationSpeed.rotationSpeed = this.configData.particles.rotationSpeed;
+    this.tempObjects.rotationTiltXZ.rotationTiltXZ = this.configData.particles.rotationTiltXZ;
+    this.tempObjects.rotationTiltXY.rotationTiltXY = this.configData.particles.rotationTiltXY;
+    this.tempObjects.pathPointSize.pathPointSize = this.configData.particles.pathPointSize;
+    this.tempObjects.depthIntensity.depthIntensity = this.configData.path.depthIntensity;
+    
+    const controlsToRefresh = [
+      'particles.dustColor',
+      'environment.pathColor',
+      //'environment.bgColor',
+      'particles.pathPointColor',
+      'particles.rotationSpeed',
+      'particles.rotationTiltXZ',
+      'particles.rotationTiltXY',
+      'particles.pathPointSize',
+      'path.depthIntensity'
+    ];
+    
+    controlsToRefresh.forEach(key => {
+      const control = this.controls.get(key);
+      if (control && typeof control.refresh === 'function') {
+        control.refresh();
+      }
+    });
+    
+    logger.debug('UIBasic', '✅ 临时对象已更新并刷新');
+  }
 
   refresh() {
     this.updateBindings();
@@ -5291,6 +5565,8 @@ class UIBasic {
     
     this.controls.clear();
     this.folders.clear();
+    this.dataControls.forEach(c => c.dispose());
+    this.dataControls = [];
     this._isInitialized = false;
     
     logger.info('UIBasic', 'UI 已销毁');

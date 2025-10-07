@@ -487,7 +487,7 @@ class PostprocessSystem {
     });
   }
 
-  // 渲染辉光层 —— 会将仅标记为 glow 的对象渲染到 glowRenderTarget
+    // 渲染辉光层 —— 会将仅标记为 glow 的对象渲染到 glowRenderTarget
   _renderGlowLayer() {
     const camera = this.getCameraFn();
     if (!camera) return;
@@ -502,31 +502,47 @@ class PostprocessSystem {
       if (!obj.userData || !obj.userData.glow) return;
       if (!obj.visible) return;
 
-      // 使用对象的 world matrix 将 clone 放到正确位置
-      // 对于 Points 与 Mesh 使用不同处理方式
-      if (obj.type === 'Points' || obj instanceof THREE.Points) {
-        // 原始材质（可能是 PointsMaterial 或自定义）
-        const origMat = obj.material;
-        // 读取 userData 发光信息（优先）
-        const userEmissive = origMat && origMat.userData && origMat.userData.emissive;
-        const emissiveIntensity = (origMat && origMat.userData && origMat.userData.emissiveIntensity) || 1.0;
+      // ================== 新增：处理路径线条 (Line + ShaderMaterial) ==================
+      if (obj.isLine && obj.material && obj.material.isShaderMaterial) {
+        const originalMaterial = obj.material;
+        
+        // 检查uniforms是否存在
+        if (originalMaterial.uniforms.uEmissive && originalMaterial.uniforms.uEmissiveIntensity) {
+          const emitColor = originalMaterial.uniforms.uEmissive.value.clone();
+          const emitIntensity = originalMaterial.uniforms.uEmissiveIntensity.value;
+          
+          // 创建一个简单的LineBasicMaterial用于辉光渲染
+          const glowLineMat = new THREE.LineBasicMaterial({
+            color: emitColor,
+            transparent: true,
+            opacity: Math.min(1.0, emitIntensity * 2.0), // 乘以2让线条辉光更明显
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+          });
 
-        // 备选颜色：material.color 或白色
+          // 共享几何体创建新的Line对象
+          const lineClone = new THREE.Line(obj.geometry, glowLineMat);
+          lineClone.matrix.copy(obj.matrixWorld);
+          lineClone.matrixAutoUpdate = false;
+          this.glowScene.add(lineClone);
+        }
+      } 
+      // ======================== 处理点 (Points) ========================
+      else if (obj.type === 'Points' || obj instanceof THREE.Points) {
+        const origMat = obj.material;
+        const userEmissive = origMat?.userData?.emissive;
+        const emissiveIntensity = origMat?.userData?.emissiveIntensity || 1.0;
+
         let color = new THREE.Color(0xffffff);
         if (userEmissive) {
-          if (userEmissive instanceof THREE.Color) {
-            color.copy(userEmissive);
-          } else {
-            color.set(userEmissive);
-          }
-        } else if (origMat && origMat.color) {
+          color.set(userEmissive);
+        } else if (origMat?.color) {
           color.copy(origMat.color);
         }
 
-        // 基于 Points 创建新的 PointsMaterial 用于辉光渲染
         const glowPointMat = new THREE.PointsMaterial({
           color: color,
-          size: (origMat && origMat.size) ? origMat.size : (config.get('postprocess.particleGlowSize') || 1.0),
+          size: origMat?.size ?? 1.0,
           transparent: true,
           opacity: Math.min(1.0, emissiveIntensity),
           depthWrite: false,
@@ -534,93 +550,35 @@ class PostprocessSystem {
           sizeAttenuation: true
         });
 
-        // 构建新的 Points 对象（共享几何）
         const pointsClone = new THREE.Points(obj.geometry, glowPointMat);
         pointsClone.matrix.copy(obj.matrixWorld);
         pointsClone.matrixAutoUpdate = false;
         this.glowScene.add(pointsClone);
-      } else if (obj.isMesh || obj.type === 'Mesh' || obj instanceof THREE.Mesh) {
-        // Mesh 类型
-        // 尽量创建简单的 Mesh 并替换材质为 glowMaterial 的副本
-        const geometry = obj.geometry;
+      } 
+      // ======================== 处理网格 (Mesh) ========================
+      else if (obj.isMesh || obj instanceof THREE.Mesh) {
         const originalMaterial = obj.material;
 
-        // 计算颜色来源：material.userData.emissive > material.emissive > material.color
-        let emitColor = null;
-        if (originalMaterial && originalMaterial.userData && originalMaterial.userData.emissive) {
-          const u = originalMaterial.userData.emissive;
-          emitColor = (u instanceof THREE.Color) ? u.clone() : new THREE.Color(u);
-        } else if (originalMaterial && originalMaterial.emissive) {
-          emitColor = originalMaterial.emissive.clone();
-        } else if (originalMaterial && originalMaterial.color) {
-          emitColor = originalMaterial.color.clone();
-        } else {
-          emitColor = new THREE.Color(0xffffff);
+        let emitColor = new THREE.Color(0xffffff);
+        if (originalMaterial?.userData?.emissive) {
+          emitColor.set(originalMaterial.userData.emissive);
+        } else if (originalMaterial?.emissive) {
+          emitColor.copy(originalMaterial.emissive);
+        } else if (originalMaterial?.color) {
+          emitColor.copy(originalMaterial.color);
         }
 
-        // 发光强度
-        const emitIntensity = (originalMaterial && originalMaterial.userData && originalMaterial.userData.emissiveIntensity) || (originalMaterial && originalMaterial.emissiveIntensity) || 1.0;
+        const emitIntensity = originalMaterial?.emissiveIntensity || 1.0;
 
-        // 创建替代材质
         const mat = this.glowMaterial.clone();
         mat.color.copy(emitColor);
         mat.opacity = Math.min(1.0, emitIntensity);
-        mat.transparent = true;
-        mat.depthWrite = false;
         mat.blending = THREE.AdditiveBlending;
 
-        // 如果原材质是数组（MultiMaterial），我们只做简单处理：使用 same mat
-        const meshClone = new THREE.Mesh(geometry, mat);
+        const meshClone = new THREE.Mesh(obj.geometry, mat);
         meshClone.matrix.copy(obj.matrixWorld);
         meshClone.matrixAutoUpdate = false;
         this.glowScene.add(meshClone);
-      } else {
-        // 其它类型（Light helpers, Sprites 等），尝试通用拷贝并设置材质颜色
-        try {
-          const clone = obj.clone(true);
-
-          // 若有材质则尝试设置
-          if (clone.material) {
-            if (Array.isArray(clone.material)) {
-              clone.material = clone.material.map((m) => {
-                const mat = this.glowMaterial.clone();
-                if (m && m.userData && m.userData.emissive) {
-                  const u = m.userData.emissive;
-                  if (u instanceof THREE.Color) mat.color.copy(u);
-                  else mat.color.set(u);
-                } else if (m && m.color) {
-                  mat.color.copy(m.color);
-                }
-                mat.opacity = (m && m.userData && m.userData.emissiveIntensity) || 1.0;
-                mat.transparent = true;
-                mat.depthWrite = false;
-                mat.blending = THREE.AdditiveBlending;
-                return mat;
-              });
-            } else {
-              const mat = this.glowMaterial.clone();
-              if (clone.material.userData && clone.material.userData.emissive) {
-                const u = clone.material.userData.emissive;
-                if (u instanceof THREE.Color) mat.color.copy(u);
-                else mat.color.set(u);
-              } else if (clone.material.color) {
-                mat.color.copy(clone.material.color);
-              }
-              mat.opacity = (clone.material.userData && clone.material.userData.emissiveIntensity) || 1.0;
-              mat.transparent = true;
-              mat.depthWrite = false;
-              mat.blending = THREE.AdditiveBlending;
-              clone.material = mat;
-            }
-          }
-
-          clone.matrix.copy(obj.matrixWorld);
-          clone.matrixAutoUpdate = false;
-          this.glowScene.add(clone);
-        } catch (e) {
-          // 如果无法拷贝，跳过
-          logger.debug('PostprocessSystem', `跳过无法拷贝对象用于辉光: ${obj.name || obj.type}`);
-        }
       }
     });
 
@@ -630,11 +588,12 @@ class PostprocessSystem {
     this.renderer.render(this.glowScene, this.getCameraFn());
     this.renderer.setRenderTarget(null);
 
-    // 更新合成 pass 的 tGlow（使用刚渲染的纹理）
+    // 更新合成 pass 的 tGlow
     if (this.glowCombinePass) {
       this.glowCombinePass.uniforms.tGlow.value = this.glowRenderTarget.texture;
     }
   }
+
 
   render(delta) {
     if (!this.cameraReady || !this.getCameraFn) {

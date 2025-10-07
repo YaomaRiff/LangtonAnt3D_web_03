@@ -1,13 +1,15 @@
 /**
  * @file ui-basic.js
- * @description 基础 UI 控制面板 - 直接绑定到 config._config + 手动更新临时对象
- * ✅ 修复：添加 updateBindings() 方法，在预设加载后手动更新颜色等临时对象
+ * @description 基础 UI 控制面板 - 动态数据源 + 预设加载同步
+ * ✅ 修复:
+ *   1. 数据源下拉框动态生成
+ *   2. 添加 updateBindings() 方法，在预设加载后手动更新颜色等临时对象
  */
 import eventBus from '../event-bus.js';
 import config from '../config.js';
 import logger from '../utils/logger.js';
 import uiContainer from './ui-container.js';
-
+import dataSys from '../systems/data-sys.js';
 class UIBasic {
   constructor() {
     this.controls = new Map();
@@ -15,14 +17,12 @@ class UIBasic {
     this._pane = null;
     this._isInitialized = false;
     
-    // ✅ 在 constructor 中获取配置引用
     this.configData = config.getRaw();
     
-    // ✅ 记录所有需要手动更新的临时对象
     this.tempObjects = {
       dustColor: { dustColor: this.configData.particles.dustColor },
       pathColor: { pathColor: this.configData.environment.pathColor },
-      bgColor: { bgColor: this.configData.environment.bgColor },
+      //bgColor: { bgColor: this.configData.environment.bgColor },
       pathPointColor: { pathPointColor: this.configData.particles.pathPointColor },
       rotationSpeed: { rotationSpeed: this.configData.particles.rotationSpeed },
       rotationTiltXZ: { rotationTiltXZ: this.configData.particles.rotationTiltXZ },
@@ -30,6 +30,9 @@ class UIBasic {
       pathPointSize: { pathPointSize: this.configData.particles.pathPointSize },
       depthIntensity: { depthIntensity: this.configData.path.depthIntensity }
     };
+
+    // ✅ 用于存放数据源文件夹中的控件
+    this.dataControls = []; 
   }
 
   async init() {
@@ -45,7 +48,11 @@ class UIBasic {
       container: uiContainer.getScrollContent()
     });
 
-    this._createDataControls();
+    // ✅ 先创建空的文件夹
+    const dataFolder = this._pane.addFolder({ title: '数据源', expanded: true });
+    this.folders.set('data', dataFolder);
+
+    this._rebuildDataControls(); // ✅ 首次构建
     this._createAnimationControls();
     this._createCameraControls();
     this._createParticleControls();
@@ -55,36 +62,46 @@ class UIBasic {
     
     this._isInitialized = true;
 
-    // ✅ 注册到UIRegistry
     const uiRegistry = (await import('./ui-registry.js')).default;
     uiRegistry.register('ui-basic', this);
 
     logger.info('UIBasic', `基础 UI 已初始化 | 控件数量: ${this.controls.size}`);
   }
+  
+  /**
+   * ✅ 核心修改: 重建数据源UI部分
+   */
+  _rebuildDataControls() {
+    const folder = this.folders.get('data');
+    if (!folder) return;
+    
+    // 清空旧控件
+    this.dataControls.forEach(c => c.dispose());
+    this.dataControls = [];
+    this.controls.delete('data.csvUrl');
 
-  _createDataControls() {
-    const folder = this._pane.addFolder({ title: '数据源', expanded: true });
+    // ✅核心修改：数据源从 config 变为直接从 dataSys 查询
+    const datasets = dataSys.getAvailableDatasets();
     
-    const datasets = config.get('data.availableDatasets') || [];
-    
-    if (!datasets || datasets.length === 0) {
-      folder.addBlade({
+    if (datasets.length === 0) {
+      const errorBlade = folder.addBlade({
         view: 'text',
         label: '错误',
         parse: (v) => String(v),
-        value: '未配置 availableDatasets'
+        value: '未找到数据源清单'
       });
-      
+      this.dataControls.push(errorBlade);
       logger.warn('UIBasic', '数据源未配置: availableDatasets 为空');
-      this.folders.set('data', folder);
       return;
     }
     
     const datasetOptions = datasets.reduce((acc, ds) => {
-      acc[ds.name] = ds.path;
+      // tweakpane 的 options 需要 key-value 对
+      // key 是显示名, value 是实际值
+      acc[ds.name] = ds.path.replace('/data/', '../data/');
       return acc;
     }, {});
-    
+
     const csvSelect = folder.addBinding(
       this.configData.data,
       'csvUrl',
@@ -96,32 +113,92 @@ class UIBasic {
     
     csvSelect.on('change', (ev) => {
       eventBus.emit('data-load-requested', ev.value);
+      this._updateDatasetDescription(); // ✅ 切换后更新描述
       logger.info('UIBasic', `切换CSV: ${ev.value}`);
     });
     
     this.controls.set('data.csvUrl', csvSelect);
+    this.dataControls.push(csvSelect);
     
-    const currentDataset = datasets.find(ds => ds.path === config.get('data.csvUrl'));
-    if (currentDataset?.description) {
-      folder.addBlade({
-        view: 'text',
-        label: '描述',
-        parse: (v) => String(v),
-        value: currentDataset.description
-      });
-    }
+    const descriptionBlade = folder.addBlade({
+      view: 'text',
+      label: '描述',
+      parse: (v) => String(v),
+      value: ''
+    });
+    this.dataControls.push(descriptionBlade);
+    this.descriptionBlade = descriptionBlade; // 保存引用以便更新
     
+    this._updateDatasetDescription(); // ✅ 首次加载时更新描述
+
     const loadBtn = folder.addButton({ title: '🔄 重新加载' });
     loadBtn.on('click', () => {
       const currentPath = config.get('data.csvUrl');
       eventBus.emit('data-load-requested', currentPath);
       logger.info('UIBasic', `重新加载数据: ${currentPath}`);
     });
-    
-    this.folders.set('data', folder);
-    logger.debug('UIBasic', '数据源控件已创建');
+    this.dataControls.push(loadBtn);
+
+    logger.debug('UIBasic', '数据源控件已重建');
   }
 
+  /**
+   * ✅ 新增辅助方法: 更新数据集描述
+   */
+  _updateDatasetDescription() {
+    if (!this.descriptionBlade) return;
+    
+    const currentPath = config.get('data.csvUrl');
+    // ✅ 数据源也从 dataSys 获取
+    const datasets = dataSys.getAvailableDatasets();
+    const currentDataset = datasets.find(ds => ds.path.replace('/data/', '../data/') === currentPath);
+    
+    if (currentDataset) {
+      this.descriptionBlade.value = currentDataset.description;
+    } else {
+      this.descriptionBlade.value = '---';
+    }
+  }
+
+  // ... _createAnimationControls, _createCameraControls 等其他方法保持不变 ...
+
+  _bindEvents() {
+    // ✅ 监听数据集列表更新事件
+    eventBus.on('datasets-list-updated', () => {
+      logger.info('UIBasic', '接收到数据集更新事件，准备重建UI');
+      this._rebuildDataControls();
+    });
+
+    eventBus.on('step-changed', (step) => {
+      const stepControl = this.controls.get('animation.currentStep');
+      if (stepControl && this.configData.animation.currentStep !== step) {
+        this.configData.animation.currentStep = step;
+        stepControl.refresh();
+      }
+    });
+
+    eventBus.on('animation-state-changed', (animating) => {
+      if (this.configData.animation.animating !== animating) {
+        this.configData.animation.animating = animating;
+      }
+    });
+
+    eventBus.on('camera-mode-switched', (mode) => {
+      if (this.configData.camera.mode !== mode) {
+        this.configData.camera.mode = mode;
+        const modeControl = this.controls.get('camera.mode');
+        if (modeControl) {
+          modeControl.refresh();
+        }
+      }
+    });
+
+    logger.debug('UIBasic', '事件监听已绑定');
+  }
+  
+  // ... updateBindings, refresh, dispose 等方法保持不变 ...
+  
+  // ... 其他创建控件的方法保持不变 ...
   _createAnimationControls() {
     const folder = this._pane.addFolder({ title: '动画控制', expanded: true });
     
@@ -166,7 +243,7 @@ class UIBasic {
       eventBus.emit('animation-speed-changed', ev.value);
     });
     
-    this.controls.set('animation.speed', speed);
+    this.controls.set('animation.speedFactor', speed);
     
     const loop = folder.addBinding(
       this.configData.animation,
@@ -269,7 +346,6 @@ class UIBasic {
   _createParticleControls() {
     const folder = this._pane.addFolder({ title: '粒子系统', expanded: false });
     
-    // 粒子颜色（使用临时对象）
     const dustColor = folder.addBinding(
       this.tempObjects.dustColor,
       'dustColor',
@@ -331,7 +407,6 @@ class UIBasic {
     
     this.controls.set('particles.floatIntensity', floatIntensity);
 
-    // 自转速度（使用临时对象）
     const rotationSpeed = folder.addBinding(
       this.tempObjects.rotationSpeed,
       'rotationSpeed',
@@ -345,7 +420,6 @@ class UIBasic {
     
     this.controls.set('particles.rotationSpeed', rotationSpeed);
     
-    // 自转倾斜XZ（使用临时对象）
     const rotationTiltXZ = folder.addBinding(
       this.tempObjects.rotationTiltXZ,
       'rotationTiltXZ',
@@ -359,7 +433,6 @@ class UIBasic {
     
     this.controls.set('particles.rotationTiltXZ', rotationTiltXZ);
     
-    // 自转俯仰XY（使用临时对象）
     const rotationTiltXY = folder.addBinding(
       this.tempObjects.rotationTiltXY,
       'rotationTiltXY',
@@ -386,27 +459,11 @@ class UIBasic {
     this.controls.set('particles.dustOpacity', dustOpacity);
     
     this.folders.set('particles', folder);
-    logger.debug('UIBasic', '✅ 粒子控件已创建(直接绑定)');
   }
 
   _createPathControls() {
     const folder = this._pane.addFolder({ title: '路径设置', expanded: false });
-
-    // 背景颜色（使用临时对象）
-    const bgColor = folder.addBinding(
-      this.tempObjects.bgColor,
-      'bgColor',
-      { label: '背景颜色' }
-    );
     
-    bgColor.on('change', (ev) => {
-      this.configData.environment.bgColor = ev.value;
-      eventBus.emit('bg-color-changed', ev.value);
-    });
-    
-    this.controls.set('environment.bgColor', bgColor);
-    
-    // 路径颜色（使用临时对象）
     const pathColor = folder.addBinding(
       this.tempObjects.pathColor,
       'pathColor',
@@ -420,7 +477,6 @@ class UIBasic {
     
     this.controls.set('environment.pathColor', pathColor);
 
-    // 光点颜色（使用临时对象）
     const pathPointColor = folder.addBinding(
       this.tempObjects.pathPointColor,
       'pathPointColor',
@@ -434,7 +490,6 @@ class UIBasic {
     
     this.controls.set('particles.pathPointColor', pathPointColor);
     
-    // 光点大小（使用临时对象）
     const pathPointSize = folder.addBinding(
       this.tempObjects.pathPointSize,
       'pathPointSize',
@@ -448,7 +503,6 @@ class UIBasic {
     
     this.controls.set('particles.pathPointSize', pathPointSize);
     
-    // 景深强度（使用临时对象）
     const depthIntensity = folder.addBinding(
       this.tempObjects.depthIntensity,
       'depthIntensity',
@@ -505,72 +559,40 @@ class UIBasic {
     });
     
     this.folders.set('audio', folder);
-    logger.debug('UIBasic', '音频控件已创建');
   }
 
-  _bindEvents() {
-    eventBus.on('step-changed', (step) => {
-      const stepControl = this.controls.get('animation.currentStep');
-      if (stepControl && this.configData.animation.currentStep !== step) {
-        this.configData.animation.currentStep = step;
-        stepControl.refresh();
-      }
-    });
-
-    eventBus.on('animation-state-changed', (animating) => {
-      if (this.configData.animation.animating !== animating) {
-        this.configData.animation.animating = animating;
-      }
-    });
-
-    eventBus.on('camera-mode-switched', (mode) => {
-      if (this.configData.camera.mode !== mode) {
-        this.configData.camera.mode = mode;
-        const modeControl = this.controls.get('camera.mode');
-        if (modeControl) {
-          modeControl.refresh();
-        }
-      }
-    });
-
-    logger.debug('UIBasic', '事件监听已绑定');
-  }
-
-  // ✅ 新增：手动更新所有临时对象
   updateBindings() {
-  // 1. 更新临时对象的值
-  this.tempObjects.dustColor.dustColor = this.configData.particles.dustColor;
-  this.tempObjects.pathColor.pathColor = this.configData.environment.pathColor;
-  this.tempObjects.bgColor.bgColor = this.configData.environment.bgColor;
-  this.tempObjects.pathPointColor.pathPointColor = this.configData.particles.pathPointColor;
-  this.tempObjects.rotationSpeed.rotationSpeed = this.configData.particles.rotationSpeed;
-  this.tempObjects.rotationTiltXZ.rotationTiltXZ = this.configData.particles.rotationTiltXZ;
-  this.tempObjects.rotationTiltXY.rotationTiltXY = this.configData.particles.rotationTiltXY;
-  this.tempObjects.pathPointSize.pathPointSize = this.configData.particles.pathPointSize;
-  this.tempObjects.depthIntensity.depthIntensity = this.configData.path.depthIntensity;
-  
-  // 2. ✅ 必须刷新对应的控件
-  const controlsToRefresh = [
-    'particles.dustColor',
-    'environment.pathColor',
-    'environment.bgColor',
-    'particles.pathPointColor',
-    'particles.rotationSpeed',
-    'particles.rotationTiltXZ',
-    'particles.rotationTiltXY',
-    'particles.pathPointSize',
-    'path.depthIntensity'
-  ];
-  
-  controlsToRefresh.forEach(key => {
-    const control = this.controls.get(key);
-    if (control && typeof control.refresh === 'function') {
-      control.refresh();
-    }
-  });
-  
-  logger.debug('UIBasic', '✅ 临时对象已更新并刷新');
-}
+    this.tempObjects.dustColor.dustColor = this.configData.particles.dustColor;
+    this.tempObjects.pathColor.pathColor = this.configData.environment.pathColor;
+    //this.tempObjects.bgColor.bgColor = this.configData.environment.bgColor;
+    this.tempObjects.pathPointColor.pathPointColor = this.configData.particles.pathPointColor;
+    this.tempObjects.rotationSpeed.rotationSpeed = this.configData.particles.rotationSpeed;
+    this.tempObjects.rotationTiltXZ.rotationTiltXZ = this.configData.particles.rotationTiltXZ;
+    this.tempObjects.rotationTiltXY.rotationTiltXY = this.configData.particles.rotationTiltXY;
+    this.tempObjects.pathPointSize.pathPointSize = this.configData.particles.pathPointSize;
+    this.tempObjects.depthIntensity.depthIntensity = this.configData.path.depthIntensity;
+    
+    const controlsToRefresh = [
+      'particles.dustColor',
+      'environment.pathColor',
+      //'environment.bgColor',
+      'particles.pathPointColor',
+      'particles.rotationSpeed',
+      'particles.rotationTiltXZ',
+      'particles.rotationTiltXY',
+      'particles.pathPointSize',
+      'path.depthIntensity'
+    ];
+    
+    controlsToRefresh.forEach(key => {
+      const control = this.controls.get(key);
+      if (control && typeof control.refresh === 'function') {
+        control.refresh();
+      }
+    });
+    
+    logger.debug('UIBasic', '✅ 临时对象已更新并刷新');
+  }
 
   refresh() {
     this.updateBindings();
@@ -590,6 +612,8 @@ class UIBasic {
     
     this.controls.clear();
     this.folders.clear();
+    this.dataControls.forEach(c => c.dispose());
+    this.dataControls = [];
     this._isInitialized = false;
     
     logger.info('UIBasic', 'UI 已销毁');

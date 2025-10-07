@@ -41,7 +41,8 @@ class PresetManager {
     try {
       const presetFiles = [
         '01.json',
-        '02.json'
+        '02.json',
+        '03.json'
       ];
 
       this.availablePresets = presetFiles.map(filename => ({

@@ -10,13 +10,7 @@ const DEFAULT_CONFIG = {
     csvUrl: '../data/data.csv',
     antData: [],
     mappedPoints: [],
-    availableDatasets: [
-      {
-        name: '默认数据集',
-        path: '../data/data.csv',
-        description: 'Langton Ant 轨迹数据'
-      }
-    ]
+    availableDatasets: []
   },
   
   animation: {
@@ -29,7 +23,7 @@ const DEFAULT_CONFIG = {
 
   coordinates: {
     dataSpace: {
-      scale: 1.0,
+      scale: 1.4,
       rotation: {
         x: 0,
         y: 0,
@@ -61,6 +55,19 @@ const DEFAULT_CONFIG = {
     }
   },
 
+    lighting: {
+    ambient: {
+      color: '#ffffff',
+      intensity: 0.2
+    },
+    directional: {
+      color: '#ffffff',
+      intensity: 1.0,
+      position: { x: 5, y: 10, z: 7.5 }
+    }
+  },
+
+
   particles: {
     floatIntensity: 0.2,
     breathIntensity: 0.1,
@@ -71,7 +78,7 @@ const DEFAULT_CONFIG = {
     pathPointSize: 0.5,
     pathPointOpacity: 0.9,
     pathPointColor: '#FFFFFF',
-    sphereRadius: 1600,
+    sphereRadius: 1400,
     systemScale: 1.0,
     rotationSpeed: 0,
     rotationTiltXZ: 0,
@@ -85,14 +92,18 @@ const DEFAULT_CONFIG = {
   },
   
   environment: {
-    bgColor: '#121414',
+    //bgColor: '#121414',
+    skybox: {
+      enabled: true,
+      path: '/skybox/Medium_Monochrome_Nebulae/'
+    },
     fogDensity: 0.015,
     fogVolumeScale: 1.0,
     pathFogIntensity: 0.1,
     pathColor: '#F0B7B7',
     dustColor: '#AF85B7',
     positionScale: 2.0,
-    yScale: 0.6,
+    yScale: 1.0,
     cameraDistFactor: 2.5,
     ambientLightIntensity: 0.5,
     directionalLightIntensity: 0.8
@@ -133,7 +144,7 @@ const DEFAULT_CONFIG = {
     fov: 75,
     position: { x: 0, y: 0, z: 10 },
     near: 0.1,
-    far: 1000,
+    far: 2000,
     controls: {
       enabled: true,
       dollySpeed: 1.0,
