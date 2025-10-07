@@ -1,6 +1,6 @@
 # Project Snapshot
 - Root: `.`
-- Created: 2025-10-07 13:24:52
+- Created: 2025-10-07 15:53:05
 - Files: 38 (ext=[.js, .mjs, .json, .css, .html], maxSize=200000B)
 - Force-Excluded: package-lock.json
 
@@ -96,15 +96,17 @@ LangtonAnt3D_web_03/
 {
   "name": "langtonant3d-web-03",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "snapshot": "node tools/snapshot.mjs --root . --out snapshot.md"
+    "snapshot": "node tools/snapshot.mjs --root . --out snapshot.md",
+    "deploy": "npm run build && gh-pages -d dist"
   },
   "devDependencies": {
+    "gh-pages": "^6.3.0",
     "vite": "^5.4.10"
   },
   "dependencies": {
