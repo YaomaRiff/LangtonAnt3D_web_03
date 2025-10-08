@@ -23,15 +23,17 @@ import cameraSys from './systems/camera-sys.js';
 import dataSys from './systems/data-sys.js';
 import animationSys from './systems/animation-sys.js';
 import particlesSys from './systems/particles-sys.js';
-import materialSys from './systems/material-sys.js';
 import postprocessSys from './systems/postprocess-sys.js';
 import audioSys from './systems/audio-sys.js';
 import lightingSys from './systems/lighting-sys.js';
 import environmentSys from './systems/environment-sys.js';
+import materialSys from './systems/material-sys.js';
+import modelSys from './systems/model-sys.js';
+import sceneDirector from './systems/scene-director-sys.js';
 
 // 实体
-import pathEntity from './entities/path-entity.js';
-import movingLight from './entities/moving-light.js';
+import pathSys from './systems/path-sys.js';
+import mathLightSys from './systems/math-light-sys.js';
 
 class Application {
   constructor() {
@@ -79,6 +81,16 @@ class Application {
        // 4.6 初始化环境系统 (天空盒)
       environmentSys.init({ scene: this.scene });
 
+      const mainCamera = cameraSys.getActiveCamera();
+
+      // 4.7. 初始化后处理系统
+      postprocessSys.init({
+        eventBus,
+        scene: this.scene,
+        camera: mainCamera,
+        renderer: this.renderer
+      });
+
       // 5. 初始化音频系统（在相机之后）
       audioSys.init({
         eventBus,
@@ -114,17 +126,18 @@ class Application {
       // 11. 初始化坐标系统UI
       await uiCoordinates.init({ eventBus });
 
-      // 13. 初始化材质系统(必须在实体之前)
-      materialSys.init({ eventBus });
+      // 12. ✅ 初始化核心服务系统 (必须在实体和视觉系统之前)
+      materialSys.init();
+      modelSys.init();
 
-      // 14. 初始化实体（传入coordinateSystem）
-      pathEntity.init({ 
+      // 14. 修改: 初始化新的系统（传入coordinateSystem）
+      pathSys.init({ 
         eventBus, 
         scene: this.scene,
         coordinateSystem 
       });
       
-      movingLight.init({ 
+      mathLightSys.init({ 
         eventBus, 
         scene: this.scene,
         coordinateSystem 
@@ -146,13 +159,8 @@ class Application {
         particlesSys
       });
 
-      // 17. 初始化后处理系统
-      postprocessSys.init({
-        eventBus,
-        scene: this.scene,
-        camera: () => cameraSys.getActiveCamera(),
-        renderer: this.renderer
-      });
+      //17.5. 初始化场景导演系统 (在所有视觉系统之后)
+      sceneDirector.init({ eventBus });
 
       // 18. 绑定事件
       this._bindEvents();
@@ -240,8 +248,8 @@ class Application {
       const elapsed = this.clock.getElapsedTime();
 
       cameraSys.update(delta);
-      pathEntity.updateCameraPosition(cameraSys.getActiveCamera());
-      pathEntity.update(delta);
+      pathSys.updateCameraPosition(cameraSys.getActiveCamera());
+      pathSys.update(delta);
       animationSys.update(delta, elapsed);
       particlesSys.update(elapsed);
 
@@ -259,6 +267,7 @@ class Application {
   dispose() {
     logger.info('App', '应用正在销毁...');
 
+    sceneDirector.dispose();
     coordinateSystem.dispose();
     cameraSys.dispose();
     dataSys.dispose();
@@ -269,8 +278,8 @@ class Application {
     audioSys.dispose();
     lightingSys.dispose();
     environmentSys.dispose();
-    pathEntity.dispose();
-    movingLight.dispose();
+    pathSys.dispose();
+    mathLightSys.dispose();
     uiBasic.dispose();
     uiMaterial.dispose();
     uiPost.dispose();

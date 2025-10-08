@@ -60,62 +60,43 @@ class UICoordinates {
     const dataSpaceScale = this.pane.addBinding(
       this.configData.coordinates.dataSpace,
       'scale',
-      {
-        label: '整体缩放',
-        min: 0.1,
-        max: 5.0,
-        step: 0.1
-      }
+      { label: '整体缩放', min: 0.1, max: 5.0, step: 0.1 }
     );
-    
+    // 🟢 改造: 使用 config.set
     dataSpaceScale.on('change', (ev) => {
-      this.eventBus.emit('dataspace-scale-changed', ev.value);
+      config.set('coordinates.dataSpace.scale', ev.value);
     });
-    
     this.controls.set('coordinates.dataSpace.scale', dataSpaceScale);
 
     // 粒子系统缩放
     const particleScale = this.pane.addBinding(
       this.configData.particles,
       'systemScale',
-      {
-        label: '粒子缩放',
-        min: 0.1,
-        max: 5.0,
-        step: 0.1
-      }
+      { label: '粒子缩放', min: 0.1, max: 5.0, step: 0.1 }
     );
-    
+    // 🟢 改造: 使用 config.set
     particleScale.on('change', (ev) => {
-      this.eventBus.emit('particle-system-scale-changed', ev.value);
-      logger.debug('UICoordinates', `粒子缩放: ${ev.value.toFixed(2)}x`);
+      config.set('particles.systemScale', ev.value);
     });
-    
     this.controls.set('particles.systemScale', particleScale);
 
     // 路径缩放
     const pathScale = this.pane.addBinding(
       this.configData.path,
       'scale',
-      {
-        label: '路径缩放',
-        min: 0.1,
-        max: 3.0,
-        step: 0.1
-      }
+      { label: '路径缩放', min: 0.1, max: 3.0, step: 0.1 }
     );
-    
+    // 🟢 改造: 使用 config.set
     pathScale.on('change', (ev) => {
-      this.eventBus.emit('path-scale-changed', ev.value);
-      logger.debug('UICoordinates', `路径缩放: ${ev.value.toFixed(2)}x`);
+      config.set('path.scale', ev.value);
     });
-    
     this.controls.set('path.scale', pathScale);
 
     // 重置按钮
     this.pane.addButton({
       title: '🔄 重置坐标系统'
     }).on('click', () => {
+      // 🟢 改造: 通过 eventBus 发出命令
       this.eventBus.emit('coordinate-system-reset');
     });
   }

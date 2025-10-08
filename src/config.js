@@ -1,11 +1,29 @@
 /**
  * @file config.js
  * @description 配置管理器 - 全局配置存储与访问
- * ✅ 已删除：postprocess.bloom 残留对象
+ * ✅ 新增: sceneComposition 结构，用于定义场景内容
  */
 import logger from './utils/logger.js';
+import eventBus from './event-bus.js';
 
 const DEFAULT_CONFIG = {
+  // 🟢 新增：场景构成定义
+  sceneComposition: {
+    active: 'defaultMath', // 当前激活的构成方案
+    compositions: {
+      defaultMath: [ // 默认的数学可视化场景
+        { type: 'math-path', enabled: true },
+        { type: 'math-light', enabled: true },
+        { type: 'particle-dust', enabled: true }
+      ],
+      // 预留一个模型场景的例子，未来使用
+      modelAnt: [
+        { type: 'model', name: 'ant', path: '/models/ant.glb', enabled: true },
+        { type: 'particle-dust', enabled: false }
+      ]
+    }
+  },
+
   data: {
     csvUrl: '../data/data.csv',
     antData: [],
@@ -24,16 +42,8 @@ const DEFAULT_CONFIG = {
   coordinates: {
     dataSpace: {
       scale: 1.4,
-      rotation: {
-        x: 0,
-        y: 0,
-        z: 0
-      },
-      position: {
-        x: 0,
-        y: 0,
-        z: 0
-      }
+      rotation: { x: 0, y: 0, z: 0 },
+      position: { x: 0, y: 0, z: 0 }
     }
   },
   
@@ -55,7 +65,7 @@ const DEFAULT_CONFIG = {
     }
   },
 
-    lighting: {
+  lighting: {
     ambient: {
       color: '#ffffff',
       intensity: 0.2
@@ -66,7 +76,6 @@ const DEFAULT_CONFIG = {
       position: { x: 5, y: 10, z: 7.5 }
     }
   },
-
 
   particles: {
     floatIntensity: 0.2,
@@ -92,7 +101,6 @@ const DEFAULT_CONFIG = {
   },
   
   environment: {
-    //bgColor: '#121414',
     skybox: {
       enabled: true,
       path: '/skybox/Medium_Monochrome_Nebulae/'
@@ -111,31 +119,11 @@ const DEFAULT_CONFIG = {
   
   postprocess: {
     enabled: true,
-    // ✅ 已删除：bloom 配置对象（已由选择性辉光系统替代）
-    hueSaturation: {
-      enabled: false,
-      hue: 0.0,
-      saturation: 0.0
-    },
-    brightnessContrast: {
-      enabled: false,
-      brightness: 0.0,
-      contrast: 0.0
-    },
-    noise: {
-      enabled: false,
-      intensity: 0.02
-    },
-    chromaticAberration: {
-      enabled: false,
-      offsetX: 0.002,
-      offsetY: 0.002
-    },
-    scanline: {
-      enabled: false,
-      intensity: 0.1,
-      density: 100
-    }
+    hueSaturation: { enabled: false, hue: 0.0, saturation: 0.0 },
+    brightnessContrast: { enabled: false, brightness: 0.0, contrast: 0.0 },
+    noise: { enabled: false, intensity: 0.02 },
+    chromaticAberration: { enabled: false, offsetX: 0.002, offsetY: 0.002 },
+    scanline: { enabled: false, intensity: 0.1, density: 100 }
   },
   
   camera: {
@@ -198,17 +186,12 @@ class ConfigManager {
   get(key) {
     try {
       if (!key) return this._config;
-      
       const keys = key.split('.');
       let value = this._config;
-      
       for (const k of keys) {
-        if (value === null || value === undefined) {
-          return null;
-        }
+        if (value === null || value === undefined) return null;
         value = value[k];
       }
-      
       return value;
     } catch (err) {
       logger.error('Config', `获取配置异常 [${key}]: ${err.message}`);
@@ -222,10 +205,8 @@ class ConfigManager {
         logger.error('Config', '设置配置失败: key 不能为空');
         return false;
       }
-      
       const keys = key.split('.');
       let target = this._config;
-      
       for (let i = 0; i < keys.length - 1; i++) {
         const k = keys[i];
         if (!target[k] || typeof target[k] !== 'object') {
@@ -233,11 +214,12 @@ class ConfigManager {
         }
         target = target[k];
       }
-      
       const lastKey = keys[keys.length - 1];
-      target[lastKey] = value;
-      
-      logger.debug('Config', `配置已更新: ${key} = ${JSON.stringify(value)}`);
+      if (target[lastKey] !== value) {
+        target[lastKey] = value;
+        eventBus.emit('config-changed', { key, value });
+        logger.debug('Config', `配置已更新: ${key} = ${JSON.stringify(value)}`);
+      }
       return true;
     } catch (err) {
       logger.error('Config', `设置配置异常 [${key}]: ${err.message}`);
@@ -246,64 +228,22 @@ class ConfigManager {
   }
 
   applyPresetData(presetData) {
-    if (!presetData || !presetData.config) {
-      logger.error('Config', '预设数据格式无效');
-      return false;
-    }
-
-    try {
-      const { type, config: presetConfig } = presetData;
-
-      if (type === 'basic') {
-        if (presetConfig.animation) {
-          Object.keys(presetConfig.animation).forEach(key => {
-            this.set(`animation.${key}`, presetConfig.animation[key]);
-          });
-        }
-
-        if (presetConfig.camera) {
-          Object.keys(presetConfig.camera).forEach(key => {
-            this.set(`camera.${key}`, presetConfig.camera[key]);
-          });
-        }
-
-        if (presetConfig.particles) {
-          Object.keys(presetConfig.particles).forEach(key => {
-            this.set(`particles.${key}`, presetConfig.particles[key]);
-          });
-        }
-
-        if (presetConfig.path) {
-          Object.keys(presetConfig.path).forEach(key => {
-            this.set(`path.${key}`, presetConfig.path[key]);
-          });
-        }
-
-        if (presetConfig.environment) {
-          Object.keys(presetConfig.environment).forEach(key => {
-            this.set(`environment.${key}`, presetConfig.environment[key]);
-          });
-        }
-
-      } else if (type === 'post') {
-        if (presetConfig.postprocess) {
-          Object.keys(presetConfig.postprocess).forEach(key => {
-            this.set(`postprocess.${key}`, presetConfig.postprocess[key]);
-          });
-        }
-      }
-
-      logger.info('Config', `预设已应用: ${type}`);
-      return true;
-    } catch (err) {
-      logger.error('Config', `应用预设失败: ${err.message}`);
-      return false;
-    }
+    logger.warn('Config', 'applyPresetData 已被弃用，请使用 PresetManager 的新加载逻辑');
+    return true;
   }
 
   reset() {
+    const oldConfig = this._config;
     this._config = deepClone(DEFAULT_CONFIG);
     logger.info('Config', '配置已重置为默认值');
+    
+    // 触发所有顶级key的更新通知
+    Object.keys(DEFAULT_CONFIG).forEach(topKey => {
+        // 比较新旧值，只有变化时才发出事件，避免不必要的刷新
+        if (JSON.stringify(oldConfig[topKey]) !== JSON.stringify(DEFAULT_CONFIG[topKey])) {
+            eventBus.emit('config-changed', { key: topKey, value: DEFAULT_CONFIG[topKey] });
+        }
+    });
   }
 }
 

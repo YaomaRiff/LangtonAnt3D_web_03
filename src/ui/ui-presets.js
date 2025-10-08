@@ -165,62 +165,19 @@ class UIPresets {
     try {
       logger.info('UIPresets', '开始恢复默认配置...');
       
+      // 🟢 改造: 只调用 config.reset()，它会自动触发更新
       config.reset();
-      this._emitDefaultEvents();
-      this._refreshAllUI();
+      
+      // 刷新UI的操作现在由 'preset-loaded' 事件的监听器统一处理
+      // 手动触发一次，以确保UI同步
+      this._updateAllBindings();
+      this._refreshAllPanes();
       
       logger.info('UIPresets', '✅ 已恢复默认配置');
     } catch (err) {
       logger.error('UIPresets', `恢复默认失败: ${err.message}`);
       alert(`恢复默认失败: ${err.message}`);
     }
-  }
-
-  _emitDefaultEvents() {
-    const cfg = config.getRaw();
-    
-    eventBus.emit('dust-color-changed', cfg.particles.dustColor);
-    eventBus.emit('dust-size-changed', cfg.particles.dustSize);
-    eventBus.emit('dust-opacity-changed', cfg.particles.dustOpacity);
-    eventBus.emit('dust-count-changed', cfg.particles.dustCount);
-    eventBus.emit('particle-system-scale-changed', cfg.particles.systemScale);
-    eventBus.emit('particle-breath-intensity-changed', cfg.particles.breathIntensity);
-    eventBus.emit('particle-float-intensity-changed', cfg.particles.floatIntensity);
-    eventBus.emit('rotation-speed-changed', cfg.particles.rotationSpeed);
-    eventBus.emit('rotation-tilt-xz-changed', cfg.particles.rotationTiltXZ);
-    eventBus.emit('rotation-tilt-xy-changed', cfg.particles.rotationTiltXY);
-    eventBus.emit('path-point-color-changed', cfg.particles.pathPointColor);
-    eventBus.emit('path-point-size-changed', cfg.particles.pathPointSize);
-    eventBus.emit('path-scale-changed', cfg.path.scale);
-    eventBus.emit('path-depth-intensity-changed', cfg.path.depthIntensity);
-    eventBus.emit('bg-color-changed', cfg.environment.bgColor);
-    eventBus.emit('path-color-changed', cfg.environment.pathColor);
-    eventBus.emit('material-glow-enabled-changed', { target: 'path', enabled: cfg.material.path.enabled });
-    eventBus.emit('material-glow-intensity-changed', { target: 'path', intensity: cfg.material.path.emissiveIntensity });
-    eventBus.emit('material-glow-enabled-changed', { target: 'particles', enabled: cfg.material.particles.enabled });
-    eventBus.emit('particle-emissive-intensity-changed', cfg.material.particles.emissiveIntensity);
-    eventBus.emit('material-glow-enabled-changed', { target: 'movingLight', enabled: cfg.material.movingLight.enabled });
-    eventBus.emit('dataspace-scale-changed', cfg.coordinates.dataSpace.scale);
-    ['x', 'y', 'z'].forEach(axis => {
-      eventBus.emit('dataspace-rotation-changed', { 
-        axis, 
-        angle: cfg.coordinates.dataSpace.rotation[axis] 
-      });
-    });
-    eventBus.emit('dataspace-position-changed', cfg.coordinates.dataSpace.position);
-    eventBus.emit('bloom-intensity-changed', cfg.postprocess.bloom.intensity);
-    eventBus.emit('bloom-smoothing-changed', cfg.postprocess.bloom.smoothing);
-    eventBus.emit('hue-saturation-enabled-changed', cfg.postprocess.hueSaturation.enabled);
-    eventBus.emit('brightness-contrast-enabled-changed', cfg.postprocess.brightnessContrast.enabled);
-    eventBus.emit('noise-enabled-changed', cfg.postprocess.noise.enabled);
-    eventBus.emit('chromatic-aberration-enabled-changed', cfg.postprocess.chromaticAberration.enabled);
-    eventBus.emit('scanline-enabled-changed', cfg.postprocess.scanline.enabled);
-    eventBus.emit('camera-mode-changed', cfg.camera.mode);
-    eventBus.emit('camera-fov-changed', cfg.camera.fov);
-    eventBus.emit('animation-speed-changed', cfg.animation.speedFactor);
-    eventBus.emit('animation-loop-changed', cfg.animation.loop);
-    
-    logger.debug('UIPresets', '默认事件已全部触发');
   }
 
   _bindEvents() {

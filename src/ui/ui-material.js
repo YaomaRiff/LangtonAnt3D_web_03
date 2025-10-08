@@ -1,7 +1,7 @@
 /**
  * @file ui-material.js
- * @description 材质辉光控制面板 - 直接绑定到 config._config + 手动更新临时对象
- * ✅ 修复：在 constructor 中获取配置 + 添加 updateBindings() 方法
+ * @description 材质辉光控制面板
+ * ✅ 核心改造: 所有控件的 'change' 事件现在直接调用 config.set()。
  */
 import eventBus from '../event-bus.js';
 import config from '../config.js';
@@ -14,7 +14,6 @@ class UIMaterial {
     this._isInitialized = false;
     this.controls = new Map();
     
-    // ✅ 在 constructor 中获取配置引用
     this.configData = config.getRaw();
   }
 
@@ -36,11 +35,10 @@ class UIMaterial {
 
     this._isInitialized = true;
 
-    // ✅ 注册到UIRegistry
     const uiRegistry = (await import('./ui-registry.js')).default;
     uiRegistry.register('ui-material', this);
     
-    logger.info('UIMaterial', '材质辉光 UI 已初始化(直接绑定)');
+    logger.info('UIMaterial', '材质辉光 UI 已初始化');
   }
 
   _createMaterialControls() {
@@ -52,14 +50,9 @@ class UIMaterial {
       'enabled',
       { label: '启用' }
     );
-    
     pathEnabled.on('change', (ev) => {
-      eventBus.emit('material-glow-enabled-changed', { 
-        target: 'path', 
-        enabled: ev.value 
-      });
+      config.set('material.path.enabled', ev.value); // ✅
     });
-    
     this.controls.set('material.path.enabled', pathEnabled);
     
     const pathIntensity = pathFolder.addBinding(
@@ -67,14 +60,9 @@ class UIMaterial {
       'emissiveIntensity',
       { label: '发光强度', min: 0, max: 3, step: 0.1 }
     );
-    
     pathIntensity.on('change', (ev) => {
-      eventBus.emit('material-glow-intensity-changed', { 
-        target: 'path', 
-        intensity: ev.value 
-      });
+      config.set('material.path.emissiveIntensity', ev.value); // ✅
     });
-    
     this.controls.set('material.path.emissiveIntensity', pathIntensity);
     
     // ========== 粒子辉光 ==========
@@ -85,14 +73,9 @@ class UIMaterial {
       'enabled',
       { label: '启用' }
     );
-    
     particlesEnabled.on('change', (ev) => {
-      eventBus.emit('material-glow-enabled-changed', { 
-        target: 'particles', 
-        enabled: ev.value 
-      });
+      config.set('material.particles.enabled', ev.value); // ✅
     });
-    
     this.controls.set('material.particles.enabled', particlesEnabled);
     
     const particlesIntensity = particlesFolder.addBinding(
@@ -100,11 +83,9 @@ class UIMaterial {
       'emissiveIntensity',
       { label: '发光强度', min: 0, max: 2, step: 0.1 }
     );
-    
     particlesIntensity.on('change', (ev) => {
-      eventBus.emit('particle-emissive-intensity-changed', ev.value);
+      config.set('material.particles.emissiveIntensity', ev.value); // ✅
     });
-    
     this.controls.set('material.particles.emissiveIntensity', particlesIntensity);
     
     // ========== 移动光点辉光 ==========
@@ -115,14 +96,9 @@ class UIMaterial {
       'enabled',
       { label: '启用' }
     );
-    
     movingLightEnabled.on('change', (ev) => {
-      eventBus.emit('material-glow-enabled-changed', { 
-        target: 'movingLight', 
-        enabled: ev.value 
-      });
+      config.set('material.movingLight.enabled', ev.value); // ✅
     });
-    
     this.controls.set('material.movingLight.enabled', movingLightEnabled);
     
     const movingLightIntensity = movingLightFolder.addBinding(
@@ -130,15 +106,12 @@ class UIMaterial {
       'emissiveIntensity',
       { label: '发光强度', min: 0, max: 3, step: 0.1 }
     );
-    
     movingLightIntensity.on('change', (ev) => {
-      eventBus.emit('moving-light-emissive-intensity-changed', ev.value);
+      config.set('material.movingLight.emissiveIntensity', ev.value); // ✅
     });
-    
     this.controls.set('material.movingLight.emissiveIntensity', movingLightIntensity);
   }
 
-  // ✅ 新增：手动更新所有绑定（材质辉光没有临时对象，直接刷新即可）
   updateBindings() {
     // 材质辉光直接绑定到 configData，无需手动更新
     logger.debug('UIMaterial', '绑定检查完成（无临时对象）');

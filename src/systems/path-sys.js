@@ -1,13 +1,15 @@
 /**
- * @file path-entity.js
- * @description 路径实体 - 动态轨迹线条 + 实时绘制 + 材质辉光注册
- * ✅ 使用容器缩放而非数据重映射
+ * @file path-sys.js
+ * @description 路径系统 - 动态轨迹线条 + 实时绘制
+ * ✅ 重构: 监听统一的 'config-changed' 事件
  */
 import * as THREE from 'three';
 import logger from '../utils/logger.js';
 import config from '../config.js';
+import materialSys from './material-sys.js';
 
-class PathEntity {
+
+class PathSystem {
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -18,12 +20,12 @@ class PathEntity {
     this.allPoints = [];
     this.currentDrawIndex = 0;
     
-    this.pathContainer = null; // ✅ 独立缩放容器
+    this.pathContainer = null;
   }
 
   init({ eventBus, scene, coordinateSystem }) {
     if (this.initialized) {
-      logger.warn('PathEntity', '路径实体已经初始化过了');
+      logger.warn('PathSystem', '路径系统已经初始化过了');
       return this;
     }
 
@@ -32,11 +34,9 @@ class PathEntity {
       this.scene = scene;
       this.coordinateSystem = coordinateSystem;
 
-      // ✅ 创建独立缩放容器并挂载到路径锚点
       this.pathContainer = new THREE.Group();
       this.pathContainer.name = 'PathContainer';
       
-      // ✅ 初始化时设置一次缩放
       const initialScale = config.get('path.scale') || 1.0;
       this.pathContainer.scale.setScalar(initialScale);
       
@@ -46,11 +46,11 @@ class PathEntity {
       this._bindEvents();
 
       this.initialized = true;
-      logger.info('PathEntity', '路径实体初始化完成（已接入坐标系统）');
+      logger.info('PathSystem', '路径系统初始化完成');
 
       return this;
     } catch (err) {
-      logger.error('PathEntity', `初始化失败: ${err.message}`);
+      logger.error('PathSystem', `初始化失败: ${err.message}`);
       throw err;
     }
   }
@@ -62,28 +62,12 @@ class PathEntity {
       this._createPath();
     });
 
-    // ❌ 删除：不再监听 data-scaled
-    // this.eventBus.on('data-scaled', (data) => { ... });
-
     this.eventBus.on('moving-light-position-updated', (position) => {
       this._updatePathToPosition(position);
     });
 
     this.eventBus.on('animation-step-updated', (step) => {
       this._jumpToStep(step);
-    });
-
-    this.eventBus.on('path-color-changed', (color) => {
-      if (this.pathLine) {
-        this.pathLine.material.uniforms.uColor.value.set(color);
-        this.pathLine.material.uniforms.uEmissive.value.set(color);
-      }
-    });
-
-    this.eventBus.on('path-depth-intensity-changed', (intensity) => {
-      if (this.pathLine) {
-        this.pathLine.material.uniforms.uDepthIntensity.value = intensity;
-      }
     });
 
     this.eventBus.on('animation-reset', () => {
@@ -93,18 +77,29 @@ class PathEntity {
       }
     });
 
-    // ✅ 路径独立缩放（核心逻辑）
-    this.eventBus.on('path-scale-changed', (scale) => {
-      if (this.pathContainer) {
-        this.pathContainer.scale.setScalar(scale);
-        logger.debug('PathEntity', `路径已缩放: ${scale.toFixed(2)}x`);
-      }
-    });
+    // ✅ 核心改造：监听通用配置变更事件
+    this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
+  }
+
+  /**
+   * ✅ 新增: 统一处理配置变更
+   * @param {{key: string, value: any}} param0
+   */
+  _handleConfigChange({ key, value }) {
+    if (!this.pathLine) return;
+
+    switch (key) {
+      case 'path.scale':
+        if (this.pathContainer) {
+          this.pathContainer.scale.setScalar(value);
+        }
+        break;
+    }
   }
 
   _createPath() {
     if (!this.allPoints || this.allPoints.length === 0) {
-      logger.warn('PathEntity', '路径点为空');
+      logger.warn('PathSystem', '路径点为空');
       return;
     }
 
@@ -128,52 +123,13 @@ class PathEntity {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setDrawRange(0, 0);
 
-    const pathColor = config.get('environment.pathColor') || '#F0B7B7';
-    const depthIntensity = config.get('path.depthIntensity') || 0.5;
-    const emissiveIntensity = config.get('material.path.emissiveIntensity') || 0.8;
+    // 从 MaterialService 获取预创建的材质
+const material = materialSys.get('pathLine');
 
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        uColor: { value: new THREE.Color(pathColor) },
-        uEmissive: { value: new THREE.Color(pathColor) },
-        uEmissiveIntensity: { value: emissiveIntensity },
-        uDepthIntensity: { value: depthIntensity },
-        uCameraPosition: { value: new THREE.Vector3() },
-        uMaxDistance: { value: 100.0 }
-      },
-      vertexShader: `
-        varying vec3 vWorldPosition;
-        
-        void main() {
-          vec4 worldPos = modelMatrix * vec4(position, 1.0);
-          vWorldPosition = worldPos.xyz;
-          gl_Position = projectionMatrix * viewMatrix * worldPos;
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 uColor;
-        uniform vec3 uEmissive;
-        uniform float uEmissiveIntensity;
-        uniform float uDepthIntensity;
-        uniform vec3 uCameraPosition;
-        uniform float uMaxDistance;
-        
-        varying vec3 vWorldPosition;
-        
-        void main() {
-          vec3 finalColor = uColor + uEmissive * uEmissiveIntensity;
-          
-          float distToCamera = length(vWorldPosition - uCameraPosition);
-          float fade = smoothstep(0.0, uMaxDistance, distToCamera);
-          float alpha = 1.0 - fade * uDepthIntensity;
-          
-          gl_FragColor = vec4(finalColor, alpha);
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    });
+if (!material) {
+  logger.error('PathSystem', '无法从 MaterialService 获取 "pathLine" 材质，路径无法创建。');
+  return;
+}
 
     this.pathLine = new THREE.Line(geometry, material);
     this.pathLine.name = 'PathLine';
@@ -181,16 +137,8 @@ class PathEntity {
     
     this.pathContainer.add(this.pathLine);
 
-    this.eventBus.emit('material-registered', {
-      name: 'path',
-      material: material
-    });
-
-    // ✅ 移除：不再每次创建路径时重新设置缩放
-
     this.currentDrawIndex = 0;
-
-    logger.info('PathEntity', `路径已创建: 总点数 ${this.allPoints.length}`);
+    logger.info('PathSystem', `路径已创建: 总点数 ${this.allPoints.length}`);
   }
 
   _updatePathToPosition(position) {
@@ -234,6 +182,20 @@ class PathEntity {
     // 占位
   }
 
+  enable() {
+    if (this.pathContainer) {
+      this.pathContainer.visible = true;
+      logger.debug('PathSystem', '已启用');
+    }
+  }
+
+  disable() {
+    if (this.pathContainer) {
+      this.pathContainer.visible = false;
+      logger.debug('PathSystem', '已禁用');
+    }
+  }
+
   dispose() {
     if (this.pathLine) {
       this.pathContainer.remove(this.pathLine);
@@ -247,9 +209,9 @@ class PathEntity {
     }
 
     this.initialized = false;
-    logger.info('PathEntity', '路径实体已销毁');
+    logger.info('PathSystem', '路径系统已销毁');
   }
 }
 
-const pathEntity = new PathEntity();
-export default pathEntity;
+const pathSys = new PathSystem();
+export default pathSys;
