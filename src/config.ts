@@ -3,9 +3,11 @@
  * @description 配置管理器 - 全局配置存储与访问
  * 🔧 修正: 对 set 方法中的日志进行节流处理，防止UI拖动时刷屏。
  * ✨ 重构: 移除了旧的材质辉光相关配置 (emissiveIntensity)，辉光效果由 postprocess.bloom 统一控制。
+ * 🔧 清理: 移除了 dotScreen 和 hueSaturation 的配置项。
  */
 import logger from './utils/logger';
 import eventBus from './event-bus';
+import { fa } from 'zod/locales';
 
 const DEFAULT_CONFIG = {
   // 🟢 新增：场景构成定义
@@ -110,38 +112,31 @@ const DEFAULT_CONFIG = {
   postprocess: {
     enabled: true,
   
-    // ✅ [重构] 光晕效果 (Bloom)
+    // 光晕效果 (Bloom)
     bloom: {
-      enabled: true,
+      enabled: false,
       intensity: 1.0,         // 效果强度
       luminanceThreshold: 0.1, // 亮度阈值
       luminanceSmoothing: 0.2, // 阈值平滑度
       mipmapBlur: true,         // 是否使用 Mipmap 模糊
     },
 
-    // ✅ 新增：景深效果 (Bokeh)
+    // 景深效果 (Bokeh)
     bokeh: {
-      enabled: true,
+      enabled: false,
       focus: 40.0,              // 焦距
       dof: 0.02,                // 景深范围
       aperture: 0.025,          // 光圈大小
       maxBlur: 0.01,            // 最大模糊
     },
 
-    // ✅ 新增：色差效果 (Chromatic Aberration)
+    // 色差效果 (Chromatic Aberration)
     chromaticAberration: {
       enabled: false,
       offset: { x: 0.001, y: 0.001 } // 颜色偏移量
     },
-    
-    // ✅ 新增：点阵效果 (Dot Screen)
-    dotScreen: {
-      enabled: false,
-      angle: 1.57,              // 角度
-      scale: 1.0                // 缩放
-    },
 
-    // ✅ [替代方案] 胶片效果 (Film) - 替代旧的 Noise 和 Scanline
+    // 胶片效果 (Film) - 替代旧的 Noise 和 Scanline
     film: {
       enabled: false,
       scanlineIntensity: 0.3,   // 扫描线强度
@@ -150,8 +145,7 @@ const DEFAULT_CONFIG = {
       grayscale: false          // 是否灰度
     },
   
-    // ✅ [保留] 色彩调整效果
-    hueSaturation: { enabled: false, hue: 0.0, saturation: 0.0 },
+    // 色彩调整效果
     brightnessContrast: { enabled: false, brightness: 0.0, contrast: 0.0 },
   },
   

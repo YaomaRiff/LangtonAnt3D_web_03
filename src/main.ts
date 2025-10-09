@@ -149,6 +149,7 @@ class Application {
       sceneDirector.init({ eventBus });
 
       this._bindEvents();
+      this._handleResize();
       this._startRenderLoop();
 
       const defaultCSV = config.get('data.csvUrl');

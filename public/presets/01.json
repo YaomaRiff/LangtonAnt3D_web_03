@@ -1,9 +1,9 @@
 {
   "name": "01",
-  "timestamp": "2025-10-06T20:09:28.849Z",
+  "timestamp": "2025-10-09T20:38:04.915Z",
   "animation": {
     "loop": true,
-    "speedFactor": 1.65
+    "speedFactor": 3.3
   },
   "camera": {
     "fov": 75,
@@ -11,51 +11,61 @@
   },
   "coordinates": {
     "dataSpace": {
-      "scale": 1
+      "scale": 2.6999999999999997
     }
   },
   "environment": {
-    "pathColor": "#F0B7B7"
+    "pathColor": "#a5abca"
   },
   "particles": {
-    "breathIntensity": 0.1,
-    "dustColor": "#AF85B7",
-    "dustCount": 6600,
-    "dustOpacity": 0.6,
+    "breathIntensity": 0.14,
+    "dustColor": "#d2b5d7",
+    "dustCount": 2000,
+    "dustOpacity": 0.63,
     "dustSize": 0.6,
-    "floatIntensity": 0.2,
-    "rotationSpeed": 0,
-    "rotationTiltXY": 0,
-    "rotationTiltXZ": 0,
+    "floatIntensity": 0.33,
+    "pathPointColor": "#caddcb",
+    "pathPointSize": 0.35000000000000003,
+    "rotationSpeed": 0.1,
+    "rotationTiltXY": -27,
+    "rotationTiltXZ": 33,
     "systemScale": 1
   },
   "path": {
-    "depthIntensity": 0.5,
-    "scale": 1
+    "depthIntensity": 0.8300000000000001,
+    "scale": 2.1
   },
   "postprocess": {
-    "enabled": true,
     "bloom": {
       "enabled": true,
-      "intensity": 0.8,
-      "luminanceSmoothing": 0.2,
-      "luminanceThreshold": 0.1
+      "intensity": 2.8,
+      "luminanceThreshold": 3.469446951953614e-18
+    },
+    "bokeh": {
+      "aperture": 0.039,
+      "dof": 0.029,
+      "enabled": false,
+      "focus": 35.9,
+      "maxBlur": 0.012
     },
     "brightnessContrast": {
       "brightness": 0,
-      "contrast": 0,
-      "enabled": false
+      "contrast": 0.07,
+      "enabled": true
     },
+    "chromaticAberration": {
+      "enabled": true,
+      "offset": {
+        "x": 0.0011,
+        "y": -0.0004
+      }
+    },
+    "enabled": true,
     "film": {
       "enabled": true,
-      "noiseIntensity": 0.26,
-      "scanlineCount": 3654,
-      "scanlineIntensity": 0.28
-    },
-    "hueSaturation": {
-      "enabled": false,
-      "hue": 0,
-      "saturation": 0
+      "noiseIntensity": 0.29000000000000004,
+      "scanlineCount": 1408,
+      "scanlineIntensity": 0.21999999999999997
     }
   }
 }

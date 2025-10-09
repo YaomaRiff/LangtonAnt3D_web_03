@@ -1,32 +1,47 @@
 /**
- * @file audio-sys.js
- * @description 音频系统 - 背景音乐管理
+ * @file audio-sys.ts
+ * @description 音频系统 - 背景音乐管理与播放控制
+ * @🔧 修正: 修复了因未正确解析资源URL导致音频加载失败的问题。
+ * @🔧 修正: 规范化了模块导入，移除了.js后缀。
+ * @✨ 优化: 延迟创建AudioContext，直到用户首次交互，以符合浏览器策略。
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import config from '../config';
+import { resolveAssetUrl } from '../utils/url-resolver'; // ✅ 核心修正：导入URL解析工具
 
 class AudioSystem {
+  private eventBus: any;
+  private camera: THREE.Camera | null;
+  private listener: THREE.AudioListener | null;
+  private sound: THREE.Audio | null;
+  private audioLoader: THREE.AudioLoader;
+  private initialized: boolean;
+  
+  private isPlaying: boolean;
+  private volume: number;
+  private currentUrl: string | null;
+  private audioContext: AudioContext | null;
+  
+  private listenerCreated: boolean;
+
   constructor() {
     this.eventBus = null;
+    this.camera = null;
     this.listener = null;
     this.sound = null;
-    this.audioLoader = null;
+    this.audioLoader = new THREE.AudioLoader();
     this.initialized = false;
     
-    // 音频状态
     this.isPlaying = false;
     this.volume = 0.5;
     this.currentUrl = null;
     this.audioContext = null;
-    this.contextResumed = false;
     
-    // ✅ 延迟创建标记
     this.listenerCreated = false;
-    this.camera = null;
   }
 
-  async init({ eventBus, camera }) {
+  async init({ eventBus, camera }: { eventBus: any, camera: THREE.Camera }) {
     if (this.initialized) {
       logger.warn('AudioSystem', '音频系统已经初始化过了');
       return this;
@@ -36,9 +51,6 @@ class AudioSystem {
       this.eventBus = eventBus;
       this.camera = camera;
       
-      // ✅ 不在这里创建 AudioListener,等用户点击播放时再创建
-      this.audioLoader = new THREE.AudioLoader();
-      
       this._bindEvents();
       
       this.initialized = true;
@@ -46,36 +58,32 @@ class AudioSystem {
       
       return this;
     } catch (err) {
-      logger.error('AudioSystem', `初始化失败: ${err.message}`);
+      logger.error('AudioSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
-  // ✅ 首次播放时创建 AudioListener 和 AudioContext
   _ensureListenerCreated() {
-    if (this.listenerCreated) return;
+    if (this.listenerCreated || !this.camera) return;
     
     try {
-      // 创建音频监听器（绑定到相机）
       this.listener = new THREE.AudioListener();
       this.camera.add(this.listener);
       
-      // 获取 AudioContext 引用
       this.audioContext = this.listener.context;
-      
-      // 创建音频对象
       this.sound = new THREE.Audio(this.listener);
       
       this.listenerCreated = true;
       logger.info('AudioSystem', 'AudioListener 已创建');
     } catch (err) {
-      logger.error('AudioSystem', `创建 AudioListener 失败: ${err.message}`);
+      logger.error('AudioSystem', `创建 AudioListener 失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
   _bindEvents() {
     this.eventBus.on('audio-toggle', () => {
+      this._ensureListenerCreated(); // 确保在切换时已创建
       if (this.isPlaying) {
         this.pause();
       } else {
@@ -83,11 +91,11 @@ class AudioSystem {
       }
     });
 
-    this.eventBus.on('audio-load', (url) => {
+    this.eventBus.on('audio-load', (url: string) => {
       this.loadAudio(url);
     });
 
-    this.eventBus.on('audio-volume-changed', (volume) => {
+    this.eventBus.on('audio-volume-changed', (volume: number) => {
       this.setVolume(volume);
     });
 
@@ -96,15 +104,16 @@ class AudioSystem {
     });
   }
 
-   loadAudio(url) {
+  loadAudio(url: string) {
     if (!url) {
       logger.warn('AudioSystem', '音频 URL 为空');
       return;
     }
 
     this._ensureListenerCreated();
+    if (!this.sound) return;
 
-    // ✅ 2. 使用 resolveAssetUrl 包装路径
+    // ✅ 核心修正: 使用 resolveAssetUrl 包装路径
     const fetchUrl = resolveAssetUrl(url);
 
     logger.info('AudioSystem', `开始加载音频: ${fetchUrl}`);
@@ -112,6 +121,7 @@ class AudioSystem {
     this.audioLoader.load(
       fetchUrl,
       (buffer) => {
+        if (!this.sound) return;
         if (this.sound.isPlaying) {
           this.sound.stop();
         }
@@ -121,15 +131,12 @@ class AudioSystem {
         this.sound.setVolume(this.volume);
         this.currentUrl = url;
         
-        logger.info('AudioSystem', '音频加载成功');
+        logger.info('AudioSystem', '✅ 音频加载成功');
         this.eventBus.emit('audio-loaded', url);
       },
-      (xhr) => {
-        const progress = (xhr.loaded / xhr.total) * 100;
-        logger.debug('AudioSystem', `加载进度: ${progress.toFixed(1)}%`);
-      },
+      undefined,
       (error) => {
-        logger.error('AudioSystem', `加载失败: ${error.message}`);
+        logger.error('AudioSystem', `加载失败: ${error.message || '未知错误'}`);
         this.eventBus.emit('audio-load-error', error);
       }
     );
@@ -137,18 +144,16 @@ class AudioSystem {
 
   async play() {
     if (!this.sound || !this.sound.buffer) {
-      logger.warn('AudioSystem', '没有加载音频');
+      logger.warn('AudioSystem', '没有加载音频，无法播放');
       return;
     }
 
-    // ✅ 确保 AudioContext 已恢复
     if (this.audioContext && this.audioContext.state === 'suspended') {
       try {
         await this.audioContext.resume();
-        this.contextResumed = true;
         logger.info('AudioSystem', 'AudioContext 已恢复');
       } catch (err) {
-        logger.error('AudioSystem', `恢复 AudioContext 失败: ${err.message}`);
+        logger.error('AudioSystem', `恢复 AudioContext 失败: ${(err as Error).message}`);
         return;
       }
     }
@@ -179,7 +184,7 @@ class AudioSystem {
     }
   }
 
-  setVolume(volume) {
+  setVolume(volume: number) {
     this.volume = THREE.MathUtils.clamp(volume, 0, 1);
     if (this.sound) {
       this.sound.setVolume(this.volume);
@@ -187,26 +192,15 @@ class AudioSystem {
     }
   }
 
-  getVolume() {
-    return this.volume;
-  }
-
-  isAudioPlaying() {
-    return this.isPlaying;
-  }
-
   dispose() {
-    if (this.sound) {
-      this.sound.stop();
-      if (this.sound.buffer) {
-        this.sound.buffer = null;
-      }
+    this.stop();
+
+    if (this.listener && this.camera) {
+      this.camera.remove(this.listener);
     }
 
-    if (this.listener && this.listener.parent) {
-      this.listener.parent.remove(this.listener);
-    }
-
+    this.sound = null;
+    this.listener = null;
     this.audioContext = null;
     this.listenerCreated = false;
     this.initialized = false;

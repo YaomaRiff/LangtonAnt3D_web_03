@@ -1,7 +1,7 @@
 # Project Snapshot
 - Root: `.`
-- Created: 2025-10-09 17:32:49
-- Files: 44 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
+- Created: 2025-10-09 20:38:37
+- Files: 42 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
 - Force-Excluded: package-lock.json
 
 ---
@@ -12,9 +12,7 @@ LangtonAnt3D_web_03/
 │  ├─ data/
 │  │  └─ manifest.json
 │  ├─ presets/
-│  │  ├─ 01.json
-│  │  ├─ 02.json
-│  │  └─ 03.json
+│  │  └─ 01.json
 │  ├─ manifest.json
 │  ├─ style.css
 ├─ src/
@@ -142,6 +140,9 @@ LangtonAnt3D_web_03/
     "troika-three-text": "^0.52.4",
     "tweakpane": "^4.0.5",
     "zod": "^4.1.11"
+  },
+  "overrides": {
+    "three": "^0.180.0"
   }
 }
 
@@ -188,10 +189,10 @@ LangtonAnt3D_web_03/
 ```json
 {
   "name": "01",
-  "timestamp": "2025-10-06T20:09:28.849Z",
+  "timestamp": "2025-10-09T20:38:04.915Z",
   "animation": {
     "loop": true,
-    "speedFactor": 1.65
+    "speedFactor": 3.3
   },
   "camera": {
     "fov": 75,
@@ -199,188 +200,64 @@ LangtonAnt3D_web_03/
   },
   "coordinates": {
     "dataSpace": {
-      "scale": 1
+      "scale": 2.6999999999999997
     }
   },
   "environment": {
-    "pathColor": "#F0B7B7"
+    "pathColor": "#a5abca"
   },
   "particles": {
-    "breathIntensity": 0.1,
-    "dustColor": "#AF85B7",
-    "dustCount": 6600,
-    "dustOpacity": 0.6,
+    "breathIntensity": 0.14,
+    "dustColor": "#d2b5d7",
+    "dustCount": 2000,
+    "dustOpacity": 0.63,
     "dustSize": 0.6,
-    "floatIntensity": 0.2,
-    "rotationSpeed": 0,
-    "rotationTiltXY": 0,
-    "rotationTiltXZ": 0,
+    "floatIntensity": 0.33,
+    "pathPointColor": "#caddcb",
+    "pathPointSize": 0.35000000000000003,
+    "rotationSpeed": 0.1,
+    "rotationTiltXY": -27,
+    "rotationTiltXZ": 33,
     "systemScale": 1
   },
   "path": {
-    "depthIntensity": 0.5,
-    "scale": 1
+    "depthIntensity": 0.8300000000000001,
+    "scale": 2.1
   },
   "postprocess": {
-    "enabled": true,
     "bloom": {
       "enabled": true,
-      "intensity": 0.8,
-      "luminanceSmoothing": 0.2,
-      "luminanceThreshold": 0.1
+      "intensity": 2.8,
+      "luminanceThreshold": 3.469446951953614e-18
     },
-    "brightnessContrast": {
-      "brightness": 0,
-      "contrast": 0,
-      "enabled": false
-    },
-    "film": {
-      "enabled": true,
-      "noiseIntensity": 0.26,
-      "scanlineCount": 3654,
-      "scanlineIntensity": 0.28
-    },
-    "hueSaturation": {
+    "bokeh": {
+      "aperture": 0.039,
+      "dof": 0.029,
       "enabled": false,
-      "hue": 0,
-      "saturation": 0
-    }
-  }
-}
-
-```
-
-### public/presets/02.json
-
-```json
-{
-  "name": "02",
-  "timestamp": "2025-10-08T11:14:32.524Z",
-  "animation": {
-    "loop": true,
-    "speedFactor": 1.65
-  },
-  "camera": {
-    "fov": 75,
-    "mode": "perspective"
-  },
-  "coordinates": {
-    "dataSpace": {
-      "scale": 1.4
-    }
-  },
-  "environment": {
-    "pathColor": "#F0B7B7"
-  },
-  "particles": {
-    "breathIntensity": 0.26,
-    "dustColor": "#AF85B7",
-    "dustCount": 2600,
-    "dustOpacity": 0.83,
-    "dustSize": 0.78,
-    "floatIntensity": 0.64,
-    "rotationSpeed": 0,
-    "rotationTiltXY": -20,
-    "rotationTiltXZ": 43,
-    "systemScale": 1
-  },
-  "path": {
-    "depthIntensity": 0.5,
-    "scale": 1.6
-  },
-  "postprocess": {
-    "enabled": true,
-    "bloom": {
-      "enabled": true,
-      "intensity": 0.9,
-      "luminanceSmoothing": 0.2,
-      "luminanceThreshold": 0.1
+      "focus": 35.9,
+      "maxBlur": 0.012
     },
     "brightnessContrast": {
       "brightness": 0,
-      "contrast": 0,
+      "contrast": 0.07,
       "enabled": true
     },
-    "film": {
+    "chromaticAberration": {
       "enabled": true,
-      "noiseIntensity": 0.29,
-      "scanlineCount": 3136,
-      "scanlineIntensity": 0.48
+      "offset": {
+        "x": 0.0011,
+        "y": -0.0004
+      }
     },
-    "hueSaturation": {
-      "enabled": true,
-      "hue": 0.65,
-      "saturation": 0.04
-    }
-  }
-}
-
-```
-
-### public/presets/03.json
-
-```json
-{
-  "name": "03",
-  "timestamp": "2025-10-06T17:01:18.755Z",
-  "animation": {
-    "loop": true
-  },
-  "camera": {
-    "fov": 75,
-    "mode": "perspective"
-  },
-  "coordinates": {
-    "dataSpace": {
-      "scale": 1
-    }
-  },
-  "environment": {
-    "pathColor": "#F0B7B7"
-  },
-  "particles": {
-    "breathIntensity": 0.1,
-    "dustColor": "#AF85B7",
-    "dustCount": 3000,
-    "dustOpacity": 0.6,
-    "dustSize": 0.6,
-    "floatIntensity": 0.2,
-    "rotationSpeed": 0,
-    "rotationTiltXY": 0,
-    "rotationTiltXZ": 0,
-    "systemScale": 1
-  },
-  "path": {
-    "depthIntensity": 0.5,
-    "scale": 1
-  },
-  "postprocess": {
     "enabled": true,
-    "bloom": {
-      "enabled": true,
-      "intensity": 0.8,
-      "luminanceSmoothing": 0.2,
-      "luminanceThreshold": 0.1
-    },
-    "brightnessContrast": {
-      "brightness": 0,
-      "contrast": 0,
-      "enabled": true
-    },
     "film": {
       "enabled": true,
-      "noiseIntensity": 0.06,
-      "scanlineCount": 1064,
-      "scanlineIntensity": 0.77
-    },
-    "hueSaturation": {
-      "enabled": true,
-      "hue": 0,
-      "saturation": 0.14
+      "noiseIntensity": 0.29000000000000004,
+      "scanlineCount": 1408,
+      "scanlineIntensity": 0.21999999999999997
     }
   }
 }
-
 ```
 
 ### public/style.css
@@ -699,9 +576,11 @@ body {
  * @description 配置管理器 - 全局配置存储与访问
  * 🔧 修正: 对 set 方法中的日志进行节流处理，防止UI拖动时刷屏。
  * ✨ 重构: 移除了旧的材质辉光相关配置 (emissiveIntensity)，辉光效果由 postprocess.bloom 统一控制。
+ * 🔧 清理: 移除了 dotScreen 和 hueSaturation 的配置项。
  */
 import logger from './utils/logger';
 import eventBus from './event-bus';
+import { fa } from 'zod/locales';
 
 const DEFAULT_CONFIG = {
   // 🟢 新增：场景构成定义
@@ -806,16 +685,16 @@ const DEFAULT_CONFIG = {
   postprocess: {
     enabled: true,
   
-    // ✅ [重构] 光晕效果 (Bloom)
+    // 光晕效果 (Bloom)
     bloom: {
-      enabled: true,
+      enabled: false,
       intensity: 1.0,         // 效果强度
       luminanceThreshold: 0.1, // 亮度阈值
       luminanceSmoothing: 0.2, // 阈值平滑度
       mipmapBlur: true,         // 是否使用 Mipmap 模糊
     },
 
-    // ✅ 新增：景深效果 (Bokeh)
+    // 景深效果 (Bokeh)
     bokeh: {
       enabled: false,
       focus: 40.0,              // 焦距
@@ -824,20 +703,13 @@ const DEFAULT_CONFIG = {
       maxBlur: 0.01,            // 最大模糊
     },
 
-    // ✅ 新增：色差效果 (Chromatic Aberration)
+    // 色差效果 (Chromatic Aberration)
     chromaticAberration: {
       enabled: false,
       offset: { x: 0.001, y: 0.001 } // 颜色偏移量
     },
-    
-    // ✅ 新增：点阵效果 (Dot Screen)
-    dotScreen: {
-      enabled: false,
-      angle: 1.57,              // 角度
-      scale: 1.0                // 缩放
-    },
 
-    // ✅ [替代方案] 胶片效果 (Film) - 替代旧的 Noise 和 Scanline
+    // 胶片效果 (Film) - 替代旧的 Noise 和 Scanline
     film: {
       enabled: false,
       scanlineIntensity: 0.3,   // 扫描线强度
@@ -846,8 +718,7 @@ const DEFAULT_CONFIG = {
       grayscale: false          // 是否灰度
     },
   
-    // ✅ [保留] 色彩调整效果
-    hueSaturation: { enabled: false, hue: 0.0, saturation: 0.0 },
+    // 色彩调整效果
     brightnessContrast: { enabled: false, brightness: 0.0, contrast: 0.0 },
   },
   
@@ -1000,28 +871,45 @@ export const reset = () => configManager.reset();
 
 ```
 /**
- * @file event-bus.js
+ * @file event-bus.ts
  * @description 事件总线 - 系统间通信
+ * @🔧 修正: 补充实现了 'once' 方法，修复了UI因调用不存在的方法而导致的崩溃。
  */
 import logger from './utils/logger';
 
 class EventBus {
+  private events: Map<string, Function[]>;
+
   constructor() {
     this.events = new Map();
   }
 
-  on(event, callback) {
+  on(event: string, callback: Function) {
     if (!this.events.has(event)) {
       this.events.set(event, []);
     }
-    this.events.get(event).push(callback);
+    this.events.get(event)!.push(callback);
     logger.debug('EventBus', `注册事件: ${event}`);
   }
 
-  off(event, callback) {
+  /**
+   * 注册一个只执行一次的事件监听器。
+   * @param {string} event - 事件名称。
+   * @param {Function} callback - 回调函数。
+   */
+  once(event: string, callback: Function) {
+    const onceCallback = (...args: any[]) => {
+      this.off(event, onceCallback); // 执行后立即移除自身
+      callback(...args);
+    };
+    this.on(event, onceCallback);
+    logger.debug('EventBus', `注册一次性事件: ${event}`);
+  }
+
+  off(event: string, callback: Function) {
     if (!this.events.has(event)) return;
     
-    const callbacks = this.events.get(event);
+    const callbacks = this.events.get(event)!;
     const index = callbacks.indexOf(callback);
     
     if (index !== -1) {
@@ -1030,15 +918,16 @@ class EventBus {
     }
   }
 
-  emit(event, ...args) {
+  emit(event: string, ...args: any[]) {
     if (!this.events.has(event)) return;
     
-    const callbacks = this.events.get(event);
+    // 创建回调数组的副本，以防回调函数内部修改原始数组（如在 once 中调用 off）
+    const callbacks = [...this.events.get(event)!];
     callbacks.forEach(callback => {
       try {
         callback(...args);
       } catch (err) {
-        logger.error('EventBus', `事件回调异常 [${event}]: ${err.message}`);
+        logger.error('EventBus', `事件回调异常 [${event}]: ${(err as Error).message}`);
       }
     });
   }
@@ -1052,13 +941,14 @@ class EventBus {
     return this.events.size;
   }
 
-  getListenerCount(event) {
-    return this.events.has(event) ? this.events.get(event).length : 0;
+  getListenerCount(event: string) {
+    return this.events.has(event) ? this.events.get(event)!.length : 0;
   }
 }
 
 const eventBus = new EventBus();
 export default eventBus;
+
 
 ```
 
@@ -1216,6 +1106,7 @@ class Application {
       sceneDirector.init({ eventBus });
 
       this._bindEvents();
+      this._handleResize();
       this._startRenderLoop();
 
       const defaultCSV = config.get('data.csvUrl');
@@ -1790,34 +1681,49 @@ export default animationSys;
 
 ```
 /**
- * @file audio-sys.js
- * @description 音频系统 - 背景音乐管理
+ * @file audio-sys.ts
+ * @description 音频系统 - 背景音乐管理与播放控制
+ * @🔧 修正: 修复了因未正确解析资源URL导致音频加载失败的问题。
+ * @🔧 修正: 规范化了模块导入，移除了.js后缀。
+ * @✨ 优化: 延迟创建AudioContext，直到用户首次交互，以符合浏览器策略。
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import config from '../config';
+import { resolveAssetUrl } from '../utils/url-resolver'; // ✅ 核心修正：导入URL解析工具
 
 class AudioSystem {
+  private eventBus: any;
+  private camera: THREE.Camera | null;
+  private listener: THREE.AudioListener | null;
+  private sound: THREE.Audio | null;
+  private audioLoader: THREE.AudioLoader;
+  private initialized: boolean;
+  
+  private isPlaying: boolean;
+  private volume: number;
+  private currentUrl: string | null;
+  private audioContext: AudioContext | null;
+  
+  private listenerCreated: boolean;
+
   constructor() {
     this.eventBus = null;
+    this.camera = null;
     this.listener = null;
     this.sound = null;
-    this.audioLoader = null;
+    this.audioLoader = new THREE.AudioLoader();
     this.initialized = false;
     
-    // 音频状态
     this.isPlaying = false;
     this.volume = 0.5;
     this.currentUrl = null;
     this.audioContext = null;
-    this.contextResumed = false;
     
-    // ✅ 延迟创建标记
     this.listenerCreated = false;
-    this.camera = null;
   }
 
-  async init({ eventBus, camera }) {
+  async init({ eventBus, camera }: { eventBus: any, camera: THREE.Camera }) {
     if (this.initialized) {
       logger.warn('AudioSystem', '音频系统已经初始化过了');
       return this;
@@ -1827,9 +1733,6 @@ class AudioSystem {
       this.eventBus = eventBus;
       this.camera = camera;
       
-      // ✅ 不在这里创建 AudioListener,等用户点击播放时再创建
-      this.audioLoader = new THREE.AudioLoader();
-      
       this._bindEvents();
       
       this.initialized = true;
@@ -1837,36 +1740,32 @@ class AudioSystem {
       
       return this;
     } catch (err) {
-      logger.error('AudioSystem', `初始化失败: ${err.message}`);
+      logger.error('AudioSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
-  // ✅ 首次播放时创建 AudioListener 和 AudioContext
   _ensureListenerCreated() {
-    if (this.listenerCreated) return;
+    if (this.listenerCreated || !this.camera) return;
     
     try {
-      // 创建音频监听器（绑定到相机）
       this.listener = new THREE.AudioListener();
       this.camera.add(this.listener);
       
-      // 获取 AudioContext 引用
       this.audioContext = this.listener.context;
-      
-      // 创建音频对象
       this.sound = new THREE.Audio(this.listener);
       
       this.listenerCreated = true;
       logger.info('AudioSystem', 'AudioListener 已创建');
     } catch (err) {
-      logger.error('AudioSystem', `创建 AudioListener 失败: ${err.message}`);
+      logger.error('AudioSystem', `创建 AudioListener 失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
   _bindEvents() {
     this.eventBus.on('audio-toggle', () => {
+      this._ensureListenerCreated(); // 确保在切换时已创建
       if (this.isPlaying) {
         this.pause();
       } else {
@@ -1874,11 +1773,11 @@ class AudioSystem {
       }
     });
 
-    this.eventBus.on('audio-load', (url) => {
+    this.eventBus.on('audio-load', (url: string) => {
       this.loadAudio(url);
     });
 
-    this.eventBus.on('audio-volume-changed', (volume) => {
+    this.eventBus.on('audio-volume-changed', (volume: number) => {
       this.setVolume(volume);
     });
 
@@ -1887,15 +1786,16 @@ class AudioSystem {
     });
   }
 
-   loadAudio(url) {
+  loadAudio(url: string) {
     if (!url) {
       logger.warn('AudioSystem', '音频 URL 为空');
       return;
     }
 
     this._ensureListenerCreated();
+    if (!this.sound) return;
 
-    // ✅ 2. 使用 resolveAssetUrl 包装路径
+    // ✅ 核心修正: 使用 resolveAssetUrl 包装路径
     const fetchUrl = resolveAssetUrl(url);
 
     logger.info('AudioSystem', `开始加载音频: ${fetchUrl}`);
@@ -1903,6 +1803,7 @@ class AudioSystem {
     this.audioLoader.load(
       fetchUrl,
       (buffer) => {
+        if (!this.sound) return;
         if (this.sound.isPlaying) {
           this.sound.stop();
         }
@@ -1912,15 +1813,12 @@ class AudioSystem {
         this.sound.setVolume(this.volume);
         this.currentUrl = url;
         
-        logger.info('AudioSystem', '音频加载成功');
+        logger.info('AudioSystem', '✅ 音频加载成功');
         this.eventBus.emit('audio-loaded', url);
       },
-      (xhr) => {
-        const progress = (xhr.loaded / xhr.total) * 100;
-        logger.debug('AudioSystem', `加载进度: ${progress.toFixed(1)}%`);
-      },
+      undefined,
       (error) => {
-        logger.error('AudioSystem', `加载失败: ${error.message}`);
+        logger.error('AudioSystem', `加载失败: ${error.message || '未知错误'}`);
         this.eventBus.emit('audio-load-error', error);
       }
     );
@@ -1928,18 +1826,16 @@ class AudioSystem {
 
   async play() {
     if (!this.sound || !this.sound.buffer) {
-      logger.warn('AudioSystem', '没有加载音频');
+      logger.warn('AudioSystem', '没有加载音频，无法播放');
       return;
     }
 
-    // ✅ 确保 AudioContext 已恢复
     if (this.audioContext && this.audioContext.state === 'suspended') {
       try {
         await this.audioContext.resume();
-        this.contextResumed = true;
         logger.info('AudioSystem', 'AudioContext 已恢复');
       } catch (err) {
-        logger.error('AudioSystem', `恢复 AudioContext 失败: ${err.message}`);
+        logger.error('AudioSystem', `恢复 AudioContext 失败: ${(err as Error).message}`);
         return;
       }
     }
@@ -1970,7 +1866,7 @@ class AudioSystem {
     }
   }
 
-  setVolume(volume) {
+  setVolume(volume: number) {
     this.volume = THREE.MathUtils.clamp(volume, 0, 1);
     if (this.sound) {
       this.sound.setVolume(this.volume);
@@ -1978,26 +1874,15 @@ class AudioSystem {
     }
   }
 
-  getVolume() {
-    return this.volume;
-  }
-
-  isAudioPlaying() {
-    return this.isPlaying;
-  }
-
   dispose() {
-    if (this.sound) {
-      this.sound.stop();
-      if (this.sound.buffer) {
-        this.sound.buffer = null;
-      }
+    this.stop();
+
+    if (this.listener && this.camera) {
+      this.camera.remove(this.listener);
     }
 
-    if (this.listener && this.listener.parent) {
-      this.listener.parent.remove(this.listener);
-    }
-
+    this.sound = null;
+    this.listener = null;
     this.audioContext = null;
     this.listenerCreated = false;
     this.initialized = false;
@@ -2756,9 +2641,9 @@ class EnvironmentSystem {
     // ✅ 2. 使用 resolveAssetUrl 包装基础路径
     const basePath = resolveAssetUrl(skyboxConfig.path);
     const urls = [
-      basePath + 'px.png', basePath + 'nx.png',
-      basePath + 'py.png', basePath + 'ny.png',
-      basePath + 'pz.png', basePath + 'nz.png'
+      basePath + 'px.png', basePath + 'nx.png', // 右, 左
+      basePath + 'py.png', basePath + 'ny.png', // 上, 下
+      basePath + 'nz.png', basePath + 'pz.png'  // 前, 后
     ];
 
     logger.debug('EnvironmentSystem', `正在加载天空盒: ${basePath}`);
@@ -3835,9 +3720,19 @@ export default pathSys;
 ```
 /**
  * @file postprocess-sys.ts
- * @description 后处理系统 -全面采用 "postprocessing" 库，不允许使用自制shader。
- * @version 2.1
+ * @description 后处理系统
+ * @version 8.0 (Refactor)
+ * @✨ 重构: 将所有效果合并到一个EffectPass中，提升性能与稳定性。
+ * @✨ 重构: 优化了相机更新逻辑，避免销毁和重建composer。
+ * @🔧 修正: 保留并稳定了基于TextureEffect的扫描线实现。
+ * @🔧 清理: 移除了过时的注释和逻辑。
  */
+
+// 1.只使用postprocessing库中的效果，不允许使用自制shader，这条注释不允许删除！
+// 2.禁止添加不稳定的 DotScreenEffect 和 HueSaturationEffect，这条注释不允许删除！
+// 3.postprocessing库没有原生的扫描线组件！这条注释不允许删除！
+
+
 import * as THREE from 'three';
 import {
   EffectComposer,
@@ -3846,15 +3741,12 @@ import {
   SelectiveBloomEffect,
   BokehEffect,
   ChromaticAberrationEffect,
-  DotScreenEffect,
   TextureEffect,
-  HueSaturationEffect,
   BrightnessContrastEffect,
   Selection,
   BlendFunction,
   NoiseEffect
 } from 'postprocessing';
-// FilmEffect 在当前 postprocessing 版本无命名导出，改用 NoiseEffect 模拟胶片颗粒
 import logger from '../utils/logger';
 import config from '../config';
 import eventBus from '../event-bus';
@@ -3866,17 +3758,14 @@ class PostprocessSystem {
   private initialized = false;
 
   private composer: EffectComposer | null = null;
-  private selection: Selection; // 用于选择性辉光
+  private selection: Selection;
 
-  // 所有效果
   private bloomEffect: SelectiveBloomEffect | null = null;
   private bokehEffect: BokehEffect | null = null;
   private chromaticAberrationEffect: ChromaticAberrationEffect | null = null;
-  private dotScreenEffect: DotScreenEffect | null = null;
   private filmEffect: NoiseEffect | null = null;
   private scanlineEffect: TextureEffect | null = null;
-  private scanlineTexture: THREE.Texture | null = null;
-  private hueSaturationEffect: HueSaturationEffect | null = null;
+  private scanlineTexture: THREE.DataTexture | null = null;
   private brightnessContrastEffect: BrightnessContrastEffect | null = null;
 
   constructor() {
@@ -3896,10 +3785,10 @@ class PostprocessSystem {
       
       this._createComposer();
       this._bindEvents();
-      this.updateAllEffectsFromConfig(); // 初始加载配置
+      this.updateAllEffectsFromConfig();
 
       this.initialized = true;
-      logger.info('PostprocessSystem', '✅ 后处理系统初始化完成 (v2.1, postprocessing库)');
+      logger.info('PostprocessSystem', '✅ 后处理系统初始化完成 (v8.1 Fix)');
       return this;
     } catch (err) {
       logger.error('PostprocessSystem', `初始化失败: ${(err as Error).message}`);
@@ -3907,49 +3796,50 @@ class PostprocessSystem {
     }
   }
 
-  // [API不变] 外部系统通过此方法注册辉光对象
   addGlowObject(object: THREE.Object3D) {
     this.selection.add(object);
-    logger.debug('PostprocessSystem', `对象 "${object.name}" 已添加到光晕选择集`);
   }
 
-  // [API不变] 外部系统通过此方法移除辉光对象
   removeGlowObject(object: THREE.Object3D) {
     this.selection.delete(object);
-    logger.debug('PostprocessSystem', `对象 "${object.name}" 已从光晕选择集移除`);
   }
 
   private _createComposer() {
     if (!this.renderer || !this.mainScene || !this.camera) return;
 
     this.composer = new EffectComposer(this.renderer, {
-      frameBufferType: THREE.HalfFloatType
+      frameBufferType: THREE.UnsignedByteType
     });
+    
+    this.composer.setSize(window.innerWidth, window.innerHeight);
 
-    // 1. 基础渲染通道
+    // 1. 基础渲染通道，必须是第一个
     const renderPass = new RenderPass(this.mainScene, this.camera);
     this.composer.addPass(renderPass);
 
-    // 2. 创建所有效果
+    // 2. 创建所有效果实例
     this._createAllEffects();
     
-    // 3. 将每个效果放入独立的 EffectPass，避免卷积合并冲突
-    const camera = this.camera as THREE.Camera;
-    const addEffect = (effect: any) => {
-      if (effect) {
-        const pass = new EffectPass(camera, effect);
-        this.composer!.addPass(pass);
-      }
-    };
+    // ✅ 核心修正：将冲突的效果分离到不同的 EffectPass 中，无冲突的合并
+    if (this.bloomEffect) {
+        this.composer.addPass(new EffectPass(this.camera, this.bloomEffect));
+    }
+    if (this.bokehEffect) {
+        this.composer.addPass(new EffectPass(this.camera, this.bokehEffect));
+    }
+    
+    // 将剩余的、无冲突的效果合并到一个 Pass 中以优化性能
+    const remainingEffects = [
+        this.chromaticAberrationEffect, // 色差与后面的效果无冲突
+        this.filmEffect,
+        this.scanlineEffect,
+        this.brightnessContrastEffect
+    ].filter(Boolean); // 过滤掉可能为null的效果
 
-    addEffect(this.bloomEffect);
-    addEffect(this.bokehEffect);
-    addEffect(this.chromaticAberrationEffect);
-    addEffect(this.dotScreenEffect);
-    addEffect(this.filmEffect);
-    addEffect(this.scanlineEffect);
-    addEffect(this.hueSaturationEffect);
-    addEffect(this.brightnessContrastEffect);
+    if (remainingEffects.length > 0) {
+        const finalPass = new EffectPass(this.camera as THREE.Camera, ...remainingEffects);
+        this.composer!.addPass(finalPass);
+    }
   }
   
   private _createAllEffects() {
@@ -3959,56 +3849,56 @@ class PostprocessSystem {
       mipmapBlur: true,
     } as any);
     
-    this.bokehEffect = new BokehEffect();
+    this.bokehEffect = new BokehEffect({
+        focus: 40.0,
+        dof: 0.02,
+        aperture: 0.025,
+        maxBlur: 0.01
+    });
+
     this.chromaticAberrationEffect = new ChromaticAberrationEffect();
-    this.dotScreenEffect = new DotScreenEffect({ blendFunction: BlendFunction.OVERLAY });
-    this.filmEffect = new NoiseEffect({ blendFunction: BlendFunction.SOFT_LIGHT }); // 用噪点效果模拟 Film 效果
-    this._createScanlineEffect();
-    this.hueSaturationEffect = new HueSaturationEffect();
+    this.filmEffect = new NoiseEffect({ blendFunction: BlendFunction.SOFT_LIGHT });
     this.brightnessContrastEffect = new BrightnessContrastEffect();
+    
+    this._createScanlineEffect();
   }
 
   private _createScanlineEffect() {
-    const data = new Uint8Array([
-      255, 255, 255, 255,
-      0, 0, 0, 255
-    ]);
+    // 创建一个 1x2 像素的纹理，上半部分白色，下半部分黑色
+    const data = new Uint8Array([ 255, 255, 255, 255, 0, 0, 0, 255 ]);
     const texture = new THREE.DataTexture(data, 1, 2, THREE.RGBAFormat);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.needsUpdate = true;
     this.scanlineTexture = texture;
 
-    const effect = new TextureEffect({
-      blendFunction: BlendFunction.SOFT_LIGHT,
+    this.scanlineEffect = new TextureEffect({
+      blendFunction: BlendFunction.OVERLAY,
       texture
     });
-    const filmCfg = (config.get('postprocess.film') || {}) as any;
-    if (filmCfg) {
-      effect.blendMode.opacity.value = filmCfg.scanlineIntensity ?? 0.3;
-      texture.repeat.set(1, Math.max(1, Math.floor((filmCfg.scanlineCount ?? 2048) / 2)));
-    }
-    this.scanlineEffect = effect;
   }
 
   render(delta: number) {
-    if (!this.composer) return;
+    if (!this.composer || !this.mainScene || !this.camera) return;
 
     if (config.get('postprocess.enabled')) {
       this.composer.render(delta);
-    } else if (this.mainScene && this.camera) {
+    } else {
       this.renderer?.render(this.mainScene, this.camera);
     }
   }
 
   private _bindEvents() {
     eventBus.on('config-changed', this._handleConfigChange.bind(this));
+    
     eventBus.on('camera-changed', (camera: THREE.Camera) => {
         this.camera = camera;
         if (this.composer) {
-            this.composer.dispose();
-            this.composer = null;
-            this._createComposer();
+            this.composer.passes.forEach(pass => {
+                if (pass instanceof EffectPass) pass.mainCamera = camera;
+                if (pass instanceof RenderPass) pass.camera = camera;
+            });
+            logger.info('PostprocessSystem', '相机已更新');
         }
     });
   }
@@ -4023,82 +3913,79 @@ class PostprocessSystem {
     if (parts.length < 2) return;
     const effectName = parts[1];
     const cfg = config.get(`postprocess.${effectName}`);
-
-    // 通用启用/禁用逻辑
-    const setEnabled = (effect: any, isEnabled: boolean) => {
-        if (effect) {
-            effect.blendMode.opacity.value = isEnabled ? 1.0 : 0.0;
-        }
-    };
+    if (!cfg) return;
 
     switch (effectName) {
       case 'bloom':
         if (this.bloomEffect) {
-          (this.bloomEffect as any).intensity = cfg.intensity;
-          (this.bloomEffect as any).luminanceMaterial.threshold = cfg.luminanceThreshold;
-          (this.bloomEffect as any).luminanceMaterial.smoothing = cfg.luminanceSmoothing;
-          setEnabled(this.bloomEffect, cfg.enabled);
+          this.bloomEffect.intensity = cfg.intensity;
+          this.bloomEffect.luminanceMaterial.threshold = cfg.luminanceThreshold;
+          this.bloomEffect.luminanceMaterial.smoothing = cfg.luminanceSmoothing;
+          this.bloomEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
         }
         break;
+
       case 'bokeh':
         if (this.bokehEffect) {
-            // 当前 postprocessing 版本 BokehEffect 无公开 uniforms 接口，避免直接访问
-            setEnabled(this.bokehEffect, cfg.enabled);
+          this.bokehEffect.uniforms.get('focus')!.value = cfg.focus;
+          this.bokehEffect.uniforms.get('dof')!.value = cfg.dof;
+          this.bokehEffect.uniforms.get('aperture')!.value = cfg.aperture;
+          this.bokehEffect.uniforms.get('maxBlur')!.value = cfg.maxBlur;
+          this.bokehEffect.blendMode.blendFunction = cfg.enabled ? BlendFunction.NORMAL : BlendFunction.SKIP;
         }
         break;
+        
       case 'chromaticAberration':
         if (this.chromaticAberrationEffect) {
-            this.chromaticAberrationEffect.offset.set(cfg.offset.x, cfg.offset.y);
-            setEnabled(this.chromaticAberrationEffect, cfg.enabled);
+            const offsetX = cfg.offset?.x ?? 0.0;
+            const offsetY = cfg.offset?.y ?? 0.0;
+            this.chromaticAberrationEffect.offset.set(offsetX, offsetY);
+            this.chromaticAberrationEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
         }
         break;
-      case 'dotScreen':
-        if (this.dotScreenEffect) {
-            this.dotScreenEffect.uniforms.get('angle')!.value = cfg.angle;
-            this.dotScreenEffect.uniforms.get('scale')!.value = cfg.scale;
-            setEnabled(this.dotScreenEffect, cfg.enabled);
-        }
-        break;
+        
       case 'film':
+        const filmEnabled = cfg.enabled;
         if (this.filmEffect) {
-            setEnabled(this.filmEffect, cfg.enabled);
+            this.filmEffect.blendMode.opacity.value = filmEnabled ? cfg.noiseIntensity : 0.0;
         }
         if (this.scanlineEffect && this.scanlineTexture) {
-            this.scanlineEffect.blendMode.opacity.value = cfg.scanlineIntensity ?? 0.3;
-            this.scanlineTexture.repeat.set(1, Math.max(1, Math.floor((cfg.scanlineCount ?? 2048) / 2)));
+            this.scanlineEffect.blendMode.opacity.value = filmEnabled ? cfg.scanlineIntensity : 0.0;
+            this.scanlineTexture.repeat.y = Math.max(1, Math.floor(cfg.scanlineCount / 2));
+            this.scanlineTexture.needsUpdate = true;
         }
         break;
-      case 'hueSaturation':
-          if (this.hueSaturationEffect) {
-              this.hueSaturationEffect.uniforms.get('hue')!.value = cfg.hue;
-              this.hueSaturationEffect.uniforms.get('saturation')!.value = cfg.saturation;
-              setEnabled(this.hueSaturationEffect, cfg.enabled);
-          }
-          break;
+          
       case 'brightnessContrast':
           if (this.brightnessContrastEffect) {
               this.brightnessContrastEffect.uniforms.get('brightness')!.value = cfg.brightness;
               this.brightnessContrastEffect.uniforms.get('contrast')!.value = cfg.contrast;
-              setEnabled(this.brightnessContrastEffect, cfg.enabled);
+              this.brightnessContrastEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
           }
           break;
     }
   }
   
   updateAllEffectsFromConfig() {
-    const allKeys = Object.keys(config.get('postprocess'));
-    allKeys.forEach(key => this.updateEffectFromConfig(`postprocess.${key}`));
+    const postprocessConfig = config.get('postprocess');
+    if (postprocessConfig) {
+        Object.keys(postprocessConfig).forEach(key => {
+            if (key !== 'enabled') {
+                this.updateEffectFromConfig(`postprocess.${key}`);
+            }
+        });
+    }
   }
 
   handleResize() {
     this.composer?.setSize(window.innerWidth, window.innerHeight);
-    logger.debugThrottled('PostprocessSystem', 'postprocess-resize', '后处理已调整大小 (v2.1)', 1000);
+    this.updateEffectFromConfig('postprocess.film');
   }
 
   dispose() {
     this.composer?.dispose();
+    this.scanlineTexture?.dispose();
     this.initialized = false;
-    logger.info('PostprocessSystem', '后处理系统已销毁 (v2.1)');
   }
 }
 
@@ -5119,9 +5006,11 @@ export default uiCoordinates;
 
 ```
 /**
- * @file ui-post.js
+ * @file ui-post.ts
  * @description 后期处理控制面板
- * ✅ [重构 v2.1] 更新UI以匹配新的 'film' 效果, 移除旧的 noise 和 scanline。
+ * @✨ 新增: 添加了景深(Bokeh)和色差(Chromatic Aberration)效果的UI控件。
+ * @✨ 重构: 使用辅助函数简化了控件创建流程，提高了代码可读性和可维护性。
+ * @🔧 清理: 移除了过时和重复的UI创建代码。
  */
 import eventBus from '../event-bus'; 
 import config from '../config';
@@ -5162,74 +5051,61 @@ class UIPost {
     const uiRegistry = (await import('./ui-registry.js')).default;
     uiRegistry.register('ui-post', this);
 
-    logger.info('UIPost', '后期处理 UI 已初始化 (v2.1)');
+    logger.info('UIPost', '后期处理 UI 已初始化');
   }
 
   _createPostProcessingControls() {
     // 全局开关
-    const globalEnable = this._pane.addBinding(this.configData.postprocess, 'enabled', { label: '启用后期处理' });
-    globalEnable.on('change', (ev) => config.set('postprocess.enabled', ev.value));
-    this.controls.set('postprocess.enabled', globalEnable);
+    this.addBinding(this._pane, 'postprocess.enabled', { label: '启用后期处理' });
 
     // ---------- 辉光 (Bloom) ----------
     const bloomFolder = this._pane.addFolder({ title: '光晕 (Bloom)', expanded: true });
-    const bloomEnabled = bloomFolder.addBinding(this.configData.postprocess.bloom, 'enabled', { label: '启用' });
-    bloomEnabled.on('change', (ev) => config.set('postprocess.bloom.enabled', ev.value));
-    this.controls.set('postprocess.bloom.enabled', bloomEnabled);
+    this.addBinding(bloomFolder, 'postprocess.bloom.enabled', { label: '启用' });
+    this.addBinding(bloomFolder, 'postprocess.bloom.intensity', { label: '强度', min: 0, max: 5, step: 0.05 });
+    this.addBinding(bloomFolder, 'postprocess.bloom.luminanceThreshold', { label: '亮度阈值', min: 0, max: 1, step: 0.01 });
 
-    const bloomIntensity = bloomFolder.addBinding(this.configData.postprocess.bloom, 'intensity', { label: '强度', min: 0, max: 3, step: 0.05 });
-    bloomIntensity.on('change', (ev) => config.set('postprocess.bloom.intensity', ev.value));
-    this.controls.set('postprocess.bloom.intensity', bloomIntensity);
+    // ---------- 景深 (Bokeh) - 新增 ----------
+    const bokehFolder = this._pane.addFolder({ title: '景深 (Bokeh)', expanded: false });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.enabled', { label: '启用' });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.focus', { label: '焦距', min: 0, max: 100, step: 0.1 });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.dof', { label: '景深范围', min: 0, max: 0.1, step: 0.001 });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.aperture', { label: '光圈', min: 0, max: 0.1, step: 0.001 });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.maxBlur', { label: '最大模糊', min: 0, max: 0.05, step: 0.001 });
 
-    const bloomThreshold = bloomFolder.addBinding(this.configData.postprocess.bloom, 'luminanceThreshold', { label: '亮度阈值', min: 0, max: 1, step: 0.01 });
-    bloomThreshold.on('change', (ev) => config.set('postprocess.bloom.luminanceThreshold', ev.value));
-    this.controls.set('postprocess.bloom.luminanceThreshold', bloomThreshold);
+    // ---------- 色差 (Chromatic Aberration) - 新增 ----------
+    const caFolder = this._pane.addFolder({ title: '色差 (Chromatic Aberration)', expanded: false });
+    this.addBinding(caFolder, 'postprocess.chromaticAberration.enabled', { label: '启用' });
+    this.addBinding(caFolder, 'postprocess.chromaticAberration.offset.x', { label: '偏移量 X', min: -0.01, max: 0.01, step: 0.0001 });
+    this.addBinding(caFolder, 'postprocess.chromaticAberration.offset.y', { label: '偏移量 Y', min: -0.01, max: 0.01, step: 0.0001 });
 
     // ---------- 胶片效果 (Film) ----------
     const filmFolder = this._pane.addFolder({ title: '胶片效果 (Film)', expanded: false });
-    const filmEnabled = filmFolder.addBinding(this.configData.postprocess.film, 'enabled', { label: '启用' });
-    filmEnabled.on('change', (ev) => config.set('postprocess.film.enabled', ev.value));
-    this.controls.set('postprocess.film.enabled', filmEnabled);
-
-    const noiseIntensity = filmFolder.addBinding(this.configData.postprocess.film, 'noiseIntensity', { label: '噪点强度', min: 0, max: 1, step: 0.01 });
-    noiseIntensity.on('change', (ev) => config.set('postprocess.film.noiseIntensity', ev.value));
-    this.controls.set('postprocess.film.noiseIntensity', noiseIntensity);
-
-    const scanlineIntensity = filmFolder.addBinding(this.configData.postprocess.film, 'scanlineIntensity', { label: '扫描线强度', min: 0, max: 1, step: 0.01 });
-    scanlineIntensity.on('change', (ev) => config.set('postprocess.film.scanlineIntensity', ev.value));
-    this.controls.set('postprocess.film.scanlineIntensity', scanlineIntensity);
-    
-    const scanlineCount = filmFolder.addBinding(this.configData.postprocess.film, 'scanlineCount', { label: '扫描线数量', min: 0, max: 4096, step: 64 });
-    scanlineCount.on('change', (ev) => config.set('postprocess.film.scanlineCount', ev.value));
-    this.controls.set('postprocess.film.scanlineCount', scanlineCount);
-
-    // ---------- 色相/饱和度 ----------
-    const hsFolder = this._pane.addFolder({ title: '色相/饱和度', expanded: false });
-    const hsEnabled = hsFolder.addBinding(this.configData.postprocess.hueSaturation, 'enabled', { label: '启用' });
-    hsEnabled.on('change', (ev) => config.set('postprocess.hueSaturation.enabled', ev.value));
-    this.controls.set('postprocess.hueSaturation.enabled', hsEnabled);
-
-    const hue = hsFolder.addBinding(this.configData.postprocess.hueSaturation, 'hue', { label: '色相', min: -1, max: 1, step: 0.01 });
-    hue.on('change', (ev) => config.set('postprocess.hueSaturation.hue', ev.value));
-    this.controls.set('postprocess.hueSaturation.hue', hue);
-
-    const saturation = hsFolder.addBinding(this.configData.postprocess.hueSaturation, 'saturation', { label: '饱和度', min: -1, max: 1, step: 0.01 });
-    saturation.on('change', (ev) => config.set('postprocess.hueSaturation.saturation', ev.value));
-    this.controls.set('postprocess.hueSaturation.saturation', saturation);
+    this.addBinding(filmFolder, 'postprocess.film.enabled', { label: '启用' });
+    this.addBinding(filmFolder, 'postprocess.film.noiseIntensity', { label: '噪点强度', min: 0, max: 1, step: 0.01 });
+    this.addBinding(filmFolder, 'postprocess.film.scanlineIntensity', { label: '扫描线强度', min: 0, max: 1, step: 0.01 });
+    this.addBinding(filmFolder, 'postprocess.film.scanlineCount', { label: '扫描线数量', min: 0, max: 4096, step: 64 });
 
     // ---------- 亮度/对比度 ----------
     const bcFolder = this._pane.addFolder({ title: '亮度/对比度', expanded: false });
-    const bcEnabled = bcFolder.addBinding(this.configData.postprocess.brightnessContrast, 'enabled', { label: '启用' });
-    bcEnabled.on('change', (ev) => config.set('postprocess.brightnessContrast.enabled', ev.value));
-    this.controls.set('postprocess.brightnessContrast.enabled', bcEnabled);
+    this.addBinding(bcFolder, 'postprocess.brightnessContrast.enabled', { label: '启用' });
+    this.addBinding(bcFolder, 'postprocess.brightnessContrast.brightness', { label: '亮度', min: -1, max: 1, step: 0.01 });
+    this.addBinding(bcFolder, 'postprocess.brightnessContrast.contrast', { label: '对比度', min: -1, max: 1, step: 0.01 });
+  }
 
-    const brightness = bcFolder.addBinding(this.configData.postprocess.brightnessContrast, 'brightness', { label: '亮度', min: -1, max: 1, step: 0.01 });
-    brightness.on('change', (ev) => config.set('postprocess.brightnessContrast.brightness', ev.value));
-    this.controls.set('postprocess.brightnessContrast.brightness', brightness);
+  /**
+   * 辅助函数，用于创建绑定、设置事件监听并注册控件，极大简化代码。
+   */
+  private addBinding(folder: any, key: string, options: any) {
+    const pathParts = key.split('.');
+    let target = this.configData;
+    for (let i = 0; i < pathParts.length - 1; i++) {
+        target = target[pathParts[i]];
+    }
+    const property = pathParts[pathParts.length - 1];
 
-    const contrast = bcFolder.addBinding(this.configData.postprocess.brightnessContrast, 'contrast', { label: '对比度', min: -1, max: 1, step: 0.01 });
-    contrast.on('change', (ev) => config.set('postprocess.brightnessContrast.contrast', ev.value));
-    this.controls.set('postprocess.brightnessContrast.contrast', contrast);
+    const control = folder.addBinding(target, property, options);
+    control.on('change', (ev: { value: any; }) => config.set(key, ev.value));
+    this.controls.set(key, control);
   }
 
   _bindEvents() {
@@ -5255,12 +5131,7 @@ class UIPost {
     eventBus.on('preset-loaded', () => this.refresh());
   }
 
-  updateBindings() {
-    logger.debug('UIPost', '绑定检查完成（无临时对象）');
-  }
-
   refresh() {
-    this.updateBindings();
     this.controls.forEach((control) => {
       if (control && typeof control.refresh === 'function') {
         control.refresh();

@@ -51,9 +51,9 @@ class EnvironmentSystem {
     // ✅ 2. 使用 resolveAssetUrl 包装基础路径
     const basePath = resolveAssetUrl(skyboxConfig.path);
     const urls = [
-      basePath + 'px.png', basePath + 'nx.png',
-      basePath + 'py.png', basePath + 'ny.png',
-      basePath + 'pz.png', basePath + 'nz.png'
+      basePath + 'px.png', basePath + 'nx.png', // 右, 左
+      basePath + 'py.png', basePath + 'ny.png', // 上, 下
+      basePath + 'nz.png', basePath + 'pz.png'  // 前, 后
     ];
 
     logger.debug('EnvironmentSystem', `正在加载天空盒: ${basePath}`);

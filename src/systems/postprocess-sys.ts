@@ -1,11 +1,18 @@
 /**
  * @file postprocess-sys.ts
- * @description 后处理系统 - 全面采用 "postprocessing" 库
- * @version 2.2
- * @🔧 修正: 彻底修复了因 BokehEffect 未配置导致的 WebGL uniform2fv 渲染崩溃问题。
- * @✨ 完善: 实现了 Bokeh (景深) 和 Film (噪点强度) 效果的参数更新逻辑。
- * @♻️ 重构: 简化了效果启用/禁用的逻辑，直接在各自的更新代码块中处理。
+ * @description 后处理系统
+ * @version 8.0 (Refactor)
+ * @✨ 重构: 将所有效果合并到一个EffectPass中，提升性能与稳定性。
+ * @✨ 重构: 优化了相机更新逻辑，避免销毁和重建composer。
+ * @🔧 修正: 保留并稳定了基于TextureEffect的扫描线实现。
+ * @🔧 清理: 移除了过时的注释和逻辑。
  */
+
+// 1.只使用postprocessing库中的效果，不允许使用自制shader，这条注释不允许删除！
+// 2.禁止添加不稳定的 DotScreenEffect 和 HueSaturationEffect，这条注释不允许删除！
+// 3.postprocessing库没有原生的扫描线组件！这条注释不允许删除！
+
+
 import * as THREE from 'three';
 import {
   EffectComposer,
@@ -14,9 +21,7 @@ import {
   SelectiveBloomEffect,
   BokehEffect,
   ChromaticAberrationEffect,
-  DotScreenEffect,
   TextureEffect,
-  HueSaturationEffect,
   BrightnessContrastEffect,
   Selection,
   BlendFunction,
@@ -33,17 +38,14 @@ class PostprocessSystem {
   private initialized = false;
 
   private composer: EffectComposer | null = null;
-  private selection: Selection; // 用于选择性辉光
+  private selection: Selection;
 
-  // 所有效果
   private bloomEffect: SelectiveBloomEffect | null = null;
   private bokehEffect: BokehEffect | null = null;
   private chromaticAberrationEffect: ChromaticAberrationEffect | null = null;
-  private dotScreenEffect: DotScreenEffect | null = null;
-  private filmEffect: NoiseEffect | null = null; // 胶片颗粒效果
-  private scanlineEffect: TextureEffect | null = null; // 扫描线效果
+  private filmEffect: NoiseEffect | null = null;
+  private scanlineEffect: TextureEffect | null = null;
   private scanlineTexture: THREE.DataTexture | null = null;
-  private hueSaturationEffect: HueSaturationEffect | null = null;
   private brightnessContrastEffect: BrightnessContrastEffect | null = null;
 
   constructor() {
@@ -63,10 +65,10 @@ class PostprocessSystem {
       
       this._createComposer();
       this._bindEvents();
-      this.updateAllEffectsFromConfig(); // 初始加载配置
+      this.updateAllEffectsFromConfig();
 
       this.initialized = true;
-      logger.info('PostprocessSystem', '✅ 后处理系统初始化完成 (v2.2)');
+      logger.info('PostprocessSystem', '✅ 后处理系统初始化完成 (v8.1 Fix)');
       return this;
     } catch (err) {
       logger.error('PostprocessSystem', `初始化失败: ${(err as Error).message}`);
@@ -74,48 +76,50 @@ class PostprocessSystem {
     }
   }
 
-  // API: 外部系统通过此方法注册辉光对象
   addGlowObject(object: THREE.Object3D) {
     this.selection.add(object);
-    logger.debug('PostprocessSystem', `对象 "${object.name}" 已添加到光晕选择集`);
   }
 
-  // API: 外部系统通过此方法移除辉光对象
   removeGlowObject(object: THREE.Object3D) {
     this.selection.delete(object);
-    logger.debug('PostprocessSystem', `对象 "${object.name}" 已从光晕选择集移除`);
   }
 
   private _createComposer() {
     if (!this.renderer || !this.mainScene || !this.camera) return;
 
     this.composer = new EffectComposer(this.renderer, {
-      frameBufferType: THREE.HalfFloatType
+      frameBufferType: THREE.UnsignedByteType
     });
+    
+    this.composer.setSize(window.innerWidth, window.innerHeight);
 
-    // 1. 基础渲染通道
+    // 1. 基础渲染通道，必须是第一个
     const renderPass = new RenderPass(this.mainScene, this.camera);
     this.composer.addPass(renderPass);
 
     // 2. 创建所有效果实例
     this._createAllEffects();
     
-    // 3. 将每个效果放入独立的 EffectPass，避免合并冲突
-    const addEffectPass = (effect: any) => {
-      if (effect) {
-        const pass = new EffectPass(this.camera as THREE.Camera, effect);
-        this.composer!.addPass(pass);
-      }
-    };
+    // ✅ 核心修正：将冲突的效果分离到不同的 EffectPass 中，无冲突的合并
+    if (this.bloomEffect) {
+        this.composer.addPass(new EffectPass(this.camera, this.bloomEffect));
+    }
+    if (this.bokehEffect) {
+        this.composer.addPass(new EffectPass(this.camera, this.bokehEffect));
+    }
+    
+    // 将剩余的、无冲突的效果合并到一个 Pass 中以优化性能
+    const remainingEffects = [
+        this.chromaticAberrationEffect, // 色差与后面的效果无冲突
+        this.filmEffect,
+        this.scanlineEffect,
+        this.brightnessContrastEffect
+    ].filter(Boolean); // 过滤掉可能为null的效果
 
-    addEffectPass(this.bloomEffect);
-    addEffectPass(this.bokehEffect);
-    addEffectPass(this.chromaticAberrationEffect);
-    addEffectPass(this.dotScreenEffect);
-    addEffectPass(this.filmEffect);
-    addEffectPass(this.scanlineEffect);
-    addEffectPass(this.hueSaturationEffect);
-    addEffectPass(this.brightnessContrastEffect);
+    if (remainingEffects.length > 0) {
+        const finalPass = new EffectPass(this.camera as THREE.Camera, ...remainingEffects);
+        this.composer!.addPass(finalPass);
+    }
   }
   
   private _createAllEffects() {
@@ -131,18 +135,17 @@ class PostprocessSystem {
         aperture: 0.025,
         maxBlur: 0.01
     });
+
     this.chromaticAberrationEffect = new ChromaticAberrationEffect();
-    this.dotScreenEffect = new DotScreenEffect({ blendFunction: BlendFunction.OVERLAY });
     this.filmEffect = new NoiseEffect({ blendFunction: BlendFunction.SOFT_LIGHT });
-    this.hueSaturationEffect = new HueSaturationEffect();
     this.brightnessContrastEffect = new BrightnessContrastEffect();
     
-    // Scanline 是一个特殊处理
     this._createScanlineEffect();
   }
 
   private _createScanlineEffect() {
-    const data = new Uint8Array([ 255, 255, 255, 255, 0, 0, 0, 255 ]); // 1x2 像素，上白下黑
+    // 创建一个 1x2 像素的纹理，上半部分白色，下半部分黑色
+    const data = new Uint8Array([ 255, 255, 255, 255, 0, 0, 0, 255 ]);
     const texture = new THREE.DataTexture(data, 1, 2, THREE.RGBAFormat);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
@@ -150,7 +153,7 @@ class PostprocessSystem {
     this.scanlineTexture = texture;
 
     this.scanlineEffect = new TextureEffect({
-      blendFunction: BlendFunction.SOFT_LIGHT,
+      blendFunction: BlendFunction.OVERLAY,
       texture
     });
   }
@@ -167,14 +170,15 @@ class PostprocessSystem {
 
   private _bindEvents() {
     eventBus.on('config-changed', this._handleConfigChange.bind(this));
+    
     eventBus.on('camera-changed', (camera: THREE.Camera) => {
         this.camera = camera;
         if (this.composer) {
-            // 当相机切换时，需要重建 composer 和所有 Pass
-            this.composer.dispose();
-            this.composer = null;
-            this._createComposer();
-            this.updateAllEffectsFromConfig();
+            this.composer.passes.forEach(pass => {
+                if (pass instanceof EffectPass) pass.mainCamera = camera;
+                if (pass instanceof RenderPass) pass.camera = camera;
+            });
+            logger.info('PostprocessSystem', '相机已更新');
         }
     });
   }
@@ -201,54 +205,36 @@ class PostprocessSystem {
         }
         break;
 
-      // ✅ [核心修复] 实现了景深效果的参数更新
       case 'bokeh':
         if (this.bokehEffect) {
-          this.bokehEffect.focus = cfg.focus;
-          this.bokehEffect.dof = cfg.dof;
-          this.bokehEffect.aperture = cfg.aperture;
-          this.bokehEffect.maxBlur = cfg.maxBlur;
-          // 景深效果的启用/禁用是通过将其混合函数设为 SKIP 来实现的，这样可以完全跳过其计算
+          this.bokehEffect.uniforms.get('focus')!.value = cfg.focus;
+          this.bokehEffect.uniforms.get('dof')!.value = cfg.dof;
+          this.bokehEffect.uniforms.get('aperture')!.value = cfg.aperture;
+          this.bokehEffect.uniforms.get('maxBlur')!.value = cfg.maxBlur;
           this.bokehEffect.blendMode.blendFunction = cfg.enabled ? BlendFunction.NORMAL : BlendFunction.SKIP;
         }
         break;
         
       case 'chromaticAberration':
         if (this.chromaticAberrationEffect) {
-            this.chromaticAberrationEffect.offset.set(cfg.offset.x, cfg.offset.y);
+            const offsetX = cfg.offset?.x ?? 0.0;
+            const offsetY = cfg.offset?.y ?? 0.0;
+            this.chromaticAberrationEffect.offset.set(offsetX, offsetY);
             this.chromaticAberrationEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
         }
         break;
         
-      case 'dotScreen':
-        if (this.dotScreenEffect) {
-            this.dotScreenEffect.uniforms.get('angle')!.value = cfg.angle;
-            this.dotScreenEffect.uniforms.get('scale')!.value = cfg.scale;
-            this.dotScreenEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
-        }
-        break;
-
-      // ✅ [功能完善] 实现了噪点和扫描线的独立控制
       case 'film':
         const filmEnabled = cfg.enabled;
-        if (this.filmEffect) { // Noise
+        if (this.filmEffect) {
             this.filmEffect.blendMode.opacity.value = filmEnabled ? cfg.noiseIntensity : 0.0;
         }
-        if (this.scanlineEffect && this.scanlineTexture) { // Scanline
+        if (this.scanlineEffect && this.scanlineTexture) {
             this.scanlineEffect.blendMode.opacity.value = filmEnabled ? cfg.scanlineIntensity : 0.0;
-            const screenHeight = this.renderer?.getDrawingBufferSize(new THREE.Vector2()).height ?? 1080;
-            // 根据屏幕高度和配置的 scanlineCount 动态调整纹理重复次数
             this.scanlineTexture.repeat.y = Math.max(1, Math.floor(cfg.scanlineCount / 2));
+            this.scanlineTexture.needsUpdate = true;
         }
         break;
-        
-      case 'hueSaturation':
-          if (this.hueSaturationEffect) {
-              this.hueSaturationEffect.uniforms.get('hue')!.value = cfg.hue;
-              this.hueSaturationEffect.uniforms.get('saturation')!.value = cfg.saturation;
-              this.hueSaturationEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
-          }
-          break;
           
       case 'brightnessContrast':
           if (this.brightnessContrastEffect) {
@@ -264,23 +250,22 @@ class PostprocessSystem {
     const postprocessConfig = config.get('postprocess');
     if (postprocessConfig) {
         Object.keys(postprocessConfig).forEach(key => {
-            this.updateEffectFromConfig(`postprocess.${key}`);
+            if (key !== 'enabled') {
+                this.updateEffectFromConfig(`postprocess.${key}`);
+            }
         });
     }
   }
 
   handleResize() {
     this.composer?.setSize(window.innerWidth, window.innerHeight);
-    // 更新扫描线数量以适应新的分辨率
     this.updateEffectFromConfig('postprocess.film');
-    logger.debugThrottled('PostprocessSystem', 'postprocess-resize', '后处理已调整大小', 1000);
   }
 
   dispose() {
     this.composer?.dispose();
     this.scanlineTexture?.dispose();
     this.initialized = false;
-    logger.info('PostprocessSystem', '后处理系统已销毁');
   }
 }
 

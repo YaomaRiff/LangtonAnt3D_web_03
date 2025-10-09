@@ -1,7 +1,9 @@
 /**
- * @file ui-post.js
+ * @file ui-post.ts
  * @description 后期处理控制面板
- * ✅ [重构 v2.1] 更新UI以匹配新的 'film' 效果, 移除旧的 noise 和 scanline。
+ * @✨ 新增: 添加了景深(Bokeh)和色差(Chromatic Aberration)效果的UI控件。
+ * @✨ 重构: 使用辅助函数简化了控件创建流程，提高了代码可读性和可维护性。
+ * @🔧 清理: 移除了过时和重复的UI创建代码。
  */
 import eventBus from '../event-bus'; 
 import config from '../config';
@@ -42,74 +44,61 @@ class UIPost {
     const uiRegistry = (await import('./ui-registry.js')).default;
     uiRegistry.register('ui-post', this);
 
-    logger.info('UIPost', '后期处理 UI 已初始化 (v2.1)');
+    logger.info('UIPost', '后期处理 UI 已初始化');
   }
 
   _createPostProcessingControls() {
     // 全局开关
-    const globalEnable = this._pane.addBinding(this.configData.postprocess, 'enabled', { label: '启用后期处理' });
-    globalEnable.on('change', (ev) => config.set('postprocess.enabled', ev.value));
-    this.controls.set('postprocess.enabled', globalEnable);
+    this.addBinding(this._pane, 'postprocess.enabled', { label: '启用后期处理' });
 
     // ---------- 辉光 (Bloom) ----------
     const bloomFolder = this._pane.addFolder({ title: '光晕 (Bloom)', expanded: true });
-    const bloomEnabled = bloomFolder.addBinding(this.configData.postprocess.bloom, 'enabled', { label: '启用' });
-    bloomEnabled.on('change', (ev) => config.set('postprocess.bloom.enabled', ev.value));
-    this.controls.set('postprocess.bloom.enabled', bloomEnabled);
+    this.addBinding(bloomFolder, 'postprocess.bloom.enabled', { label: '启用' });
+    this.addBinding(bloomFolder, 'postprocess.bloom.intensity', { label: '强度', min: 0, max: 5, step: 0.05 });
+    this.addBinding(bloomFolder, 'postprocess.bloom.luminanceThreshold', { label: '亮度阈值', min: 0, max: 1, step: 0.01 });
 
-    const bloomIntensity = bloomFolder.addBinding(this.configData.postprocess.bloom, 'intensity', { label: '强度', min: 0, max: 3, step: 0.05 });
-    bloomIntensity.on('change', (ev) => config.set('postprocess.bloom.intensity', ev.value));
-    this.controls.set('postprocess.bloom.intensity', bloomIntensity);
+    // ---------- 景深 (Bokeh) - 新增 ----------
+    const bokehFolder = this._pane.addFolder({ title: '景深 (Bokeh)', expanded: false });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.enabled', { label: '启用' });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.focus', { label: '焦距', min: 0, max: 100, step: 0.1 });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.dof', { label: '景深范围', min: 0, max: 0.1, step: 0.001 });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.aperture', { label: '光圈', min: 0, max: 0.1, step: 0.001 });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.maxBlur', { label: '最大模糊', min: 0, max: 0.05, step: 0.001 });
 
-    const bloomThreshold = bloomFolder.addBinding(this.configData.postprocess.bloom, 'luminanceThreshold', { label: '亮度阈值', min: 0, max: 1, step: 0.01 });
-    bloomThreshold.on('change', (ev) => config.set('postprocess.bloom.luminanceThreshold', ev.value));
-    this.controls.set('postprocess.bloom.luminanceThreshold', bloomThreshold);
+    // ---------- 色差 (Chromatic Aberration) - 新增 ----------
+    const caFolder = this._pane.addFolder({ title: '色差 (Chromatic Aberration)', expanded: false });
+    this.addBinding(caFolder, 'postprocess.chromaticAberration.enabled', { label: '启用' });
+    this.addBinding(caFolder, 'postprocess.chromaticAberration.offset.x', { label: '偏移量 X', min: -0.01, max: 0.01, step: 0.0001 });
+    this.addBinding(caFolder, 'postprocess.chromaticAberration.offset.y', { label: '偏移量 Y', min: -0.01, max: 0.01, step: 0.0001 });
 
     // ---------- 胶片效果 (Film) ----------
     const filmFolder = this._pane.addFolder({ title: '胶片效果 (Film)', expanded: false });
-    const filmEnabled = filmFolder.addBinding(this.configData.postprocess.film, 'enabled', { label: '启用' });
-    filmEnabled.on('change', (ev) => config.set('postprocess.film.enabled', ev.value));
-    this.controls.set('postprocess.film.enabled', filmEnabled);
-
-    const noiseIntensity = filmFolder.addBinding(this.configData.postprocess.film, 'noiseIntensity', { label: '噪点强度', min: 0, max: 1, step: 0.01 });
-    noiseIntensity.on('change', (ev) => config.set('postprocess.film.noiseIntensity', ev.value));
-    this.controls.set('postprocess.film.noiseIntensity', noiseIntensity);
-
-    const scanlineIntensity = filmFolder.addBinding(this.configData.postprocess.film, 'scanlineIntensity', { label: '扫描线强度', min: 0, max: 1, step: 0.01 });
-    scanlineIntensity.on('change', (ev) => config.set('postprocess.film.scanlineIntensity', ev.value));
-    this.controls.set('postprocess.film.scanlineIntensity', scanlineIntensity);
-    
-    const scanlineCount = filmFolder.addBinding(this.configData.postprocess.film, 'scanlineCount', { label: '扫描线数量', min: 0, max: 4096, step: 64 });
-    scanlineCount.on('change', (ev) => config.set('postprocess.film.scanlineCount', ev.value));
-    this.controls.set('postprocess.film.scanlineCount', scanlineCount);
-
-    // ---------- 色相/饱和度 ----------
-    const hsFolder = this._pane.addFolder({ title: '色相/饱和度', expanded: false });
-    const hsEnabled = hsFolder.addBinding(this.configData.postprocess.hueSaturation, 'enabled', { label: '启用' });
-    hsEnabled.on('change', (ev) => config.set('postprocess.hueSaturation.enabled', ev.value));
-    this.controls.set('postprocess.hueSaturation.enabled', hsEnabled);
-
-    const hue = hsFolder.addBinding(this.configData.postprocess.hueSaturation, 'hue', { label: '色相', min: -1, max: 1, step: 0.01 });
-    hue.on('change', (ev) => config.set('postprocess.hueSaturation.hue', ev.value));
-    this.controls.set('postprocess.hueSaturation.hue', hue);
-
-    const saturation = hsFolder.addBinding(this.configData.postprocess.hueSaturation, 'saturation', { label: '饱和度', min: -1, max: 1, step: 0.01 });
-    saturation.on('change', (ev) => config.set('postprocess.hueSaturation.saturation', ev.value));
-    this.controls.set('postprocess.hueSaturation.saturation', saturation);
+    this.addBinding(filmFolder, 'postprocess.film.enabled', { label: '启用' });
+    this.addBinding(filmFolder, 'postprocess.film.noiseIntensity', { label: '噪点强度', min: 0, max: 1, step: 0.01 });
+    this.addBinding(filmFolder, 'postprocess.film.scanlineIntensity', { label: '扫描线强度', min: 0, max: 1, step: 0.01 });
+    this.addBinding(filmFolder, 'postprocess.film.scanlineCount', { label: '扫描线数量', min: 0, max: 4096, step: 64 });
 
     // ---------- 亮度/对比度 ----------
     const bcFolder = this._pane.addFolder({ title: '亮度/对比度', expanded: false });
-    const bcEnabled = bcFolder.addBinding(this.configData.postprocess.brightnessContrast, 'enabled', { label: '启用' });
-    bcEnabled.on('change', (ev) => config.set('postprocess.brightnessContrast.enabled', ev.value));
-    this.controls.set('postprocess.brightnessContrast.enabled', bcEnabled);
+    this.addBinding(bcFolder, 'postprocess.brightnessContrast.enabled', { label: '启用' });
+    this.addBinding(bcFolder, 'postprocess.brightnessContrast.brightness', { label: '亮度', min: -1, max: 1, step: 0.01 });
+    this.addBinding(bcFolder, 'postprocess.brightnessContrast.contrast', { label: '对比度', min: -1, max: 1, step: 0.01 });
+  }
 
-    const brightness = bcFolder.addBinding(this.configData.postprocess.brightnessContrast, 'brightness', { label: '亮度', min: -1, max: 1, step: 0.01 });
-    brightness.on('change', (ev) => config.set('postprocess.brightnessContrast.brightness', ev.value));
-    this.controls.set('postprocess.brightnessContrast.brightness', brightness);
+  /**
+   * 辅助函数，用于创建绑定、设置事件监听并注册控件，极大简化代码。
+   */
+  private addBinding(folder: any, key: string, options: any) {
+    const pathParts = key.split('.');
+    let target = this.configData;
+    for (let i = 0; i < pathParts.length - 1; i++) {
+        target = target[pathParts[i]];
+    }
+    const property = pathParts[pathParts.length - 1];
 
-    const contrast = bcFolder.addBinding(this.configData.postprocess.brightnessContrast, 'contrast', { label: '对比度', min: -1, max: 1, step: 0.01 });
-    contrast.on('change', (ev) => config.set('postprocess.brightnessContrast.contrast', ev.value));
-    this.controls.set('postprocess.brightnessContrast.contrast', contrast);
+    const control = folder.addBinding(target, property, options);
+    control.on('change', (ev: { value: any; }) => config.set(key, ev.value));
+    this.controls.set(key, control);
   }
 
   _bindEvents() {
@@ -135,12 +124,7 @@ class UIPost {
     eventBus.on('preset-loaded', () => this.refresh());
   }
 
-  updateBindings() {
-    logger.debug('UIPost', '绑定检查完成（无临时对象）');
-  }
-
   refresh() {
-    this.updateBindings();
     this.controls.forEach((control) => {
       if (control && typeof control.refresh === 'function') {
         control.refresh();

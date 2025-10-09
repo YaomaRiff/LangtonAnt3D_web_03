@@ -1,7 +1,7 @@
 {
   "name": "langtonant3d-web-03",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -41,5 +41,8 @@
     "troika-three-text": "^0.52.4",
     "tweakpane": "^4.0.5",
     "zod": "^4.1.11"
+  },
+  "overrides": {
+    "three": "^0.180.0"
   }
 }
