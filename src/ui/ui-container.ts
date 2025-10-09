@@ -2,7 +2,7 @@
  * @file ui-container.js
  * @description 统一 UI 容器系统 - 左侧可滚动面板
  */
-import logger from '../utils/logger.js';
+import logger from '../utils/logger';
 
 class UIContainer {
   constructor() {

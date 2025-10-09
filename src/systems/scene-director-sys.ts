@@ -2,12 +2,12 @@
  * @file scene-director-sys.js
  * @description 场景导演系统 - 根据配置动态启用/禁用场景中的视觉组件
  */
-import logger from '../utils/logger.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import config from '../config';
 
 // 引入所有受其控制的视觉系统
-import pathSys from './path-sys.js';
-import mathLightSys from './math-light-sys.js';
+import pathSys from './path-sys';
+import mathLightSys from './math-light-sys';
 import particlesSys from './particles-sys.js';
 // import modelSys from './model-sys.js'; // 未来用于加载模型
 

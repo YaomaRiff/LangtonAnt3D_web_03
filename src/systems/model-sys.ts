@@ -1,14 +1,18 @@
 /**
- * @file model-sys.js
+ * @file model-sys.ts
  * @description 模型服务 - 负责加载、缓存和处理 GLB/GLTF 模型资源。
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import logger from '../utils/logger.js';
-import materialSys from './material-sys.js';
-import { resolveAssetUrl } from '../utils/url-resolver.js';
+import logger from '../utils/logger';
+import materialSys from './material-sys';
+import { resolveAssetUrl } from '../utils/url-resolver';
 
 class ModelService {
+  private initialized: boolean;
+  private loader: GLTFLoader;
+  private cache: Map<string, any>;
+
   constructor() {
     this.initialized = false;
     this.loader = new GLTFLoader();

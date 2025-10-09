@@ -1,14 +1,23 @@
 /**
- * @file math-light-sys.js
+ * @file math-light-sys.ts
  * @description 移动光点系统 (数学球体版)
  * ✅ 重构: 监听统一的 'config-changed' 事件
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-import materialSys from './material-sys.js';
+import logger from '../utils/logger';
+import config from '../config';
+import materialSys from './material-sys';
+import postprocessSys from './postprocess-sys';
+
 
 class MathLightSystem {
+  private eventBus: any;
+  private scene: THREE.Scene | null;
+  private coordinateSystem: any;
+  private initialized: boolean;
+  private lightMesh: any;
+  private currentPosition: THREE.Vector3;
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -63,6 +72,8 @@ if (!material) {
     
     const lightAnchor = this.coordinateSystem.getLightAnchor();
     lightAnchor.add(this.lightMesh);
+
+    postprocessSys.addGlowObject(this.lightMesh); // **注册到新的辉光系统**
     
     logger.debug('MathLightSystem', '光点球体已创建');
   }

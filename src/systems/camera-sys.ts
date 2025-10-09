@@ -5,9 +5,9 @@
  */
 import * as THREE from 'three';
 import CameraControls from 'camera-controls';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-import { applyPerspMouseMapping, applyOrthoMouseMapping } from './controls-util.js';
+import logger from '../utils/logger';
+import config from '../config';
+import { applyPerspMouseMapping, applyOrthoMouseMapping } from './controls-util';
 
 CameraControls.install({ THREE });
 

@@ -1,7 +1,7 @@
 # Project Snapshot
 - Root: `.`
-- Created: 2025-10-08 11:18:16
-- Files: 39 (ext=[.js, .mjs, .json, .css, .html], maxSize=200000B)
+- Created: 2025-10-09 17:32:49
+- Files: 44 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
 - Force-Excluded: package-lock.json
 
 ---
@@ -19,42 +19,48 @@ LangtonAnt3D_web_03/
 │  ├─ style.css
 ├─ src/
 │  ├─ systems/
-│  │  ├─ animation-sys.js
-│  │  ├─ audio-sys.js
-│  │  ├─ camera-sys.js
-│  │  ├─ controls-util.js
-│  │  ├─ coordinates-sys.js
-│  │  ├─ data-sys.js
-│  │  ├─ environment-sys.js
-│  │  ├─ lighting-sys.js
-│  │  ├─ material-sys.js
-│  │  ├─ math-light-sys.js
-│  │  ├─ model-sys.js
-│  │  ├─ particles-sys.js
-│  │  ├─ path-sys.js
-│  │  ├─ postprocess-sys.js
-│  │  └─ scene-director-sys.js
+│  │  ├─ shaders/
+│  │  │  ├─ path.frag
+│  │  │  └─ path.vert
+│  │  ├─ animation-sys.ts
+│  │  ├─ audio-sys.ts
+│  │  ├─ camera-sys.ts
+│  │  ├─ controls-util.ts
+│  │  ├─ coordinates-sys.ts
+│  │  ├─ data-sys.ts
+│  │  ├─ environment-sys.ts
+│  │  ├─ lighting-sys.ts
+│  │  ├─ material-sys.ts
+│  │  ├─ math-light-sys.ts
+│  │  ├─ model-sys.ts
+│  │  ├─ particles-sys.ts
+│  │  ├─ path-sys.ts
+│  │  ├─ postprocess-sys.ts
+│  │  ├─ scene-director-sys.ts
+│  │  └─ state.ts
 │  ├─ ui/
-│  │  ├─ ui-basic.js
-│  │  ├─ ui-container.js
-│  │  ├─ ui-coordinates.js
-│  │  ├─ ui-material.js
-│  │  ├─ ui-post.js
-│  │  ├─ ui-presets.js
-│  │  └─ ui-registry.js
+│  │  ├─ ui-basic.ts
+│  │  ├─ ui-container.ts
+│  │  ├─ ui-coordinates.ts
+│  │  ├─ ui-post.ts
+│  │  ├─ ui-presets.ts
+│  │  └─ ui-registry.ts
 │  ├─ utils/
-│  │  ├─ logger.js
-│  │  └─ url-resolver.js
-│  ├─ config.js
-│  ├─ event-bus.js
-│  ├─ main.js
-│  └─ preset-manager.js
+│  │  ├─ logger.ts
+│  │  └─ url-resolver.ts
+│  ├─ config.ts
+│  ├─ event-bus.ts
+│  ├─ main.ts
+│  ├─ preset-manager.ts
+│  └─ vite-env.d.ts
 ├─ tools/
 │  └─ snapshot.mjs
 ├─ index.html
 ├─ package.json
 ├─ snapshot.index.json
-└─ vite.config.js
+├─ tsconfig.json
+├─ tsconfig.node.json
+└─ vite.config.ts
 ```
 
 ---
@@ -84,7 +90,7 @@ LangtonAnt3D_web_03/
 </head>
 <body>
   <div id="app"></div>
-  <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
 
@@ -96,18 +102,26 @@ LangtonAnt3D_web_03/
 {
   "name": "langtonant3d-web-03",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
     "snapshot": "node tools/snapshot.mjs --root . --out snapshot.md",
     "publish": "npm run build && rimraf ../LangtonAnt3D_dist && ncp dist ../LangtonAnt3D_dist"
   },
   "devDependencies": {
+    "@types/file-saver": "^2.0.7",
+    "@types/howler": "^2.2.12",
+    "@types/jszip": "^3.4.0",
+    "@types/node": "^24.7.0",
+    "@types/papaparse": "^5.3.16",
+    "@types/three": "^0.180.0",
     "ncp": "^2.0.0",
     "rimraf": "^6.0.1",
+    "typescript": "^5.9.3",
     "vite": "^5.4.10"
   },
   "dependencies": {
@@ -191,20 +205,6 @@ LangtonAnt3D_web_03/
   "environment": {
     "pathColor": "#F0B7B7"
   },
-  "material": {
-    "movingLight": {
-      "emissiveIntensity": 1.5,
-      "enabled": true
-    },
-    "particles": {
-      "emissiveIntensity": 0.3,
-      "enabled": true
-    },
-    "path": {
-      "emissiveIntensity": 0.8,
-      "enabled": true
-    }
-  },
   "particles": {
     "breathIntensity": 0.1,
     "dustColor": "#AF85B7",
@@ -212,8 +212,6 @@ LangtonAnt3D_web_03/
     "dustOpacity": 0.6,
     "dustSize": 0.6,
     "floatIntensity": 0.2,
-    "pathPointColor": "#FFFFFF",
-    "pathPointSize": 0.5,
     "rotationSpeed": 0,
     "rotationTiltXY": 0,
     "rotationTiltXZ": 0,
@@ -224,30 +222,32 @@ LangtonAnt3D_web_03/
     "scale": 1
   },
   "postprocess": {
+    "enabled": true,
+    "bloom": {
+      "enabled": true,
+      "intensity": 0.8,
+      "luminanceSmoothing": 0.2,
+      "luminanceThreshold": 0.1
+    },
     "brightnessContrast": {
       "brightness": 0,
       "contrast": 0,
       "enabled": false
     },
-    "chromaticAberration": {
-      "enabled": false
+    "film": {
+      "enabled": true,
+      "noiseIntensity": 0.26,
+      "scanlineCount": 3654,
+      "scanlineIntensity": 0.28
     },
     "hueSaturation": {
       "enabled": false,
       "hue": 0,
       "saturation": 0
-    },
-    "noise": {
-      "enabled": true,
-      "intensity": 0.088
-    },
-    "scanline": {
-      "density": 228.4,
-      "enabled": true,
-      "intensity": 0.28
     }
   }
 }
+
 ```
 
 ### public/presets/02.json
@@ -272,29 +272,13 @@ LangtonAnt3D_web_03/
   "environment": {
     "pathColor": "#F0B7B7"
   },
-  "material": {
-    "movingLight": {
-      "emissiveIntensity": 1.3,
-      "enabled": true
-    },
-    "particles": {
-      "emissiveIntensity": 0.7000000000000001,
-      "enabled": true
-    },
-    "path": {
-      "emissiveIntensity": 0.9,
-      "enabled": true
-    }
-  },
   "particles": {
     "breathIntensity": 0.26,
     "dustColor": "#AF85B7",
     "dustCount": 2600,
-    "dustOpacity": 0.8300000000000001,
+    "dustOpacity": 0.83,
     "dustSize": 0.78,
     "floatIntensity": 0.64,
-    "pathPointColor": "#FFFFFF",
-    "pathPointSize": 0.5,
     "rotationSpeed": 0,
     "rotationTiltXY": -20,
     "rotationTiltXZ": 43,
@@ -302,31 +286,35 @@ LangtonAnt3D_web_03/
   },
   "path": {
     "depthIntensity": 0.5,
-    "scale": 1.5999999999999999
+    "scale": 1.6
   },
   "postprocess": {
+    "enabled": true,
+    "bloom": {
+      "enabled": true,
+      "intensity": 0.9,
+      "luminanceSmoothing": 0.2,
+      "luminanceThreshold": 0.1
+    },
     "brightnessContrast": {
       "brightness": 0,
       "contrast": 0,
       "enabled": true
     },
-    "enabled": true,
+    "film": {
+      "enabled": true,
+      "noiseIntensity": 0.29,
+      "scanlineCount": 3136,
+      "scanlineIntensity": 0.48
+    },
     "hueSaturation": {
       "enabled": true,
       "hue": 0.65,
       "saturation": 0.04
-    },
-    "noise": {
-      "enabled": true,
-      "intensity": 0.096
-    },
-    "scanline": {
-      "density": 196,
-      "enabled": true,
-      "intensity": 0.48
     }
   }
 }
+
 ```
 
 ### public/presets/03.json
@@ -348,22 +336,7 @@ LangtonAnt3D_web_03/
     }
   },
   "environment": {
-    "bgColor": "#121414",
     "pathColor": "#F0B7B7"
-  },
-  "material": {
-    "movingLight": {
-      "emissiveIntensity": 1.5,
-      "enabled": true
-    },
-    "particles": {
-      "emissiveIntensity": 0.3,
-      "enabled": true
-    },
-    "path": {
-      "emissiveIntensity": 0.8,
-      "enabled": true
-    }
   },
   "particles": {
     "breathIntensity": 0.1,
@@ -372,8 +345,6 @@ LangtonAnt3D_web_03/
     "dustOpacity": 0.6,
     "dustSize": 0.6,
     "floatIntensity": 0.2,
-    "pathPointColor": "#FFFFFF",
-    "pathPointSize": 0.5,
     "rotationSpeed": 0,
     "rotationTiltXY": 0,
     "rotationTiltXZ": 0,
@@ -384,30 +355,32 @@ LangtonAnt3D_web_03/
     "scale": 1
   },
   "postprocess": {
+    "enabled": true,
+    "bloom": {
+      "enabled": true,
+      "intensity": 0.8,
+      "luminanceSmoothing": 0.2,
+      "luminanceThreshold": 0.1
+    },
     "brightnessContrast": {
       "brightness": 0,
       "contrast": 0,
       "enabled": true
     },
-    "chromaticAberration": {
-      "enabled": false
+    "film": {
+      "enabled": true,
+      "noiseIntensity": 0.06,
+      "scanlineCount": 1064,
+      "scanlineIntensity": 0.77
     },
     "hueSaturation": {
       "enabled": true,
       "hue": 0,
       "saturation": 0.14
-    },
-    "noise": {
-      "enabled": true,
-      "intensity": 0.02
-    },
-    "scanline": {
-      "density": 66.5,
-      "enabled": true,
-      "intensity": 0.77
     }
   }
 }
+
 ```
 
 ### public/style.css
@@ -718,16 +691,17 @@ body {
 ]
 ```
 
-### src/config.js
+### src/config.ts
 
-```javascript
+```
 /**
- * @file config.js
+ * @file config.ts
  * @description 配置管理器 - 全局配置存储与访问
- * ✅ 新增: sceneComposition 结构，用于定义场景内容
+ * 🔧 修正: 对 set 方法中的日志进行节流处理，防止UI拖动时刷屏。
+ * ✨ 重构: 移除了旧的材质辉光相关配置 (emissiveIntensity)，辉光效果由 postprocess.bloom 统一控制。
  */
-import logger from './utils/logger.js';
-import eventBus from './event-bus.js';
+import logger from './utils/logger';
+import eventBus from './event-bus';
 
 const DEFAULT_CONFIG = {
   // 🟢 新增：场景构成定义
@@ -749,15 +723,10 @@ const DEFAULT_CONFIG = {
 
   data: {
     csvUrl: '../data/data.csv',
-    antData: [],
-    mappedPoints: [],
     availableDatasets: []
   },
   
   animation: {
-    currentStep: 0,
-    lerpT: 0,
-    animating: false,
     speedFactor: 1.65,
     loop: true
   },
@@ -772,18 +741,12 @@ const DEFAULT_CONFIG = {
   
   material: {
     path: {
-      enabled: true,
-      emissiveIntensity: 0.8,
       emissiveColor: '#F0B7B7'
     },
     particles: {
-      enabled: true,
-      emissiveIntensity: 0.3,
       emissiveColor: '#AF85B7'
     },
     movingLight: {
-      enabled: true,
-      emissiveIntensity: 1.5,
       emissiveColor: '#FFFFFF'
     }
   },
@@ -807,9 +770,9 @@ const DEFAULT_CONFIG = {
     dustSize: 0.6,
     dustOpacity: 0.6,
     dustColor: '#AF85B7',
+    pathPointColor: '#F0B7B7',
     pathPointSize: 0.5,
     pathPointOpacity: 0.9,
-    pathPointColor: '#FFFFFF',
     sphereRadius: 1400,
     systemScale: 1.0,
     rotationSpeed: 0,
@@ -842,11 +805,50 @@ const DEFAULT_CONFIG = {
   
   postprocess: {
     enabled: true,
+  
+    // ✅ [重构] 光晕效果 (Bloom)
+    bloom: {
+      enabled: true,
+      intensity: 1.0,         // 效果强度
+      luminanceThreshold: 0.1, // 亮度阈值
+      luminanceSmoothing: 0.2, // 阈值平滑度
+      mipmapBlur: true,         // 是否使用 Mipmap 模糊
+    },
+
+    // ✅ 新增：景深效果 (Bokeh)
+    bokeh: {
+      enabled: false,
+      focus: 40.0,              // 焦距
+      dof: 0.02,                // 景深范围
+      aperture: 0.025,          // 光圈大小
+      maxBlur: 0.01,            // 最大模糊
+    },
+
+    // ✅ 新增：色差效果 (Chromatic Aberration)
+    chromaticAberration: {
+      enabled: false,
+      offset: { x: 0.001, y: 0.001 } // 颜色偏移量
+    },
+    
+    // ✅ 新增：点阵效果 (Dot Screen)
+    dotScreen: {
+      enabled: false,
+      angle: 1.57,              // 角度
+      scale: 1.0                // 缩放
+    },
+
+    // ✅ [替代方案] 胶片效果 (Film) - 替代旧的 Noise 和 Scanline
+    film: {
+      enabled: false,
+      scanlineIntensity: 0.3,   // 扫描线强度
+      noiseIntensity: 0.3,      // 噪点强度
+      scanlineCount: 2048,      // 扫描线数量
+      grayscale: false          // 是否灰度
+    },
+  
+    // ✅ [保留] 色彩调整效果
     hueSaturation: { enabled: false, hue: 0.0, saturation: 0.0 },
     brightnessContrast: { enabled: false, brightness: 0.0, contrast: 0.0 },
-    noise: { enabled: false, intensity: 0.02 },
-    chromaticAberration: { enabled: false, offsetX: 0.002, offsetY: 0.002 },
-    scanline: { enabled: false, intensity: 0.1, density: 100 }
   },
   
   camera: {
@@ -868,12 +870,12 @@ const DEFAULT_CONFIG = {
   }
 };
 
-function deepClone(obj) {
+function deepClone(obj: any): any {
   if (obj === null || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(item => deepClone(item));
-  const cloned = {};
+  const cloned: any = {};
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if ((obj as Object).hasOwnProperty.call(obj, key)) {
       cloned[key] = deepClone(obj[key]);
     }
   }
@@ -881,6 +883,9 @@ function deepClone(obj) {
 }
 
 class ConfigManager {
+  private _config: any;
+  private initialized: boolean;
+
   constructor() {
     this._config = deepClone(DEFAULT_CONFIG);
     this.initialized = false;
@@ -897,39 +902,39 @@ class ConfigManager {
       this.initialized = true;
       logger.info('Config', '配置初始化完成');
     } catch (err) {
-      logger.error('Config', `配置初始化失败: ${err.message}`);
-      throw err;
+      logger.error('Config', `配置初始化失败: ${(err as Error).message}`);
+      throw err as Error;
     }
   }
 
-  getRaw() {
+  getRaw(): any {
     return this._config;
   }
 
-  get(key) {
+  get(key?: string): any {
     try {
       if (!key) return this._config;
       const keys = key.split('.');
-      let value = this._config;
+      let value: any = this._config as any;
       for (const k of keys) {
         if (value === null || value === undefined) return null;
         value = value[k];
       }
       return value;
     } catch (err) {
-      logger.error('Config', `获取配置异常 [${key}]: ${err.message}`);
+      logger.error('Config', `获取配置异常 [${key}]: ${(err as Error).message}`);
       return null;
     }
   }
 
-  set(key, value) {
+  set(key: string, value: any) {
     try {
       if (!key) {
         logger.error('Config', '设置配置失败: key 不能为空');
         return false;
       }
       const keys = key.split('.');
-      let target = this._config;
+      let target: any = this._config as any;
       for (let i = 0; i < keys.length - 1; i++) {
         const k = keys[i];
         if (!target[k] || typeof target[k] !== 'object') {
@@ -941,16 +946,24 @@ class ConfigManager {
       if (target[lastKey] !== value) {
         target[lastKey] = value;
         eventBus.emit('config-changed', { key, value });
-        logger.debug('Config', `配置已更新: ${key} = ${JSON.stringify(value)}`);
+        
+        // ✅ 核心修正: 使用节流日志替换普通日志，防止刷屏
+        const valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
+        logger.debugThrottled(
+          'Config',
+          `config-set:${key}`, // 使用唯一的 key 来节流
+          `配置已更新: ${key} = ${valueStr}`,
+          1500 // 每 1.5 秒最多打印一次
+        );
       }
       return true;
     } catch (err) {
-      logger.error('Config', `设置配置异常 [${key}]: ${err.message}`);
+      logger.error('Config', `设置配置异常 [${key}]: ${(err as Error).message}`);
       return false;
     }
   }
 
-  applyPresetData(presetData) {
+  applyPresetData(presetData: any) {
     logger.warn('Config', 'applyPresetData 已被弃用，请使用 PresetManager 的新加载逻辑');
     return true;
   }
@@ -961,10 +974,10 @@ class ConfigManager {
     logger.info('Config', '配置已重置为默认值');
     
     // 触发所有顶级key的更新通知
-    Object.keys(DEFAULT_CONFIG).forEach(topKey => {
+    Object.keys(DEFAULT_CONFIG as any).forEach((topKey: string) => {
         // 比较新旧值，只有变化时才发出事件，避免不必要的刷新
-        if (JSON.stringify(oldConfig[topKey]) !== JSON.stringify(DEFAULT_CONFIG[topKey])) {
-            eventBus.emit('config-changed', { key: topKey, value: DEFAULT_CONFIG[topKey] });
+        if (JSON.stringify((oldConfig as any)[topKey]) !== JSON.stringify((DEFAULT_CONFIG as any)[topKey])) {
+            eventBus.emit('config-changed', { key: topKey, value: (DEFAULT_CONFIG as any)[topKey] });
         }
     });
   }
@@ -972,23 +985,25 @@ class ConfigManager {
 
 const configManager = new ConfigManager();
 export default configManager;
+
+// 保持原有的快捷导出不变
 export const initConfig = () => configManager.init();
-export const get = (key) => configManager.get(key);
-export const set = (key, value) => configManager.set(key, value);
-export const getRaw = () => configManager.getRaw();
-export const applyPresetData = (data) => configManager.applyPresetData(data);
+export const get = (key?: string): any => configManager.get(key);
+export const set = (key: string, value: any) => configManager.set(key, value);
+export const getRaw = (): any => configManager.getRaw();
+export const applyPresetData = (data: any) => configManager.applyPresetData(data);
 export const reset = () => configManager.reset();
 
 ```
 
-### src/event-bus.js
+### src/event-bus.ts
 
-```javascript
+```
 /**
  * @file event-bus.js
  * @description 事件总线 - 系统间通信
  */
-import logger from './utils/logger.js';
+import logger from './utils/logger';
 
 class EventBus {
   constructor() {
@@ -1047,47 +1062,50 @@ export default eventBus;
 
 ```
 
-### src/main.js
+### src/main.ts
 
-```javascript
+```
 /**
  * @file main.js
  * @description 应用主入口 - 系统协调与生命周期管理
- * ✅ 已集成坐标系统和音频系统
+ * ✨ 重构: 彻底移除了旧的 ui-material 系统。
  */
 import * as THREE from 'three';
-import logger from './utils/logger.js';
-import config, { initConfig } from './config.js';
-import eventBus from './event-bus.js';
-import presetManager from './preset-manager.js';
+import logger from './utils/logger';
+import config, { initConfig } from './config';
+import eventBus from './event-bus';
+import presetManager from './preset-manager';
 
 // UI 系统
-import uiContainer from './ui/ui-container.js';
-import uiBasic from './ui/ui-basic.js';
-import uiMaterial from './ui/ui-material.js';
-import uiPost from './ui/ui-post.js';
-import uiPresets from './ui/ui-presets.js';
-import uiCoordinates from './ui/ui-coordinates.js';
+import uiContainer from './ui/ui-container';
+import uiBasic from './ui/ui-basic';
+import uiPost from './ui/ui-post';
+import uiPresets from './ui/ui-presets';
+import uiCoordinates from './ui/ui-coordinates';
 
 // 核心系统
-import coordinateSystem from './systems/coordinates-sys.js';
-import cameraSys from './systems/camera-sys.js';
-import dataSys from './systems/data-sys.js';
-import animationSys from './systems/animation-sys.js';
-import particlesSys from './systems/particles-sys.js';
-import postprocessSys from './systems/postprocess-sys.js';
-import audioSys from './systems/audio-sys.js';
-import lightingSys from './systems/lighting-sys.js';
-import environmentSys from './systems/environment-sys.js';
-import materialSys from './systems/material-sys.js';
-import modelSys from './systems/model-sys.js';
-import sceneDirector from './systems/scene-director-sys.js';
+import coordinateSystem from './systems/coordinates-sys';
+import cameraSys from './systems/camera-sys';
+import dataSys from './systems/data-sys';
+import animationSys from './systems/animation-sys';
+import particlesSys from './systems/particles-sys';
+import postprocessSys from './systems/postprocess-sys';
+import audioSys from './systems/audio-sys';
+import lightingSys from './systems/lighting-sys';
+import environmentSys from './systems/environment-sys';
+import materialSys from './systems/material-sys';
+import modelSys from './systems/model-sys';
+import sceneDirector from './systems/scene-director-sys';
 
 // 实体
-import pathSys from './systems/path-sys.js';
-import mathLightSys from './systems/math-light-sys.js';
+import pathSys from './systems/path-sys';
+import mathLightSys from './systems/math-light-sys';
 
 class Application {
+  private scene: THREE.Scene | null;
+  private renderer: THREE.WebGLRenderer | null;
+  private clock: THREE.Clock;
+  private initialized: boolean;
   constructor() {
     this.scene = null;
     this.renderer = null;
@@ -1117,8 +1135,9 @@ class Application {
         scene: this.scene
       });
 
-      // 将坐标系统存入scene.userData供camera-sys访问
-      this.scene.userData.coordinateSystem = coordinateSystem;
+      if (this.scene) {
+        this.scene.userData.coordinateSystem = coordinateSystem;
+      }
 
       // 4. 初始化相机系统
       cameraSys.init({
@@ -1127,33 +1146,24 @@ class Application {
         renderer: this.renderer
       });
 
-      // 4.5 初始化光照系统 (新)
       lightingSys.init({ scene: this.scene });
-
-       // 4.6 初始化环境系统 (天空盒)
       environmentSys.init({ scene: this.scene });
 
       const mainCamera = cameraSys.getActiveCamera();
 
-      // 4.7. 初始化后处理系统
       postprocessSys.init({
-        eventBus,
-        scene: this.scene,
-        camera: mainCamera,
-        renderer: this.renderer
+        scene: this.scene as THREE.Scene,
+        camera: mainCamera as THREE.Camera,
+        renderer: this.renderer as THREE.WebGLRenderer
       });
 
-      // 5. 初始化音频系统（在相机之后）
       audioSys.init({
         eventBus,
         camera: cameraSys.getActiveCamera()
       });
 
-      // 6. 初始化 UI 容器
       uiContainer.init();
 
-      // 核心修复：优先初始化数据系统
-      // 这样后续的UI系统就能在第一时间拿到数据
       await dataSys.init({
         eventBus,
         scene: this.scene,
@@ -1163,64 +1173,51 @@ class Application {
 
       // 7. 初始化基础 UI
       await uiBasic.init();
-
-      // 8. 初始化材质 UI
-      await uiMaterial.init();
-
-      // 9. 初始化后处理 UI
+      // 8. 初始化后处理 UI
       await uiPost.init();
 
       await presetManager.init();
 
-      // 10. 初始化预设系统
+      // 9. 初始化预设系统
       await uiPresets.init();
-
-      // 11. 初始化坐标系统UI
+      // 10. 初始化坐标系统UI
       await uiCoordinates.init({ eventBus });
 
-      // 12. ✅ 初始化核心服务系统 (必须在实体和视觉系统之前)
+      // 11. 初始化核心服务系统
       materialSys.init();
       modelSys.init();
 
-      // 14. 修改: 初始化新的系统（传入coordinateSystem）
       pathSys.init({ 
         eventBus, 
-        scene: this.scene,
+        scene: this.scene as THREE.Scene,
         coordinateSystem 
       });
       
       mathLightSys.init({ 
         eventBus, 
-        scene: this.scene,
+        scene: this.scene as THREE.Scene,
         coordinateSystem 
       });
 
-      // 15. 初始化粒子系统（传入coordinateSystem）
       particlesSys.init({ 
         eventBus, 
-        scene: this.scene,
+        scene: this.scene as THREE.Scene,
         coordinateSystem 
       });
 
-      // 16. 初始化动画系统
       animationSys.init({
         eventBus,
-        scene: this.scene,
-        renderer: this.renderer,
+        scene: this.scene as THREE.Scene,
+        renderer: this.renderer as THREE.WebGLRenderer,
         controls: cameraSys.getControls(),
         particlesSys
       });
 
-      //17.5. 初始化场景导演系统 (在所有视觉系统之后)
       sceneDirector.init({ eventBus });
 
-      // 18. 绑定事件
       this._bindEvents();
-
-      // 19. 启动渲染循环
       this._startRenderLoop();
 
-      // 20. 加载默认数据
       const defaultCSV = config.get('data.csvUrl');
       if (defaultCSV) {
         dataSys.loadCSV(defaultCSV);
@@ -1230,14 +1227,13 @@ class Application {
       logger.info('App', '✅ 应用初始化完成');
 
     } catch (err) {
-      logger.error('App', `初始化失败: ${err.message}`);
+      logger.error('App', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
   _createScene() {
     this.scene = new THREE.Scene();
-    // 背景色现在由 environment-sys 管理
     logger.debug('App', '场景已创建');
   }
 
@@ -1273,12 +1269,8 @@ class Application {
       this._handleResize();
     });
 
-    // eventBus.on('bg-color-changed', (color) => {
-    //   this.scene.background = new THREE.Color(color);
-    // });
-
     eventBus.on('show-coordinate-debug', () => {
-      const debugInfo = coordinateSystem.debugInfo();
+      const debugInfo = (coordinateSystem as any).debugInfo?.() || 'N/A';
       console.log('📊 坐标系统调试信息:', debugInfo);
       logger.info('App', '坐标系统调试信息已输出到控制台');
     });
@@ -1287,9 +1279,16 @@ class Application {
   }
 
   _handleResize() {
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    if (this.renderer) {
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
     postprocessSys.handleResize();
-    logger.debug('App', '窗口大小已调整');
+    logger.debugThrottled(
+      'App',
+      'window-resize',
+      '窗口大小已调整',
+      1000
+    );
   }
 
   _startRenderLoop() {
@@ -1304,10 +1303,10 @@ class Application {
       pathSys.update(delta);
       animationSys.update(delta, elapsed);
       particlesSys.update(elapsed);
-
+      
       if (config.get('postprocess.enabled')) {
         postprocessSys.render(delta);
-      } else {
+      } else if (this.renderer && this.scene) {
         this.renderer.render(this.scene, cameraSys.getActiveCamera());
       }
     };
@@ -1333,7 +1332,6 @@ class Application {
     pathSys.dispose();
     mathLightSys.dispose();
     uiBasic.dispose();
-    uiMaterial.dispose();
     uiPost.dispose();
     uiPresets.dispose();
     uiCoordinates.dispose();
@@ -1361,9 +1359,9 @@ export default app;
 
 ```
 
-### src/preset-manager.js
+### src/preset-manager.ts
 
-```javascript
+```
 /**
  * @file preset-manager.js
  * @description 预设管理器 - 加载、保存和应用配置快照。通过 config.set() 自动触发更新事件。
@@ -1371,11 +1369,11 @@ export default app;
  *   1. 删除了巨大的 _emitConfigEvents 方法。
  *   2. 加载预设时，通过遍历并调用 config.set() 来自动触发更新。
  */
-import config from './config.js';
-import logger from './utils/logger.js';
-import eventBus from './event-bus.js';
-import uiRegistry from './ui/ui-registry.js';
-import { resolveAssetUrl } from './utils/url-resolver.js';
+import config from './config';
+import logger from './utils/logger';
+import eventBus from './event-bus';
+import uiRegistry from './ui/ui-registry';
+import { resolveAssetUrl } from './utils/url-resolver';
 
 class PresetManager {
   constructor() {
@@ -1580,19 +1578,31 @@ export default presetManager;
 
 ```
 
-### src/systems/animation-sys.js
+### src/systems/animation-sys.ts
 
-```javascript
+```
 /**
  * @file animation-sys.js
  * @description 动画系统 - 路径插值与步进控制
  * ✅ 核心改造: 监听统一的 'config-changed' 事件来控制动画启停。
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import config from '../config';
+import state from './state';
 
 class AnimationSystem {
+  private eventBus: any;
+  private scene: THREE.Scene | null;
+  private renderer: THREE.WebGLRenderer | null;
+  private controls: any;
+  private particlesSys: any;
+  private initialized: boolean;
+  private currentStep: number;
+  private lerpT: number;
+  private animating: boolean;
+  private mappedPoints: any[];
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -1635,12 +1645,13 @@ class AnimationSystem {
   }
   
   _loadInitialConfig() {
-    this.animating = config.get('animation.animating') || false;
+    this.animating = state.get('animation.animating') || false; //从 state 读取
   }
 
   _bindEvents() {
     // ✅ 核心改造：监听通用配置变更事件
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
+    this.eventBus.on('state-changed', this._handleStateChange.bind(this));
 
     // ✅ 保留数据信号和命令式事件
     this.eventBus.on('data-loaded', (data) => {
@@ -1659,17 +1670,18 @@ class AnimationSystem {
     });
   }
 
-  /**
-   * ✅ 新增: 统一处理配置变更
-   */
+  //统一处理配置变更
   _handleConfigChange({ key, value }) {
-    switch (key) {
-      case 'animation.animating':
+    // speedFactor 和 loop 在 update 循环中直接从 config 读取，无需处理
+    // animating 的处理已移至 _handleStateChange
+  }
+
+  //统一处理 *状态* 变更
+  _handleStateChange({ key, value }: { key: string; value: any }) {
+      if (key === 'animation.animating') {
         this.animating = value;
         logger.info('AnimationSystem', `动画状态变更为: ${value ? '播放' : '暂停'}`);
-        break;
-      // speedFactor 和 loop 在 update 循环中直接读取，无需在这里处理
-    }
+      }
   }
 
   update(delta, elapsed) {
@@ -1688,8 +1700,7 @@ class AnimationSystem {
           this.currentStep = 0;
           logger.debug('AnimationSystem', '动画循环重新开始');
         } else {
-          // 通过 config.set 触发UI和其他系统的更新
-          config.set('animation.animating', false); 
+          state.set('animation.animating', false); 
           this.eventBus.emit('animation-completed');
           logger.info('AnimationSystem', '动画播放完成');
           return;
@@ -1700,8 +1711,8 @@ class AnimationSystem {
     this._updatePosition();
     
     // 更新配置状态(触发UI刷新)
-    config.set('animation.currentStep', this.currentStep);
-    config.set('animation.lerpT', this.lerpT);
+    state.set('animation.currentStep', this.currentStep);
+    state.set('animation.lerpT', this.lerpT);
 
     this.eventBus.emit('animation-step-updated', this.currentStep);
   }
@@ -1719,9 +1730,9 @@ class AnimationSystem {
 
   reset() {
     // 通过 config.set 驱动状态变更
-    config.set('animation.currentStep', 0);
-    config.set('animation.lerpT', 0);
-    config.set('animation.animating', false);
+    state.set('animation.currentStep', 0);
+    state.set('animation.lerpT', 0);
+    state.set('animation.animating', false);
 
     // 手动同步内部状态
     this.currentStep = 0;
@@ -1738,15 +1749,21 @@ class AnimationSystem {
     }
     
     // 通过 config.set 驱动状态变更
-    config.set('animation.currentStep', step);
-    config.set('animation.lerpT', 0);
+    state.set('animation.currentStep', step);
+    state.set('animation.lerpT', 0);
 
     // 手动同步内部状态
     this.currentStep = step;
     this.lerpT = 0;
 
     this._updatePosition();
-    logger.debug('AnimationSystem', `跳转到步骤: ${step}`);
+    // ✅ 使用节流日志，避免拖动进度条时刷屏
+logger.debugThrottled(
+  'AnimationSystem',
+  'animation-step-to', // 节流的唯一Key
+  `跳转到步骤: ${this.currentStep}`,
+  500 // 500毫秒的间隔对进度条拖动更友好
+);
   }
 
   getCurrentStep() { return this.currentStep; }
@@ -1769,9 +1786,9 @@ export default animationSys;
 
 ```
 
-### src/systems/audio-sys.js
+### src/systems/audio-sys.ts
 
-```javascript
+```
 /**
  * @file audio-sys.js
  * @description 音频系统 - 背景音乐管理
@@ -1993,9 +2010,9 @@ export default audioSys;
 
 ```
 
-### src/systems/camera-sys.js
+### src/systems/camera-sys.ts
 
-```javascript
+```
 /**
  * @file camera-sys.js
  * @description 相机系统 - 透视/正交切换 + camera-controls 集成
@@ -2003,9 +2020,9 @@ export default audioSys;
  */
 import * as THREE from 'three';
 import CameraControls from 'camera-controls';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-import { applyPerspMouseMapping, applyOrthoMouseMapping } from './controls-util.js';
+import logger from '../utils/logger';
+import config from '../config';
+import { applyPerspMouseMapping, applyOrthoMouseMapping } from './controls-util';
 
 CameraControls.install({ THREE });
 
@@ -2241,9 +2258,9 @@ export default cameraSys;
 
 ```
 
-### src/systems/controls-util.js
+### src/systems/controls-util.ts
 
-```javascript
+```
 // 说明：集中封装 CameraControls 的鼠标/触控映射
 import CameraControls from 'camera-controls';
 
@@ -2291,9 +2308,9 @@ export function applyDefaultMouseMapping(controls) {
 
 ```
 
-### src/systems/coordinates-sys.js
+### src/systems/coordinates-sys.ts
 
-```javascript
+```
 /**
  * @file coordinates-sys.js
  * @description 统一坐标系统 - 管理所有3D对象的坐标空间
@@ -2455,9 +2472,9 @@ export default coordinateSystem;
 
 ```
 
-### src/systems/data-sys.js
+### src/systems/data-sys.ts
 
-```javascript
+```
 /**
  * @file data-sys.js
  * @description 数据加载系统 - CSV解析与坐标映射
@@ -2465,11 +2482,20 @@ export default coordinateSystem;
  */
 import * as THREE from 'three';
 import Papa from 'papaparse';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-import { resolveAssetUrl } from '../utils/url-resolver.js';
+import logger from '../utils/logger';
+import config from '../config';
+import { resolveAssetUrl } from '../utils/url-resolver';
+import state from './state';
 
 class DataSystem {
+  private eventBus: any;
+  private scene: THREE.Scene | null;
+  private camera: THREE.Camera | null;
+  private controls: any;
+  private initialized: boolean;
+  private rawData: any[];
+  private datasets: any[];
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -2601,10 +2627,10 @@ class DataSystem {
       }
 
       this.rawData = validData;
-      config.set('data.antData', validData);
+       state.set('data.antData', validData);
 
       const mappedPoints = this._mapToPoints(validData);
-      config.set('data.mappedPoints', mappedPoints);
+      state.set('data.mappedPoints', mappedPoints);
 
       this._adjustCamera(mappedPoints);
 
@@ -2674,18 +2700,18 @@ export default dataSys;
 
 ```
 
-### src/systems/environment-sys.js
+### src/systems/environment-sys.ts
 
-```javascript
+```
 /**
  * @file environment-sys.js
  * @description 环境系统 - 负责管理天空盒、背景和环境反射
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-import eventBus from '../event-bus.js';
-import { resolveAssetUrl } from '../utils/url-resolver.js';
+import logger from '../utils/logger';
+import config from '../config';
+import eventBus from '../event-bus';
+import { resolveAssetUrl } from '../utils/url-resolver';
 
 class EnvironmentSystem {
   constructor() {
@@ -2765,9 +2791,9 @@ export default environmentSys;
 
 ```
 
-### src/systems/lighting-sys.js
+### src/systems/lighting-sys.ts
 
-```javascript
+```
 /**
  * @file lighting-sys.js
  * @description 光照系统 - 管理场景中的环境光与直接光
@@ -2777,6 +2803,11 @@ import logger from '../utils/logger.js';
 import config from '../config.js';
 
 class LightingSystem {
+  private scene: THREE.Scene | null;
+  private initialized: boolean;
+  private ambientLight: THREE.AmbientLight | null;
+  private directionalLight: THREE.DirectionalLight | null;
+
   constructor() {
     this.scene = null;
     this.initialized = false;
@@ -2855,19 +2886,27 @@ export default lightingSys;
 
 ```
 
-### src/systems/material-sys.js
+### src/systems/material-sys.ts
 
-```javascript
+```
 /**
- * @file material-sys.js
+ * @file material-sys.ts
  * @description 材质服务 - 预创建、管理和更新项目中所有共享材质的中央库。
+ * ✨ 重构: 移除了与旧辉光系统相关的 emissiveIntensity 逻辑，并简化了路径着色器 uniform。
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-import eventBus from '../event-bus.js';
+import logger from '../utils/logger';
+import config from '../config';
+import eventBus from '../event-bus';
+
+// 导入外部化的 GLSL 文件
+import pathVertexShader from './shaders/path.vert?raw';
+import pathFragmentShader from './shaders/path.frag?raw';
 
 class MaterialService {
+  private initialized: boolean;
+  private materials: Map<string, THREE.Material>;
+
   constructor() {
     this.initialized = false;
     this.materials = new Map();
@@ -2887,125 +2926,108 @@ class MaterialService {
     return this;
   }
 
-  /**
-   * 预先创建项目中用到的所有材质
-   */
   _createAllMaterials() {
-    // 1. 路径线条材质 (ShaderMaterial)
-    const pathConfig = config.getRaw();
+    // 从 config 中一次性获取所有需要的配置节
+    const pathCfg = config.get('path');
+    const materialCfg = config.get('material');
+    const particlesCfg = config.get('particles');
+    const envCfg = config.get('environment');
+
+    // 1. 路径材质 (PathLine)
     const pathMaterial = new THREE.ShaderMaterial({
       uniforms: {
-        uColor: { value: new THREE.Color(pathConfig.environment.pathColor) },
-        uEmissive: { value: new THREE.Color(pathConfig.environment.pathColor) },
-        uEmissiveIntensity: { value: pathConfig.material.path.emissiveIntensity },
-        uDepthIntensity: { value: pathConfig.path.depthIntensity },
+        uEmissive: { value: new THREE.Color(envCfg.pathColor) },
+        uDepthIntensity: { value: pathCfg.depthIntensity },
         uCameraPosition: { value: new THREE.Vector3() }
       },
-      vertexShader: `
-        varying vec3 vWorldPosition;
-        void main() {
-          vec4 worldPos = modelMatrix * vec4(position, 1.0);
-          vWorldPosition = worldPos.xyz;
-          gl_Position = projectionMatrix * viewMatrix * worldPos;
-        }
-      `,
-      fragmentShader: `
-        uniform vec3 uColor;
-        uniform vec3 uEmissive;
-        uniform float uEmissiveIntensity;
-        uniform float uDepthIntensity;
-        uniform vec3 uCameraPosition;
-        varying vec3 vWorldPosition;
-        void main() {
-          vec3 finalColor = uColor + uEmissive * uEmissiveIntensity;
-          float distToCamera = length(vWorldPosition - uCameraPosition);
-          float fade = smoothstep(0.0, 200.0, distToCamera); // Hardcoded max distance
-          float alpha = 1.0 - fade * uDepthIntensity;
-          gl_FragColor = vec4(finalColor, alpha);
-        }
-      `,
+      vertexShader: pathVertexShader,
+      fragmentShader: pathFragmentShader,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false
     });
     this.materials.set('pathLine', pathMaterial);
-
-    // 2. 尘埃粒子材质 (PointsMaterial)
+    
+    // ✅ 修正：为尘埃粒子材质提供完整的配置
     const dustParticlesMaterial = new THREE.PointsMaterial({
-      color: new THREE.Color(pathConfig.particles.dustColor),
-      size: pathConfig.particles.dustSize,
-      opacity: pathConfig.particles.dustOpacity,
+      color: new THREE.Color(particlesCfg.dustColor),
+      size: particlesCfg.dustSize,
+      opacity: particlesCfg.dustOpacity,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      vertexColors: false,
-      sizeAttenuation: true
+      sizeAttenuation: true, // 粒子大小随距离衰减
+      vertexColors: false
     });
     this.materials.set('dustParticles', dustParticlesMaterial);
 
-    // 3. 移动光点材质 (MeshBasicMaterial)
+    // ✅ 修正：为移动光点材质提供完整的配置
     const movingLightMaterial = new THREE.MeshBasicMaterial({
-      color: new THREE.Color(pathConfig.particles.pathPointColor),
+      color: new THREE.Color(materialCfg.movingLight.emissiveColor),
       transparent: true,
-      opacity: 0.9
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
     });
     this.materials.set('movingLight', movingLightMaterial);
   }
 
-  /**
-   * 监听配置变化，动态更新材质属性
-   */
   _bindEvents() {
-    eventBus.on('config-changed', ({ key, value }) => {
+    eventBus.on('config-changed', ({ key, value }: { key: string, value: any }) => {
       this._updateMaterialProperty(key, value);
     });
   }
 
-  _updateMaterialProperty(key, value) {
-    const pathMat = this.materials.get('pathLine');
+  _updateMaterialProperty(key: string, value: any) {
+    const pathLineMat = this.materials.get('pathLine');
     const dustMat = this.materials.get('dustParticles');
     const lightMat = this.materials.get('movingLight');
 
+    if (!pathLineMat || !dustMat || !lightMat) return;
+
     switch (key) {
-      // Path Material
+      // PathLine Material updates
       case 'environment.pathColor':
-        pathMat.uniforms.uColor.value.set(value);
-        pathMat.uniforms.uEmissive.value.set(value);
-        break;
-      case 'material.path.emissiveIntensity':
-        pathMat.uniforms.uEmissiveIntensity.value = value;
+        if (pathLineMat instanceof THREE.ShaderMaterial) {
+          pathLineMat.uniforms.uEmissive.value.set(value);
+        }
         break;
       case 'path.depthIntensity':
-        pathMat.uniforms.uDepthIntensity.value = value;
+        if (pathLineMat instanceof THREE.ShaderMaterial) {
+          pathLineMat.uniforms.uDepthIntensity.value = value;
+        }
         break;
 
-      // Dust Particles Material
+      // Dust Particles Material updates
       case 'particles.dustColor':
-        dustMat.color.set(value);
+        if (dustMat instanceof THREE.PointsMaterial) {
+          dustMat.color.set(value);
+        }
         break;
       case 'particles.dustSize':
-        dustMat.size = value;
+        if (dustMat instanceof THREE.PointsMaterial) {
+          dustMat.size = value;
+        }
         break;
       case 'particles.dustOpacity':
-        dustMat.opacity = value;
+        if (dustMat instanceof THREE.PointsMaterial) {
+          dustMat.opacity = value;
+        }
         break;
 
-      // Moving Light Material
-      case 'particles.pathPointColor':
-        lightMat.color.set(value);
+      // Moving Light Material updates
+      case 'material.movingLight.emissiveColor':
+         if (lightMat instanceof THREE.MeshBasicMaterial) {
+          lightMat.color.set(value);
+        }
         break;
     }
   }
 
-  /**
-   * 获取一个已注册的材质实例
-   * @param {string} name - 材质名称 ('pathLine', 'dustParticles', 'movingLight')
-   * @returns {THREE.Material | undefined}
-   */
-  get(name) {
+  get(name: string): THREE.Material | null {
     const material = this.materials.get(name);
     if (!material) {
-      logger.warn('MaterialService', `请求的材质 "${name}" 不存在`);
+      logger.warn('MaterialService', `请求的材质不存在: "${name}"`);
+      return null;
     }
     return material;
   }
@@ -3023,20 +3045,29 @@ export default materialSys;
 
 ```
 
-### src/systems/math-light-sys.js
+### src/systems/math-light-sys.ts
 
-```javascript
+```
 /**
- * @file math-light-sys.js
+ * @file math-light-sys.ts
  * @description 移动光点系统 (数学球体版)
  * ✅ 重构: 监听统一的 'config-changed' 事件
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-import materialSys from './material-sys.js';
+import logger from '../utils/logger';
+import config from '../config';
+import materialSys from './material-sys';
+import postprocessSys from './postprocess-sys';
+
 
 class MathLightSystem {
+  private eventBus: any;
+  private scene: THREE.Scene | null;
+  private coordinateSystem: any;
+  private initialized: boolean;
+  private lightMesh: any;
+  private currentPosition: THREE.Vector3;
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -3091,6 +3122,8 @@ if (!material) {
     
     const lightAnchor = this.coordinateSystem.getLightAnchor();
     lightAnchor.add(this.lightMesh);
+
+    postprocessSys.addGlowObject(this.lightMesh); // **注册到新的辉光系统**
     
     logger.debug('MathLightSystem', '光点球体已创建');
   }
@@ -3166,20 +3199,24 @@ export default mathLightSys;
 
 ```
 
-### src/systems/model-sys.js
+### src/systems/model-sys.ts
 
-```javascript
+```
 /**
- * @file model-sys.js
+ * @file model-sys.ts
  * @description 模型服务 - 负责加载、缓存和处理 GLB/GLTF 模型资源。
  */
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import logger from '../utils/logger.js';
-import materialSys from './material-sys.js';
-import { resolveAssetUrl } from '../utils/url-resolver.js';
+import logger from '../utils/logger';
+import materialSys from './material-sys';
+import { resolveAssetUrl } from '../utils/url-resolver';
 
 class ModelService {
+  private initialized: boolean;
+  private loader: GLTFLoader;
+  private cache: Map<string, any>;
+
   constructor() {
     this.initialized = false;
     this.loader = new GLTFLoader();
@@ -3261,18 +3298,19 @@ export default modelSys;
 
 ```
 
-### src/systems/particles-sys.js
+### src/systems/particles-sys.ts
 
-```javascript
+```
 /**
- * @file particles-sys.js
+ * @file particles-sys.ts
  * @description 粒子系统 - 球形分布 + 自转 + 呼吸 + 浮动效果
- * ✅ 核心改造: 监听统一的 'config-changed' 事件，取代大量独立事件。
+ * ✨ 重构: 移除了对旧辉光属性 material.particles.emissiveIntensity 的监听。
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-import materialSys from './material-sys.js';
+import logger from '../utils/logger';
+import config from '../config';
+import materialSys from './material-sys';
+import postprocessSys from './postprocess-sys';
 
 
 const DEFAULT_SPHERE_RADIUS = 1600;
@@ -3283,6 +3321,24 @@ const DEFAULT_FLOAT_INTENSITY = 0.3;
 const DEFAULT_FLOAT_PERIOD = 4.0;
 
 class ParticlesSystem {
+  private eventBus: any;
+  private scene: THREE.Scene | null;
+  private coordinateSystem: any;
+  private initialized: boolean;
+  private dustParticles: any;
+  private particleContainer: any;
+  private rotationAxis: THREE.Vector3;
+  private rotationSpeed: number;
+  private tiltXZ: number;
+  private tiltXY: number;
+  private baseRadius: number;
+  private breathIntensity: number;
+  private breathPeriod: number;
+  private floatIntensity: number;
+  private floatPeriod: number;
+  private initialPositions: any;
+  private baseSize: number;
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -3330,7 +3386,7 @@ class ParticlesSystem {
 
       this._createDustParticles();
       this._bindEvents();
-      this._loadInitialConfig(); // ✅ 新增：加载初始配置
+      this._loadInitialConfig(); 
 
       this.initialized = true;
       logger.info('ParticlesSystem', '粒子系统初始化完成');
@@ -3367,30 +3423,28 @@ class ParticlesSystem {
     
     this.initialPositions = positions.slice();
     
-    // 从 MaterialService 获取预创建的材质
-const material = materialSys.get('dustParticles');
+    const material = materialSys.get('dustParticles');
 
-if (!material) {
-  logger.error('ParticlesSystem', '无法从 MaterialService 获取 "dustParticles" 材质，粒子无法创建。');
-  return;
-}
+    if (!material) {
+      logger.error('ParticlesSystem', '无法从 MaterialService 获取 "dustParticles" 材质，粒子无法创建。');
+      return;
+    }
 
-// 更新 this.baseSize 以便在 update 循环中使用
-this.baseSize = config.get('particles.dustSize') ?? 0.6;
+    this.baseSize = config.get('particles.dustSize') ?? 0.6;
     
     this.dustParticles = new THREE.Points(geometry, material);
     this.dustParticles.name = 'DustParticles';
     this.dustParticles.userData = { glow: true };
     
     this.particleContainer.add(this.dustParticles);
+
+    postprocessSys.addGlowObject(this.dustParticles);
     
     logger.debug('ParticlesSystem', `尘埃粒子已创建: ${count} 个`);
   }
 
   _bindEvents() {
-    // ✅ 核心改造：监听通用配置变更事件
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
-    // ❌ 所有独立的事件监听器已被移除
   }
 
   _loadInitialConfig() {
@@ -3402,28 +3456,21 @@ this.baseSize = config.get('particles.dustSize') ?? 0.6;
     this._updateRotationAxis();
   }
 
-  /**
-   * ✅ 新增: 统一处理配置变更
-   * @param {{key: string, value: any}} param0
-   */
-  _handleConfigChange({ key, value }) {
+  _handleConfigChange({ key, value }: { key: string, value: any }) {
     if (!this.dustParticles) return;
 
     switch (key) {
       case 'particles.dustColor':
-        this.dustParticles.material.color.set(value);
-        if (this.dustParticles.material.userData.emissive) {
-          this.dustParticles.material.userData.emissive.set(value);
-        }
+        (this.dustParticles.material as THREE.PointsMaterial).color.set(value);
         break;
       
       case 'particles.dustSize':
         this.baseSize = value;
-        this.dustParticles.material.size = value;
+        (this.dustParticles.material as THREE.PointsMaterial).size = value;
         break;
 
       case 'particles.dustOpacity':
-        this.dustParticles.material.opacity = value;
+        (this.dustParticles.material as THREE.PointsMaterial).opacity = value;
         break;
 
       case 'particles.systemScale':
@@ -3457,12 +3504,6 @@ this.baseSize = config.get('particles.dustSize') ?? 0.6;
       case 'particles.floatIntensity':
         this.floatIntensity = value;
         break;
-      
-      case 'material.particles.emissiveIntensity':
-        if (this.dustParticles.material.userData) {
-          this.dustParticles.material.userData.emissiveIntensity = value;
-        }
-        break;
     }
   }
 
@@ -3470,18 +3511,17 @@ this.baseSize = config.get('particles.dustSize') ?? 0.6;
     const radXZ = (this.tiltXZ * Math.PI) / 180;
     const radXY = (this.tiltXY * Math.PI) / 180;
     
-    const axis = new THREE.Vector3(0, 1, 0); // Start with Y-axis
-    axis.applyAxisAngle(new THREE.Vector3(1, 0, 0), radXY); // Tilt around X-axis
-    axis.applyAxisAngle(new THREE.Vector3(0, 0, 1), radXZ); // Tilt around Z-axis
+    const axis = new THREE.Vector3(0, 1, 0);
+    axis.applyAxisAngle(new THREE.Vector3(1, 0, 0), radXY);
+    axis.applyAxisAngle(new THREE.Vector3(0, 0, 1), radXZ);
     
     this.rotationAxis.copy(axis.normalize());
   }
 
-  _rebuildDustParticles(count) {
+  _rebuildDustParticles(count: number) {
     if (this.dustParticles) {
-      this.particleContainer.remove(this.dustParticles);
+      this.particleContainer?.remove(this.dustParticles);
       this.dustParticles.geometry.dispose();
-      this.dustParticles.material.dispose();
     }
     
     this._createDustParticles();
@@ -3489,36 +3529,33 @@ this.baseSize = config.get('particles.dustSize') ?? 0.6;
     logger.info('ParticlesSystem', `粒子系统已重建: ${count} 个`);
   }
 
-  update(elapsed) {
+  update(elapsed: number) {
     if (this.dustParticles && this.rotationSpeed !== 0) {
-      this.dustParticles.rotateOnAxis(this.rotationAxis, this.rotationSpeed * 0.01 * elapsed); // Use delta
+      // Note: The rotation is not frame-rate independent here. For smoother results, multiply by delta in the main loop.
+      this.dustParticles.rotateOnAxis(this.rotationAxis, this.rotationSpeed * 0.001);
     }
-
+  
     if (this.dustParticles && this.initialPositions) {
-      const positions = this.dustParticles.geometry.attributes.position.array;
-      const sizes = this.dustParticles.geometry.attributes.size.array;
+      const positions = this.dustParticles.geometry.attributes.position.array as Float32Array;
+      const sizes = this.dustParticles.geometry.attributes.size.array as Float32Array;
       const count = positions.length / 3;
-
+  
       for (let i = 0; i < count; i++) {
         const phaseOffset = sizes[i];
-        
-        const breathPhase = elapsed / this.breathPeriod + phaseOffset;
-        const breathScale = 1.0 + Math.sin(breathPhase * Math.PI * 2) * this.breathIntensity;
         
         const floatPhase = elapsed / this.floatPeriod + phaseOffset;
         const floatOffset = Math.sin(floatPhase * Math.PI * 2) * this.floatIntensity;
         
-        // Apply float only to Y, assuming initial positions are the reference
         positions[i * 3 + 1] = this.initialPositions[i * 3 + 1] + floatOffset;
-        // Breathing can be handled by scaling position vectors (more complex) or by material size (simpler)
       }
-
+  
       this.dustParticles.geometry.attributes.position.needsUpdate = true;
-
+  
       const globalBreath = 1.0 + Math.sin(elapsed / this.breathPeriod * Math.PI * 2) * this.breathIntensity * 0.3;
-      this.dustParticles.material.size = this.baseSize * globalBreath;
+      (this.dustParticles.material as THREE.PointsMaterial).size = this.baseSize * globalBreath;
     }
   }
+
   enable() {
     if (this.particleContainer) {
       this.particleContainer.visible = true;
@@ -3534,10 +3571,9 @@ this.baseSize = config.get('particles.dustSize') ?? 0.6;
   }
 
   dispose() {
-    if (this.dustParticles) {
+    if (this.dustParticles && this.particleContainer) {
       this.particleContainer.remove(this.dustParticles);
       this.dustParticles.geometry.dispose();
-      this.dustParticles.material.dispose();
     }
 
     if (this.particleContainer && this.coordinateSystem) {
@@ -3553,23 +3589,36 @@ this.baseSize = config.get('particles.dustSize') ?? 0.6;
 const particlesSys = new ParticlesSystem();
 export default particlesSys;
 
+
 ```
 
-### src/systems/path-sys.js
+### src/systems/path-sys.ts
 
-```javascript
+```
 /**
- * @file path-sys.js
+ * @file path-sys.ts
  * @description 路径系统 - 动态轨迹线条 + 实时绘制
- * ✅ 重构: 监听统一的 'config-changed' 事件
+ * 🔧 修正: 移除对旧辉光层 (GLOW_LAYER) 的引用，改用新的 postprocessSys.addGlowObject() 方法。
+ * 🔧 修正: 移除对共享材质的 .dispose() 调用，以保护材质服务。
+ * 🔧 补充: 恢复 enable/disable 方法以兼容场景导演。
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-import materialSys from './material-sys.js';
-
+import logger from '../utils/logger';
+import config from '../config';
+import materialSys from './material-sys';
+import postprocessSys from './postprocess-sys';
 
 class PathSystem {
+  private eventBus: any;
+  private scene: THREE.Scene | null;
+  private coordinateSystem: any;
+  private initialized: boolean;
+  private pathLine: THREE.Line | null;
+  private allPoints: THREE.Vector3[];
+  private currentDrawIndex: number;
+  private pathContainer: THREE.Group | null;
+  private isEnabled: boolean; // 补充
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -3581,9 +3630,10 @@ class PathSystem {
     this.currentDrawIndex = 0;
     
     this.pathContainer = null;
+    this.isEnabled = true; // 补充
   }
 
-  init({ eventBus, scene, coordinateSystem }) {
+  init({ eventBus, scene, coordinateSystem }: { eventBus: any; scene: THREE.Scene; coordinateSystem: any; }) {
     if (this.initialized) {
       logger.warn('PathSystem', '路径系统已经初始化过了');
       return this;
@@ -3610,23 +3660,23 @@ class PathSystem {
 
       return this;
     } catch (err) {
-      logger.error('PathSystem', `初始化失败: ${err.message}`);
+      logger.error('PathSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
   _bindEvents() {
-    this.eventBus.on('data-loaded', (data) => {
+    this.eventBus.on('data-loaded', (data: { points: THREE.Vector3[] }) => {
       this.allPoints = data.points;
       this.currentDrawIndex = 0;
       this._createPath();
     });
 
-    this.eventBus.on('moving-light-position-updated', (position) => {
+    this.eventBus.on('moving-light-position-updated', (position: THREE.Vector3) => {
       this._updatePathToPosition(position);
     });
 
-    this.eventBus.on('animation-step-updated', (step) => {
+    this.eventBus.on('animation-step-updated', (step: number) => {
       this._jumpToStep(step);
     });
 
@@ -3637,15 +3687,10 @@ class PathSystem {
       }
     });
 
-    // ✅ 核心改造：监听通用配置变更事件
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
   }
 
-  /**
-   * ✅ 新增: 统一处理配置变更
-   * @param {{key: string, value: any}} param0
-   */
-  _handleConfigChange({ key, value }) {
+  _handleConfigChange({ key, value }: { key: string; value: any; }) {
     if (!this.pathLine) return;
 
     switch (key) {
@@ -3663,10 +3708,13 @@ class PathSystem {
       return;
     }
 
-    if (this.pathLine) {
+    if (this.pathLine && this.pathContainer) {
+      // ✅ 核心修正: 从辉光场景中移除旧对象
+      postprocessSys.removeGlowObject(this.pathLine);
       this.pathContainer.remove(this.pathLine);
       this.pathLine.geometry.dispose();
-      this.pathLine.material.dispose();
+      // ✅ 核心修正: 不要销毁由 materialSys 管理的共享材质
+      // this.pathLine.material.dispose(); 
     }
 
     const geometry = new THREE.BufferGeometry();
@@ -3683,25 +3731,27 @@ class PathSystem {
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setDrawRange(0, 0);
 
-    // 从 MaterialService 获取预创建的材质
-const material = materialSys.get('pathLine');
+    const material = materialSys.get('pathLine');
 
-if (!material) {
-  logger.error('PathSystem', '无法从 MaterialService 获取 "pathLine" 材质，路径无法创建。');
-  return;
-}
+    if (!material) {
+      logger.error('PathSystem', '无法从 MaterialService 获取 "pathLine" 材质，路径无法创建。');
+      return;
+    }
 
     this.pathLine = new THREE.Line(geometry, material);
     this.pathLine.name = 'PathLine';
     this.pathLine.userData = { glow: true };
     
-    this.pathContainer.add(this.pathLine);
+    // ✅ 核心修正: 使用新的方法将路径添加到辉光场景
+    postprocessSys.addGlowObject(this.pathLine);
+    
+    this.pathContainer?.add(this.pathLine);
 
     this.currentDrawIndex = 0;
     logger.info('PathSystem', `路径已创建: 总点数 ${this.allPoints.length}`);
   }
 
-  _updatePathToPosition(position) {
+  _updatePathToPosition(position: THREE.Vector3) {
     if (!this.pathLine || !this.allPoints.length) return;
 
     let closestIndex = 0;
@@ -3713,7 +3763,7 @@ if (!material) {
         minDist = dist;
         closestIndex = i;
       }
-      if (dist > minDist) break;
+      if (dist > minDist && i > this.currentDrawIndex + 5) break; // 优化: 如果距离开始变大，则停止搜索
     }
 
     if (closestIndex > this.currentDrawIndex) {
@@ -3722,7 +3772,7 @@ if (!material) {
     }
   }
 
-  _jumpToStep(step) {
+  _jumpToStep(step: number) {
     if (!this.pathLine || !this.allPoints.length) return;
 
     const targetIndex = Math.min(step, this.allPoints.length - 1);
@@ -3730,37 +3780,39 @@ if (!material) {
     this.pathLine.geometry.setDrawRange(0, this.currentDrawIndex + 1);
   }
 
-  updateCameraPosition(camera) {
-    if (this.pathLine && camera) {
-      const worldCamPos = camera.position.clone();
-      const localCamPos = this.pathContainer.worldToLocal(worldCamPos);
-      this.pathLine.material.uniforms.uCameraPosition.value.copy(localCamPos);
+  updateCameraPosition(camera: THREE.Camera) {
+    if (this.pathLine && camera && this.pathContainer) {
+      const material = this.pathLine.material as THREE.ShaderMaterial;
+      if (material.uniforms.uCameraPosition) {
+        const worldCamPos = camera.position.clone();
+        const localCamPos = this.pathContainer.worldToLocal(worldCamPos);
+        material.uniforms.uCameraPosition.value.copy(localCamPos);
+      }
     }
   }
 
-  update(delta) {
+  update(delta: number) {
     // 占位
   }
-
+  
+  // ✅ 补充: 恢复 enable/disable 方法以兼容 scene-director-sys
   enable() {
-    if (this.pathContainer) {
-      this.pathContainer.visible = true;
-      logger.debug('PathSystem', '已启用');
-    }
+    this.isEnabled = true;
+    if (this.pathContainer) this.pathContainer.visible = true;
+    logger.debug('PathSystem', '已启用');
   }
 
   disable() {
-    if (this.pathContainer) {
-      this.pathContainer.visible = false;
-      logger.debug('PathSystem', '已禁用');
-    }
+    this.isEnabled = false;
+    if (this.pathContainer) this.pathContainer.visible = false;
+    logger.debug('PathSystem', '已禁用');
   }
 
   dispose() {
-    if (this.pathLine) {
+    if (this.pathLine && this.pathContainer) {
+      postprocessSys.removeGlowObject(this.pathLine);
       this.pathContainer.remove(this.pathLine);
       this.pathLine.geometry.dispose();
-      this.pathLine.material.dispose();
     }
 
     if (this.pathContainer && this.coordinateSystem) {
@@ -3778,368 +3830,296 @@ export default pathSys;
 
 ```
 
-### src/systems/postprocess-sys.js
+### src/systems/postprocess-sys.ts
 
-```javascript
+```
 /**
- * @file postprocess-sys.js
- * @description 后处理系统 - 选择性辉光 + 色相 + 噪点等效果
- * ✅ 核心改造: 监听统一的 'config-changed' 事件。
+ * @file postprocess-sys.ts
+ * @description 后处理系统 -全面采用 "postprocessing" 库，不允许使用自制shader。
+ * @version 2.1
  */
 import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-
-// ... (抑制警告的代码保持不变)
+import {
+  EffectComposer,
+  EffectPass,
+  RenderPass,
+  SelectiveBloomEffect,
+  BokehEffect,
+  ChromaticAberrationEffect,
+  DotScreenEffect,
+  TextureEffect,
+  HueSaturationEffect,
+  BrightnessContrastEffect,
+  Selection,
+  BlendFunction,
+  NoiseEffect
+} from 'postprocessing';
+// FilmEffect 在当前 postprocessing 版本无命名导出，改用 NoiseEffect 模拟胶片颗粒
+import logger from '../utils/logger';
+import config from '../config';
+import eventBus from '../event-bus';
 
 class PostprocessSystem {
-  // ... (构造函数和 init/create 方法保持不变)
+  private mainScene: THREE.Scene | null = null;
+  private camera: THREE.Camera | null = null;
+  private renderer: THREE.WebGLRenderer | null = null;
+  private initialized = false;
+
+  private composer: EffectComposer | null = null;
+  private selection: Selection; // 用于选择性辉光
+
+  // 所有效果
+  private bloomEffect: SelectiveBloomEffect | null = null;
+  private bokehEffect: BokehEffect | null = null;
+  private chromaticAberrationEffect: ChromaticAberrationEffect | null = null;
+  private dotScreenEffect: DotScreenEffect | null = null;
+  private filmEffect: NoiseEffect | null = null;
+  private scanlineEffect: TextureEffect | null = null;
+  private scanlineTexture: THREE.Texture | null = null;
+  private hueSaturationEffect: HueSaturationEffect | null = null;
+  private brightnessContrastEffect: BrightnessContrastEffect | null = null;
+
   constructor() {
-    this.eventBus = null;
-    this.scene = null;
-    this.camera = null;
-    this.renderer = null;
-    this.initialized = false;
-    this.composer = null;
-    this.renderPass = null;
-    this.glowRenderTarget = null;
-    this.glowScene = null;
-    this.glowMaterial = null;
-    this.glowCombinePass = null;
-    this.hueSaturationPass = null;
-    this.brightnessContrastPass = null;
-    this.noisePass = null;
-    this.chromaticAberrationPass = null;
-    this.scanlinePass = null;
-    this.getCameraFn = null;
-    this.cameraReady = false;
-    this._loggedWaiting = false;
+    this.selection = new Selection();
   }
 
-  init({ eventBus, scene, camera, renderer }) {
+  init({ scene, camera, renderer }: { scene: THREE.Scene; camera: THREE.Camera; renderer: THREE.WebGLRenderer; }) {
     if (this.initialized) return this;
     try {
-      this.eventBus = eventBus;
-      this.scene = scene;
+      this.mainScene = scene;
       this.renderer = renderer;
-      this.getCameraFn = (typeof camera === 'function') ? camera : () => camera;
-      this.cameraReady = !!this.getCameraFn();
+      this.camera = camera;
 
+      if (!this.camera) {
+        throw new Error('相机对象未提供，无法初始化后处理系统');
+      }
+      
       this._createComposer();
-      this._createSelectiveGlow();
-      this._createPasses();
       this._bindEvents();
+      this.updateAllEffectsFromConfig(); // 初始加载配置
 
       this.initialized = true;
-      logger.info('PostprocessSystem', '后处理系统初始化完成');
+      logger.info('PostprocessSystem', '✅ 后处理系统初始化完成 (v2.1, postprocessing库)');
       return this;
     } catch (err) {
-      logger.error('PostprocessSystem', `初始化失败: ${err.message}`);
+      logger.error('PostprocessSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
-  _createComposer() {
-    this.composer = new EffectComposer(this.renderer);
-    this.renderPass = new RenderPass(this.scene, this.getCameraFn());
-    this.composer.addPass(this.renderPass);
+  // [API不变] 外部系统通过此方法注册辉光对象
+  addGlowObject(object: THREE.Object3D) {
+    this.selection.add(object);
+    logger.debug('PostprocessSystem', `对象 "${object.name}" 已添加到光晕选择集`);
   }
 
-  _createSelectiveGlow() {
-    const { innerWidth: width, innerHeight: height } = window;
-    this.glowRenderTarget = new THREE.WebGLRenderTarget(width, height, {
-      minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat
-    });
-    this.glowScene = new THREE.Scene();
-    this.glowMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false });
-
-    // 假设选择性辉光仍然受一个全局开关控制
-    const bloomEnabled = config.get('postprocess.bloom.enabled') ?? true;
-
-    this.glowCombinePass = new ShaderPass({
-      uniforms: {
-        tDiffuse: { value: null },
-        tGlow: { value: this.glowRenderTarget.texture },
-        glowIntensity: { value: 1.0 },
-        resolution: { value: new THREE.Vector2(1 / width, 1 / height) },
-        blurSize: { value: 2.0 }
-      },
-      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: `
-        uniform sampler2D tDiffuse; uniform sampler2D tGlow; uniform float glowIntensity;
-        uniform vec2 resolution; uniform float blurSize; varying vec2 vUv;
-        void main() {
-          vec4 base = texture2D(tDiffuse, vUv); vec4 glow = vec4(0.0); float total = 0.0;
-          for(float x = -2.0; x <= 2.0; x++) { for(float y = -2.0; y <= 2.0; y++) {
-            vec2 offset = vec2(x, y) * resolution * blurSize;
-            glow += texture2D(tGlow, vUv + offset); total += 1.0;
-          }}
-          glow /= total;
-          gl_FragColor = base + glow * glowIntensity;
-        }`
-    });
-    this.glowCombinePass.enabled = bloomEnabled;
-    this.composer.addPass(this.glowCombinePass);
+  // [API不变] 外部系统通过此方法移除辉光对象
+  removeGlowObject(object: THREE.Object3D) {
+    this.selection.delete(object);
+    logger.debug('PostprocessSystem', `对象 "${object.name}" 已从光晕选择集移除`);
   }
 
-  _createPasses() {
-    this._createHueSaturationPass();
-    this._createBrightnessContrastPass();
-    this._createNoisePass();
-    this._createChromaticAberrationPass();
-    this._createScanlinePass();
-  }
+  private _createComposer() {
+    if (!this.renderer || !this.mainScene || !this.camera) return;
 
-  // ... (所有 _create...Pass 方法保持不变)
-  _createHueSaturationPass() {
-    const hsConfig = config.get('postprocess.hueSaturation');
-    this.hueSaturationPass = new ShaderPass({
-      uniforms: { tDiffuse: { value: null }, hue: { value: hsConfig.hue }, saturation: { value: hsConfig.saturation } },
-      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: `
-        uniform sampler2D tDiffuse; uniform float hue; uniform float saturation; varying vec2 vUv;
-        vec3 rgb2hsv(vec3 c) { vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0); vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g)); vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r)); float d = q.x - min(q.w, q.y); float e = 1.0e-10; return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x); }
-        vec3 hsv2rgb(vec3 c) { vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0); vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www); return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y); }
-        void main() { vec4 texel = texture2D(tDiffuse, vUv); vec3 hsv = rgb2hsv(texel.rgb); hsv.x = fract(hsv.x + hue); hsv.y = clamp(hsv.y * (1.0 + saturation), 0.0, 1.0); gl_FragColor = vec4(hsv2rgb(hsv), texel.a); }`
+    this.composer = new EffectComposer(this.renderer, {
+      frameBufferType: THREE.HalfFloatType
     });
-    this.hueSaturationPass.enabled = hsConfig.enabled; this.composer.addPass(this.hueSaturationPass);
-  }
-  _createBrightnessContrastPass() {
-    const bcConfig = config.get('postprocess.brightnessContrast');
-    this.brightnessContrastPass = new ShaderPass({
-      uniforms: { tDiffuse: { value: null }, brightness: { value: bcConfig.brightness }, contrast: { value: bcConfig.contrast } },
-      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: `
-        uniform sampler2D tDiffuse; uniform float brightness; uniform float contrast; varying vec2 vUv;
-        void main() { vec4 texel = texture2D(tDiffuse, vUv); vec3 color = texel.rgb; color += brightness; color = (color - 0.5) * (1.0 + contrast) + 0.5; gl_FragColor = vec4(clamp(color, 0.0, 1.0), texel.a); }`
-    });
-    this.brightnessContrastPass.enabled = bcConfig.enabled; this.composer.addPass(this.brightnessContrastPass);
-  }
-  _createNoisePass() {
-    const noiseConfig = config.get('postprocess.noise');
-    this.noisePass = new ShaderPass({
-      uniforms: { tDiffuse: { value: null }, intensity: { value: noiseConfig.intensity }, time: { value: 0 } },
-      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: `
-        uniform sampler2D tDiffuse; uniform float intensity; uniform float time; varying vec2 vUv;
-        float random(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123); }
-        void main() { vec4 texel = texture2D(tDiffuse, vUv); float noise = random(vUv + time) * intensity; gl_FragColor = vec4(texel.rgb + noise, texel.a); }`
-    });
-    this.noisePass.enabled = noiseConfig.enabled; this.composer.addPass(this.noisePass);
-  }
-  _createChromaticAberrationPass() {
-    const caConfig = config.get('postprocess.chromaticAberration');
-    this.chromaticAberrationPass = new ShaderPass({
-      uniforms: { tDiffuse: { value: null }, offsetX: { value: caConfig.offsetX || 0.002 }, offsetY: { value: caConfig.offsetY || 0.002 } },
-      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: `
-        uniform sampler2D tDiffuse; uniform float offsetX; uniform float offsetY; varying vec2 vUv;
-        void main() { vec2 offset = vec2(offsetX, offsetY); vec2 uvR = clamp(vUv + offset, 0.0, 1.0); vec2 uvB = clamp(vUv - offset, 0.0, 1.0); float r = texture2D(tDiffuse, uvR).r; float g = texture2D(tDiffuse, vUv).g; float b = texture2D(tDiffuse, uvB).b; float a = texture2D(tDiffuse, vUv).a; gl_FragColor = vec4(r, g, b, a); }`
-    });
-    this.chromaticAberrationPass.enabled = caConfig.enabled; this.composer.addPass(this.chromaticAberrationPass);
-  }
-  _createScanlinePass() {
-    const slConfig = config.get('postprocess.scanline');
-    this.scanlinePass = new ShaderPass({
-      uniforms: { tDiffuse: { value: null }, intensity: { value: slConfig.intensity }, density: { value: slConfig.density }, time: { value: 0 } },
-      vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: `
-        uniform sampler2D tDiffuse; uniform float intensity; uniform float density; uniform float time; varying vec2 vUv;
-        void main() { vec4 texel = texture2D(tDiffuse, vUv); float scanline = sin((vUv.y * density + time * 0.5) * 6.28318530718) * intensity; gl_FragColor = vec4(texel.rgb * (1.0 - scanline * 0.5), texel.a); }`
-    });
-    this.scanlinePass.enabled = slConfig.enabled; this.composer.addPass(this.scanlinePass);
-  }
 
-  _bindEvents() {
-    // ✅ 核心改造：监听通用配置变更事件
-    this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
+    // 1. 基础渲染通道
+    const renderPass = new RenderPass(this.mainScene, this.camera);
+    this.composer.addPass(renderPass);
 
-    // 监听相机切换，以便更新renderPass中的相机引用
-    this.eventBus.on('camera-changed', (camera) => {
-      if (this.renderPass) {
-        this.renderPass.camera = camera;
+    // 2. 创建所有效果
+    this._createAllEffects();
+    
+    // 3. 将每个效果放入独立的 EffectPass，避免卷积合并冲突
+    const camera = this.camera as THREE.Camera;
+    const addEffect = (effect: any) => {
+      if (effect) {
+        const pass = new EffectPass(camera, effect);
+        this.composer!.addPass(pass);
       }
-    });
+    };
 
-    // ❌ 所有独立的事件监听器已被移除
+    addEffect(this.bloomEffect);
+    addEffect(this.bokehEffect);
+    addEffect(this.chromaticAberrationEffect);
+    addEffect(this.dotScreenEffect);
+    addEffect(this.filmEffect);
+    addEffect(this.scanlineEffect);
+    addEffect(this.hueSaturationEffect);
+    addEffect(this.brightnessContrastEffect);
+  }
+  
+  private _createAllEffects() {
+    this.bloomEffect = new SelectiveBloomEffect(this.mainScene as any, this.camera as any, {
+      blendFunction: BlendFunction.ADD,
+      selection: this.selection,
+      mipmapBlur: true,
+    } as any);
+    
+    this.bokehEffect = new BokehEffect();
+    this.chromaticAberrationEffect = new ChromaticAberrationEffect();
+    this.dotScreenEffect = new DotScreenEffect({ blendFunction: BlendFunction.OVERLAY });
+    this.filmEffect = new NoiseEffect({ blendFunction: BlendFunction.SOFT_LIGHT }); // 用噪点效果模拟 Film 效果
+    this._createScanlineEffect();
+    this.hueSaturationEffect = new HueSaturationEffect();
+    this.brightnessContrastEffect = new BrightnessContrastEffect();
   }
 
-  /**
-   * ✅ 新增: 统一处理配置变更
-   * @param {{key: string, value: any}} param0
-   */
-  _handleConfigChange({ key, value }) {
-    if (!key.startsWith('postprocess.')) return;
+  private _createScanlineEffect() {
+    const data = new Uint8Array([
+      255, 255, 255, 255,
+      0, 0, 0, 255
+    ]);
+    const texture = new THREE.DataTexture(data, 1, 2, THREE.RGBAFormat);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.needsUpdate = true;
+    this.scanlineTexture = texture;
 
-    // 分离出效果名称和属性
-    const parts = key.split('.'); // e.g., ['postprocess', 'hueSaturation', 'enabled']
-    if (parts.length < 3) return;
-    
+    const effect = new TextureEffect({
+      blendFunction: BlendFunction.SOFT_LIGHT,
+      texture
+    });
+    const filmCfg = (config.get('postprocess.film') || {}) as any;
+    if (filmCfg) {
+      effect.blendMode.opacity.value = filmCfg.scanlineIntensity ?? 0.3;
+      texture.repeat.set(1, Math.max(1, Math.floor((filmCfg.scanlineCount ?? 2048) / 2)));
+    }
+    this.scanlineEffect = effect;
+  }
+
+  render(delta: number) {
+    if (!this.composer) return;
+
+    if (config.get('postprocess.enabled')) {
+      this.composer.render(delta);
+    } else if (this.mainScene && this.camera) {
+      this.renderer?.render(this.mainScene, this.camera);
+    }
+  }
+
+  private _bindEvents() {
+    eventBus.on('config-changed', this._handleConfigChange.bind(this));
+    eventBus.on('camera-changed', (camera: THREE.Camera) => {
+        this.camera = camera;
+        if (this.composer) {
+            this.composer.dispose();
+            this.composer = null;
+            this._createComposer();
+        }
+    });
+  }
+
+  private _handleConfigChange({ key }: { key: string; value: any }) {
+    if (!key.startsWith('postprocess.')) return;
+    this.updateEffectFromConfig(key);
+  }
+
+  updateEffectFromConfig(key: string) {
+    const parts = key.split('.');
+    if (parts.length < 2) return;
     const effectName = parts[1];
-    const property = parts[2];
-    
-    let pass;
-    let uniformName;
+    const cfg = config.get(`postprocess.${effectName}`);
+
+    // 通用启用/禁用逻辑
+    const setEnabled = (effect: any, isEnabled: boolean) => {
+        if (effect) {
+            effect.blendMode.opacity.value = isEnabled ? 1.0 : 0.0;
+        }
+    };
 
     switch (effectName) {
-      // ✅ 注意: bloom/glow 效果现在由选择性辉光系统处理
-      // 这里的配置项是假设存在的，用于控制 glowCombinePass
       case 'bloom':
-        if (this.glowCombinePass) {
-          if (property === 'enabled') this.glowCombinePass.enabled = value;
-          else if (property === 'intensity') this.glowCombinePass.uniforms.glowIntensity.value = value;
-          else if (property === 'smoothing') this.glowCombinePass.uniforms.blurSize.value = value;
+        if (this.bloomEffect) {
+          (this.bloomEffect as any).intensity = cfg.intensity;
+          (this.bloomEffect as any).luminanceMaterial.threshold = cfg.luminanceThreshold;
+          (this.bloomEffect as any).luminanceMaterial.smoothing = cfg.luminanceSmoothing;
+          setEnabled(this.bloomEffect, cfg.enabled);
         }
         break;
-
-      case 'hueSaturation':
-        pass = this.hueSaturationPass;
-        if (property === 'enabled') pass.enabled = value;
-        else if (property === 'hue') pass.uniforms.hue.value = value;
-        else if (property === 'saturation') pass.uniforms.saturation.value = value;
+      case 'bokeh':
+        if (this.bokehEffect) {
+            // 当前 postprocessing 版本 BokehEffect 无公开 uniforms 接口，避免直接访问
+            setEnabled(this.bokehEffect, cfg.enabled);
+        }
         break;
-      
-      case 'brightnessContrast':
-        pass = this.brightnessContrastPass;
-        if (property === 'enabled') pass.enabled = value;
-        else if (property === 'brightness') pass.uniforms.brightness.value = value;
-        else if (property === 'contrast') pass.uniforms.contrast.value = value;
-        break;
-
-      case 'noise':
-        pass = this.noisePass;
-        if (property === 'enabled') pass.enabled = value;
-        else if (property === 'intensity') pass.uniforms.intensity.value = value;
-        break;
-
       case 'chromaticAberration':
-        pass = this.chromaticAberrationPass;
-        if (property === 'enabled') pass.enabled = value;
-        else if (property === 'offsetX') pass.uniforms.offsetX.value = value;
-        else if (property === 'offsetY') pass.uniforms.offsetY.value = value;
+        if (this.chromaticAberrationEffect) {
+            this.chromaticAberrationEffect.offset.set(cfg.offset.x, cfg.offset.y);
+            setEnabled(this.chromaticAberrationEffect, cfg.enabled);
+        }
         break;
-
-      case 'scanline':
-        pass = this.scanlinePass;
-        if (property === 'enabled') pass.enabled = value;
-        else if (property === 'intensity') pass.uniforms.intensity.value = value;
-        else if (property === 'density') pass.uniforms.density.value = value;
+      case 'dotScreen':
+        if (this.dotScreenEffect) {
+            this.dotScreenEffect.uniforms.get('angle')!.value = cfg.angle;
+            this.dotScreenEffect.uniforms.get('scale')!.value = cfg.scale;
+            setEnabled(this.dotScreenEffect, cfg.enabled);
+        }
         break;
+      case 'film':
+        if (this.filmEffect) {
+            setEnabled(this.filmEffect, cfg.enabled);
+        }
+        if (this.scanlineEffect && this.scanlineTexture) {
+            this.scanlineEffect.blendMode.opacity.value = cfg.scanlineIntensity ?? 0.3;
+            this.scanlineTexture.repeat.set(1, Math.max(1, Math.floor((cfg.scanlineCount ?? 2048) / 2)));
+        }
+        break;
+      case 'hueSaturation':
+          if (this.hueSaturationEffect) {
+              this.hueSaturationEffect.uniforms.get('hue')!.value = cfg.hue;
+              this.hueSaturationEffect.uniforms.get('saturation')!.value = cfg.saturation;
+              setEnabled(this.hueSaturationEffect, cfg.enabled);
+          }
+          break;
+      case 'brightnessContrast':
+          if (this.brightnessContrastEffect) {
+              this.brightnessContrastEffect.uniforms.get('brightness')!.value = cfg.brightness;
+              this.brightnessContrastEffect.uniforms.get('contrast')!.value = cfg.contrast;
+              setEnabled(this.brightnessContrastEffect, cfg.enabled);
+          }
+          break;
     }
   }
-
-  // ... (_renderGlowLayer 方法保持不变)
-   _renderGlowLayer() {
-    const camera = this.getCameraFn(); if (!camera) return;
-    while (this.glowScene.children.length > 0) { this.glowScene.remove(this.glowScene.children[0]); }
-    this.scene.traverse((obj) => {
-      if (!obj.userData || !obj.userData.glow || !obj.visible) return;
-      if (obj.isLine && obj.material && obj.material.isShaderMaterial) {
-        const originalMaterial = obj.material;
-        if (originalMaterial.uniforms.uEmissive && originalMaterial.uniforms.uEmissiveIntensity) {
-          const emitColor = originalMaterial.uniforms.uEmissive.value.clone();
-          const emitIntensity = originalMaterial.uniforms.uEmissiveIntensity.value;
-          const glowLineMat = new THREE.LineBasicMaterial({
-            color: emitColor, transparent: true, opacity: Math.min(1.0, emitIntensity * 2.0),
-            depthWrite: false, blending: THREE.AdditiveBlending
-          });
-          const lineClone = new THREE.Line(obj.geometry, glowLineMat);
-          lineClone.matrix.copy(obj.matrixWorld); lineClone.matrixAutoUpdate = false; this.glowScene.add(lineClone);
-        }
-      } else if (obj.type === 'Points' || obj instanceof THREE.Points) {
-        const origMat = obj.material; const userEmissive = origMat?.userData?.emissive; const emissiveIntensity = origMat?.userData?.emissiveIntensity || 1.0;
-        let color = new THREE.Color(0xffffff);
-        if (userEmissive) { color.set(userEmissive); } else if (origMat?.color) { color.copy(origMat.color); }
-        const glowPointMat = new THREE.PointsMaterial({
-          color: color, size: origMat?.size ?? 1.0, transparent: true, opacity: Math.min(1.0, emissiveIntensity),
-          depthWrite: false, blending: THREE.AdditiveBlending, sizeAttenuation: true
-        });
-        const pointsClone = new THREE.Points(obj.geometry, glowPointMat);
-        pointsClone.matrix.copy(obj.matrixWorld); pointsClone.matrixAutoUpdate = false; this.glowScene.add(pointsClone);
-      } else if (obj.isMesh || obj instanceof THREE.Mesh) {
-        const originalMaterial = obj.material;
-        let emitColor = new THREE.Color(0xffffff);
-        if (originalMaterial?.userData?.emissive) { emitColor.set(originalMaterial.userData.emissive); }
-        else if (originalMaterial?.emissive) { emitColor.copy(originalMaterial.emissive); }
-        else if (originalMaterial?.color) { emitColor.copy(originalMaterial.color); }
-        const emitIntensity = originalMaterial?.emissiveIntensity || 1.0;
-        const mat = this.glowMaterial.clone();
-        mat.color.copy(emitColor); mat.opacity = Math.min(1.0, emitIntensity); mat.blending = THREE.AdditiveBlending;
-        const meshClone = new THREE.Mesh(obj.geometry, mat);
-        meshClone.matrix.copy(obj.matrixWorld); meshClone.matrixAutoUpdate = false; this.glowScene.add(meshClone);
-      }
-    });
-    this.renderer.setRenderTarget(this.glowRenderTarget); this.renderer.clear();
-    this.renderer.render(this.glowScene, this.getCameraFn()); this.renderer.setRenderTarget(null);
-    if (this.glowCombinePass) { this.glowCombinePass.uniforms.tGlow.value = this.glowRenderTarget.texture; }
-  }
-
-
-  render(delta) {
-    if (!this.cameraReady) {
-      const camera = this.getCameraFn();
-      if (camera) {
-        this.cameraReady = true;
-        this.renderPass.camera = camera;
-        logger.info('PostprocessSystem', '相机已就绪，开始后处理渲染');
-      } else {
-        if (!this._loggedWaiting) {
-          logger.debug('PostprocessSystem', '等待相机初始化...');
-          this._loggedWaiting = true;
-        }
-        return;
-      }
-    }
-
-    // 辉光层现在由一个全局开关控制
-    const bloomEnabled = config.get('postprocess.bloom.enabled') ?? true;
-    if (this.glowCombinePass && bloomEnabled) {
-      this._renderGlowLayer();
-    }
-    
-    if (this.noisePass && this.noisePass.enabled) this.noisePass.uniforms.time.value += delta;
-    if (this.scanlinePass && this.scanlinePass.enabled) this.scanlinePass.uniforms.time.value += delta;
-
-    this.composer.render(delta);
+  
+  updateAllEffectsFromConfig() {
+    const allKeys = Object.keys(config.get('postprocess'));
+    allKeys.forEach(key => this.updateEffectFromConfig(`postprocess.${key}`));
   }
 
   handleResize() {
-    const { innerWidth: width, innerHeight: height } = window;
-    this.composer.setSize(width, height);
-    if (this.glowRenderTarget) this.glowRenderTarget.setSize(width, height);
-    if (this.glowCombinePass) this.glowCombinePass.uniforms.resolution.value.set(1 / width, 1 / height);
-    logger.debug('PostprocessSystem', '后处理已调整大小');
+    this.composer?.setSize(window.innerWidth, window.innerHeight);
+    logger.debugThrottled('PostprocessSystem', 'postprocess-resize', '后处理已调整大小 (v2.1)', 1000);
   }
 
   dispose() {
-    if (this.composer) this.composer.dispose();
-    if (this.glowRenderTarget) this.glowRenderTarget.dispose();
+    this.composer?.dispose();
     this.initialized = false;
-    this.cameraReady = false;
-    logger.info('PostprocessSystem', '后处理系统已销毁');
+    logger.info('PostprocessSystem', '后处理系统已销毁 (v2.1)');
   }
 }
 
 const postprocessSys = new PostprocessSystem();
 export default postprocessSys;
+
 ```
 
-### src/systems/scene-director-sys.js
+### src/systems/scene-director-sys.ts
 
-```javascript
+```
 /**
  * @file scene-director-sys.js
  * @description 场景导演系统 - 根据配置动态启用/禁用场景中的视觉组件
  */
-import logger from '../utils/logger.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import config from '../config';
 
 // 引入所有受其控制的视觉系统
-import pathSys from './path-sys.js';
-import mathLightSys from './math-light-sys.js';
+import pathSys from './path-sys';
+import mathLightSys from './math-light-sys';
 import particlesSys from './particles-sys.js';
 // import modelSys from './model-sys.js'; // 未来用于加载模型
 
@@ -4233,22 +4213,170 @@ export default sceneDirector;
 
 ```
 
-### src/ui/ui-basic.js
+### src/systems/shaders/path.frag
 
-```javascript
+```
+/**
+ * @file path.frag
+ * @description 路径线段的片元着色器
+ * ✨ 重构: 移除了 uEmissiveIntensity 和 uColor uniform，辉光由后处理 bloom 效果决定。
+ */
+uniform vec3 uEmissive; // 路径的颜色
+uniform float uDepthIntensity;
+uniform vec3 uCameraPosition;
+varying vec3 vWorldPosition;
+
+void main() {
+  // 最终颜色直接使用 uEmissive。如果该颜色足够亮，后处理系统中的 Bloom 效果会自动捕捉它。
+  vec3 finalColor = uEmissive;
+  
+  // 根据与相机的距离计算 alpha 透明度，实现景深效果
+  float distToCamera = length(vWorldPosition - uCameraPosition);
+  float fade = smoothstep(0.0, 200.0, distToCamera); // 在200个单位的距离内渐变
+  float alpha = 1.0 - fade * uDepthIntensity;
+  
+  gl_FragColor = vec4(finalColor, alpha);
+}
+
+```
+
+### src/systems/shaders/path.vert
+
+```
+varying vec3 vWorldPosition;
+
+void main() {
+  vec4 worldPos = modelMatrix * vec4(position, 1.0);
+  vWorldPosition = worldPos.xyz;
+  gl_Position = projectionMatrix * viewMatrix * worldPos;
+}
+
+```
+
+### src/systems/state.ts
+
+```
+/**
+ * @file state.ts
+ * @description 全局状态管理器 - 存储和管理运行时动态变化的数据。
+ */
+import eventBus from '../event-bus';
+import logger from '../utils/logger';
+
+// 默认状态
+const DEFAULT_STATE = {
+  data: {
+    antData: [],
+    mappedPoints: [],
+  },
+  animation: {
+    currentStep: 0,
+    lerpT: 0,
+    animating: false,
+  }
+};
+
+// 深度克隆函数
+function deepClone(obj: any): any {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(item => deepClone(item));
+  const cloned: { [key: string]: any } = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      cloned[key] = deepClone(obj[key]);
+    }
+  }
+  return cloned;
+}
+
+class StateManager {
+  private _state = deepClone(DEFAULT_STATE);
+
+  get(key: string): any {
+    try {
+      if (!key) return this._state;
+      const keys = key.split('.');
+      let value = this._state as any;
+      for (const k of keys) {
+        if (value === null || value === undefined) return null;
+        value = value[k];
+      }
+      return value;
+    } catch (err) {
+      logger.error('State', `获取状态异常 [${key}]: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
+  set(key: string, value: any): boolean {
+    try {
+      const keys = key.split('.');
+      let target = this._state as any;
+      for (let i = 0; i < keys.length - 1; i++) {
+        const k = keys[i];
+        if (!target[k] || typeof target[k] !== 'object') {
+          target[k] = {};
+        }
+        target = target[k];
+      }
+      const lastKey = keys[keys.length - 1];
+      if (target[lastKey] !== value) {
+        target[lastKey] = value;
+        // ✅ 发出独立的 state-changed 事件
+        eventBus.emit('state-changed', { key, value });
+      }
+      return true;
+    } catch (err) {
+      logger.error('State', `设置状态异常 [${key}]: ${(err as Error).message}`);
+      return false;
+    }
+  }
+
+  reset() {
+    this._state = deepClone(DEFAULT_STATE);
+    logger.info('State', '状态已重置为默认值');
+    Object.keys(DEFAULT_STATE).forEach(topKey => {
+      eventBus.emit('state-changed', { key: topKey, value: (DEFAULT_STATE as any)[topKey] });
+    });
+  }
+  
+  getRaw() {
+    return this._state;
+  }
+}
+
+const state = new StateManager();
+export default state;
+
+```
+
+### src/ui/ui-basic.ts
+
+```
 /**
  * @file ui-basic.js
  * @description 基础 UI 控制面板
  * ✅ 核心改造: 所有控件的 'change' 事件现在直接调用 config.set()，
  *    不再发出独立的 eventBus 事件。
  */
-import eventBus from '../event-bus.js';
-import config from '../config.js';
-import logger from '../utils/logger.js';
-import uiContainer from './ui-container.js';
-import dataSys from '../systems/data-sys.js';
+import eventBus from '../event-bus';
+import config from '../config';
+import logger from '../utils/logger';
+import uiContainer from './ui-container';
+import dataSys from '../systems/data-sys';
+import state from '../systems/state';
 
 class UIBasic {
+  private controls: Map<string, any>;
+  private folders: Map<string, any>;
+  private _pane: any;
+  private _isInitialized: boolean;
+  private configData: any;
+  private stateData: any;
+  private tempObjects: any;
+  private dataControls: any[];
+  private descriptionBlade: any;
+
   constructor() {
     this.controls = new Map();
     this.folders = new Map();
@@ -4256,6 +4384,7 @@ class UIBasic {
     this._isInitialized = false;
     
     this.configData = config.getRaw();
+    this.stateData = state.getRaw();
     
     // 临时对象用于Tweakpane的颜色选择器等特殊控件
     this.tempObjects = {
@@ -4360,49 +4489,50 @@ class UIBasic {
     this.descriptionBlade.value = currentDataset ? currentDataset.description : '---';
   }
 
-  _createAnimationControls() {
+    _createAnimationControls() {
     const folder = this._pane.addFolder({ title: '动画控制', expanded: true });
     
-    const playButton = folder.addButton({ title: config.get('animation.animating') ? '⏸️ 暂停' : '▶️ 播放' });
+    const playButton = folder.addButton({ title: state.get('animation.animating') ? '⏸️ 暂停' : '▶️ 播放' });
     playButton.on('click', () => {
-      const isPlaying = !config.get('animation.animating');
-      // ✅ 直接调用 config.set
-      config.set('animation.animating', isPlaying);
-      playButton.title = isPlaying ? '⏸️ 暂停' : '▶️ 播放';
+      const isPlaying = !state.get('animation.animating');
+      // ✅ 直接调用 state.set
+      state.set('animation.animating', isPlaying);
     });
 
-    eventBus.on('config-changed', ({ key, value }) => {
+    // 监听状态变化来更新按钮标题
+    eventBus.on('state-changed', ({ key, value }) => {
         if (key === 'animation.animating') {
             playButton.title = value ? '⏸️ 暂停' : '▶️ 播放';
         }
     });
     
-    const stepSlider = folder.addBinding(this.configData.animation, 'currentStep', {
+    const stepSlider = folder.addBinding(this.stateData.animation, 'currentStep', { // ✅ 绑定到 stateData
       label: '当前步数', min: 0, max: 100, step: 1
     });
     stepSlider.on('change', (ev) => {
-      // 这是一个命令，保留 eventBus
       eventBus.emit('step-to', ev.value);
     });
-    this.controls.set('animation.currentStep', stepSlider);
+    this.controls.set('animation.currentStep', stepSlider); // ✅ key 保持不变
     
     eventBus.on('data-loaded', (data) => {
       stepSlider.max = data.points.length - 1;
       stepSlider.refresh();
     });
     
+    // speed 和 loop 仍然是配置项，所以绑定到 configData
     const speed = folder.addBinding(this.configData.animation, 'speedFactor', { 
       label: '速度', min: 0.05, max: 5, step: 0.05 
     });
-    speed.on('change', (ev) => config.set('animation.speedFactor', ev.value)); // ✅
+    speed.on('change', (ev) => config.set('animation.speedFactor', ev.value));
     this.controls.set('animation.speedFactor', speed);
     
     const loop = folder.addBinding(this.configData.animation, 'loop', { label: '循环播放' });
-    loop.on('change', (ev) => config.set('animation.loop', ev.value)); // ✅
+    loop.on('change', (ev) => config.set('animation.loop', ev.value));
     this.controls.set('animation.loop', loop);
     
     this.folders.set('animation', folder);
   }
+
 
   _createCameraControls() {
     const folder = this._pane.addFolder({ title: '相机设置', expanded: false });
@@ -4443,7 +4573,7 @@ class UIBasic {
   _createParticleControls() {
     const folder = this._pane.addFolder({ title: '粒子系统', expanded: false });
     
-    const dustColor = folder.addBinding(this.tempObjects.dustColor, 'dustColor', { label: '粒子颜色' });
+    const dustColor = folder.addBinding(this.tempObjects.dustColor, 'dustColor', { label: '粒子颜色', view: 'color' });
     dustColor.on('change', (ev) => config.set('particles.dustColor', ev.value)); // ✅
     this.controls.set('particles.dustColor', dustColor);
     
@@ -4501,11 +4631,11 @@ class UIBasic {
   _createPathControls() {
     const folder = this._pane.addFolder({ title: '路径设置', expanded: false });
     
-    const pathColor = folder.addBinding(this.tempObjects.pathColor, 'pathColor', { label: '路径颜色' });
+    const pathColor = folder.addBinding(this.tempObjects.pathColor, 'pathColor', { label: '路径颜色', view: 'color' });
     pathColor.on('change', (ev) => config.set('environment.pathColor', ev.value)); // ✅
     this.controls.set('environment.pathColor', pathColor);
 
-    const pointColor = folder.addBinding(this.tempObjects.pathPointColor, 'pathPointColor', { label: '光点颜色' });
+    const pointColor = folder.addBinding(this.tempObjects.pathPointColor, 'pathPointColor', { label: '光点颜色', view: 'color' });
     pointColor.on('change', (ev) => config.set('particles.pathPointColor', ev.value)); // ✅
     this.controls.set('particles.pathPointColor', pointColor);
     
@@ -4550,20 +4680,56 @@ class UIBasic {
     this.folders.set('audio', folder);
   }
 
-  _bindEvents() {
+      _bindEvents() {
     eventBus.on('datasets-list-updated', () => this._rebuildDataControls());
-    // 监听config中step的变化，反向更新UI滑块
+
+    // 监听配置变更
     eventBus.on('config-changed', ({ key, value }) => {
-      if (key === 'animation.currentStep') {
-        const stepControl = this.controls.get('animation.currentStep');
-        if (stepControl && this.configData.animation.currentStep !== value) {
-            this.configData.animation.currentStep = value;
-            stepControl.refresh();
-        }
-      }
+      this._updateControl(key, value, this.configData, this.tempObjects);
+    });
+    
+    // ✅ 新增: 监听状态变更
+    eventBus.on('state-changed', ({ key, value }) => {
+      this._updateControl(key, value, this.stateData);
+    });
+
+    eventBus.on('preset-loaded', () => {
+        this.refresh();
     });
   }
-  
+
+  // ✅ 新增: 提取一个可重用的辅助方法来更新UI控件
+  _updateControl(key: string, value: any, primarySource: any, secondarySource?: any) {
+      const control = this.controls.get(key);
+      if (!control) return;
+
+      const pathParts = key.split('.');
+      let target: any;
+      let tempKey: string | undefined;
+
+      // 特殊处理颜色等绑定到 tempObjects 的情况
+      if (secondarySource && (key === 'particles.dustColor' || key === 'environment.pathColor' || key === 'particles.pathPointColor')) {
+          tempKey = pathParts[1]; // e.g., 'dustColor'
+          target = secondarySource[tempKey];
+          if (target && target[tempKey] !== value) {
+              target[tempKey] = value;
+              control.refresh();
+          }
+          return;
+      }
+      
+      // 处理直接绑定到 primarySource (configData or stateData) 的情况
+      target = primarySource;
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        target = target[pathParts[i]];
+      }
+      const lastKey = pathParts[pathParts.length - 1];
+      if (target && target[lastKey] !== value) {
+        target[lastKey] = value;
+        control.refresh();
+      }
+  }
+
   updateBindings() {
     this.tempObjects.dustColor.dustColor = config.get('particles.dustColor');
     this.tempObjects.pathColor.pathColor = config.get('environment.pathColor');
@@ -4601,14 +4767,14 @@ export default uiBasic;
 
 ```
 
-### src/ui/ui-container.js
+### src/ui/ui-container.ts
 
-```javascript
+```
 /**
  * @file ui-container.js
  * @description 统一 UI 容器系统 - 左侧可滚动面板
  */
-import logger from '../utils/logger.js';
+import logger from '../utils/logger';
 
 class UIContainer {
   constructor() {
@@ -4776,20 +4942,26 @@ export default new UIContainer();
 
 ```
 
-### src/ui/ui-coordinates.js
+### src/ui/ui-coordinates.ts
 
-```javascript
+```
 /**
  * @file ui-coordinates.js
  * @description 坐标系统 UI 面板 - 缩放控制
  * ✅ 已删除：整体旋转、调试信息按钮
  */
 import { Pane } from 'tweakpane';
-import logger from '../utils/logger.js';
-import uiContainer from './ui-container.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import uiContainer from './ui-container';
+import config from '../config';
 
 class UICoordinates {
+  private pane: any;
+  private eventBus: any;
+  private initialized: boolean;
+  private controls: Map<string, any>;
+  private configData: any;
+
   constructor() {
     this.pane = null;
     this.eventBus = null;
@@ -4882,12 +5054,36 @@ class UICoordinates {
     });
   }
 
-  _bindEvents() {
+    _bindEvents() {
+    // 监听 reset 命令完成
     this.eventBus.on('coordinate-system-reset-completed', () => {
-      this.pane.refresh();
+      this.refresh();
       logger.info('UICoordinates', '坐标系统 UI 已刷新');
     });
+
+    // 监听外部配置变更
+    this.eventBus.on('config-changed', ({ key, value }) => {
+      const control = this.controls.get(key);
+      if (control) {
+        const pathParts = key.split('.');
+        let target = this.configData;
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          target = target[pathParts[i]];
+        }
+        const lastKey = pathParts[pathParts.length - 1];
+        if (target && target[lastKey] !== value) {
+          target[lastKey] = value;
+          control.refresh();
+        }
+      }
+    });
+
+    // 监听预设加载
+    this.eventBus.on('preset-loaded', () => {
+        this.refresh();
+    });
   }
+
 
   updateBindings() {
     logger.debug('UICoordinates', '绑定检查完成');
@@ -4919,166 +5115,25 @@ export default uiCoordinates;
 
 ```
 
-### src/ui/ui-material.js
-
-```javascript
-/**
- * @file ui-material.js
- * @description 材质辉光控制面板
- * ✅ 核心改造: 所有控件的 'change' 事件现在直接调用 config.set()。
- */
-import eventBus from '../event-bus.js';
-import config from '../config.js';
-import logger from '../utils/logger.js';
-import uiContainer from './ui-container.js';
-
-class UIMaterial {
-  constructor() {
-    this._pane = null;
-    this._isInitialized = false;
-    this.controls = new Map();
-    
-    this.configData = config.getRaw();
-  }
-
-  async init() {
-    if (this._isInitialized) {
-      logger.warn('UIMaterial', 'UI 已初始化');
-      return;
-    }
-
-    const { Pane } = await import('tweakpane');
-    
-    this._pane = new Pane({
-      title: '材质辉光',
-      expanded: false,
-      container: uiContainer.getScrollContent()
-    });
-
-    this._createMaterialControls();
-
-    this._isInitialized = true;
-
-    const uiRegistry = (await import('./ui-registry.js')).default;
-    uiRegistry.register('ui-material', this);
-    
-    logger.info('UIMaterial', '材质辉光 UI 已初始化');
-  }
-
-  _createMaterialControls() {
-    // ========== 路径辉光 ==========
-    const pathFolder = this._pane.addFolder({ title: '路径辉光', expanded: true });
-    
-    const pathEnabled = pathFolder.addBinding(
-      this.configData.material.path,
-      'enabled',
-      { label: '启用' }
-    );
-    pathEnabled.on('change', (ev) => {
-      config.set('material.path.enabled', ev.value); // ✅
-    });
-    this.controls.set('material.path.enabled', pathEnabled);
-    
-    const pathIntensity = pathFolder.addBinding(
-      this.configData.material.path,
-      'emissiveIntensity',
-      { label: '发光强度', min: 0, max: 3, step: 0.1 }
-    );
-    pathIntensity.on('change', (ev) => {
-      config.set('material.path.emissiveIntensity', ev.value); // ✅
-    });
-    this.controls.set('material.path.emissiveIntensity', pathIntensity);
-    
-    // ========== 粒子辉光 ==========
-    const particlesFolder = this._pane.addFolder({ title: '粒子辉光', expanded: false });
-    
-    const particlesEnabled = particlesFolder.addBinding(
-      this.configData.material.particles,
-      'enabled',
-      { label: '启用' }
-    );
-    particlesEnabled.on('change', (ev) => {
-      config.set('material.particles.enabled', ev.value); // ✅
-    });
-    this.controls.set('material.particles.enabled', particlesEnabled);
-    
-    const particlesIntensity = particlesFolder.addBinding(
-      this.configData.material.particles,
-      'emissiveIntensity',
-      { label: '发光强度', min: 0, max: 2, step: 0.1 }
-    );
-    particlesIntensity.on('change', (ev) => {
-      config.set('material.particles.emissiveIntensity', ev.value); // ✅
-    });
-    this.controls.set('material.particles.emissiveIntensity', particlesIntensity);
-    
-    // ========== 移动光点辉光 ==========
-    const movingLightFolder = this._pane.addFolder({ title: '移动光点辉光', expanded: false });
-    
-    const movingLightEnabled = movingLightFolder.addBinding(
-      this.configData.material.movingLight,
-      'enabled',
-      { label: '启用' }
-    );
-    movingLightEnabled.on('change', (ev) => {
-      config.set('material.movingLight.enabled', ev.value); // ✅
-    });
-    this.controls.set('material.movingLight.enabled', movingLightEnabled);
-    
-    const movingLightIntensity = movingLightFolder.addBinding(
-      this.configData.material.movingLight,
-      'emissiveIntensity',
-      { label: '发光强度', min: 0, max: 3, step: 0.1 }
-    );
-    movingLightIntensity.on('change', (ev) => {
-      config.set('material.movingLight.emissiveIntensity', ev.value); // ✅
-    });
-    this.controls.set('material.movingLight.emissiveIntensity', movingLightIntensity);
-  }
-
-  updateBindings() {
-    // 材质辉光直接绑定到 configData，无需手动更新
-    logger.debug('UIMaterial', '绑定检查完成（无临时对象）');
-  }
-
-  refresh() {
-    this.updateBindings();
-    this.controls.forEach((control) => {
-      if (control && typeof control.refresh === 'function') {
-        control.refresh();
-      }
-    });
-    logger.debug('UIMaterial', 'UI 已刷新');
-  }
-
-  dispose() {
-    if (this._pane) {
-      this._pane.dispose();
-      this._pane = null;
-    }
-    this.controls.clear();
-    this._isInitialized = false;
-    logger.info('UIMaterial', '材质辉光 UI 已清理');
-  }
-}
-
-export default new UIMaterial();
+### src/ui/ui-post.ts
 
 ```
-
-### src/ui/ui-post.js
-
-```javascript
 /**
  * @file ui-post.js
  * @description 后期处理控制面板
- * ✅ 核心改造: 完全重写以匹配 config.js 中的新后处理结构，并使用 config.set()。
+ * ✅ [重构 v2.1] 更新UI以匹配新的 'film' 效果, 移除旧的 noise 和 scanline。
  */
-import config from '../config.js';
-import logger from '../utils/logger.js';
-import uiContainer from './ui-container.js';
+import eventBus from '../event-bus'; 
+import config from '../config';
+import logger from '../utils/logger';
+import uiContainer from './ui-container';
 
 class UIPost {
+  private _pane: any;
+  private _isInitialized: boolean;
+  private controls: Map<string, any>;
+  private configData: any;
+
   constructor() {
     this._pane = null;
     this._isInitialized = false;
@@ -5101,12 +5156,13 @@ class UIPost {
     });
 
     this._createPostProcessingControls();
+    this._bindEvents();
     this._isInitialized = true;
 
     const uiRegistry = (await import('./ui-registry.js')).default;
     uiRegistry.register('ui-post', this);
 
-    logger.info('UIPost', '后期处理 UI 已初始化');
+    logger.info('UIPost', '后期处理 UI 已初始化 (v2.1)');
   }
 
   _createPostProcessingControls() {
@@ -5114,7 +5170,39 @@ class UIPost {
     const globalEnable = this._pane.addBinding(this.configData.postprocess, 'enabled', { label: '启用后期处理' });
     globalEnable.on('change', (ev) => config.set('postprocess.enabled', ev.value));
     this.controls.set('postprocess.enabled', globalEnable);
+
+    // ---------- 辉光 (Bloom) ----------
+    const bloomFolder = this._pane.addFolder({ title: '光晕 (Bloom)', expanded: true });
+    const bloomEnabled = bloomFolder.addBinding(this.configData.postprocess.bloom, 'enabled', { label: '启用' });
+    bloomEnabled.on('change', (ev) => config.set('postprocess.bloom.enabled', ev.value));
+    this.controls.set('postprocess.bloom.enabled', bloomEnabled);
+
+    const bloomIntensity = bloomFolder.addBinding(this.configData.postprocess.bloom, 'intensity', { label: '强度', min: 0, max: 3, step: 0.05 });
+    bloomIntensity.on('change', (ev) => config.set('postprocess.bloom.intensity', ev.value));
+    this.controls.set('postprocess.bloom.intensity', bloomIntensity);
+
+    const bloomThreshold = bloomFolder.addBinding(this.configData.postprocess.bloom, 'luminanceThreshold', { label: '亮度阈值', min: 0, max: 1, step: 0.01 });
+    bloomThreshold.on('change', (ev) => config.set('postprocess.bloom.luminanceThreshold', ev.value));
+    this.controls.set('postprocess.bloom.luminanceThreshold', bloomThreshold);
+
+    // ---------- 胶片效果 (Film) ----------
+    const filmFolder = this._pane.addFolder({ title: '胶片效果 (Film)', expanded: false });
+    const filmEnabled = filmFolder.addBinding(this.configData.postprocess.film, 'enabled', { label: '启用' });
+    filmEnabled.on('change', (ev) => config.set('postprocess.film.enabled', ev.value));
+    this.controls.set('postprocess.film.enabled', filmEnabled);
+
+    const noiseIntensity = filmFolder.addBinding(this.configData.postprocess.film, 'noiseIntensity', { label: '噪点强度', min: 0, max: 1, step: 0.01 });
+    noiseIntensity.on('change', (ev) => config.set('postprocess.film.noiseIntensity', ev.value));
+    this.controls.set('postprocess.film.noiseIntensity', noiseIntensity);
+
+    const scanlineIntensity = filmFolder.addBinding(this.configData.postprocess.film, 'scanlineIntensity', { label: '扫描线强度', min: 0, max: 1, step: 0.01 });
+    scanlineIntensity.on('change', (ev) => config.set('postprocess.film.scanlineIntensity', ev.value));
+    this.controls.set('postprocess.film.scanlineIntensity', scanlineIntensity);
     
+    const scanlineCount = filmFolder.addBinding(this.configData.postprocess.film, 'scanlineCount', { label: '扫描线数量', min: 0, max: 4096, step: 64 });
+    scanlineCount.on('change', (ev) => config.set('postprocess.film.scanlineCount', ev.value));
+    this.controls.set('postprocess.film.scanlineCount', scanlineCount);
+
     // ---------- 色相/饱和度 ----------
     const hsFolder = this._pane.addFolder({ title: '色相/饱和度', expanded: false });
     const hsEnabled = hsFolder.addBinding(this.configData.postprocess.hueSaturation, 'enabled', { label: '启用' });
@@ -5142,30 +5230,29 @@ class UIPost {
     const contrast = bcFolder.addBinding(this.configData.postprocess.brightnessContrast, 'contrast', { label: '对比度', min: -1, max: 1, step: 0.01 });
     contrast.on('change', (ev) => config.set('postprocess.brightnessContrast.contrast', ev.value));
     this.controls.set('postprocess.brightnessContrast.contrast', contrast);
+  }
 
-    // ---------- 噪点 ----------
-    const noiseFolder = this._pane.addFolder({ title: '噪点', expanded: false });
-    const noiseEnabled = noiseFolder.addBinding(this.configData.postprocess.noise, 'enabled', { label: '启用' });
-    noiseEnabled.on('change', (ev) => config.set('postprocess.noise.enabled', ev.value));
-    this.controls.set('postprocess.noise.enabled', noiseEnabled);
-    
-    const noiseIntensity = noiseFolder.addBinding(this.configData.postprocess.noise, 'intensity', { label: '强度', min: 0, max: 0.2, step: 0.001 });
-    noiseIntensity.on('change', (ev) => config.set('postprocess.noise.intensity', ev.value));
-    this.controls.set('postprocess.noise.intensity', noiseIntensity);
+  _bindEvents() {
+    const refreshControl = ({ key, value }: { key: string; value: any; }) => {
+      if (!key.startsWith('postprocess.')) return;
+      
+      const control = this.controls.get(key);
+      if (control) {
+        const pathParts = key.split('.');
+        let target = this.configData as any;
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          target = target[pathParts[i]];
+        }
+        const lastKey = pathParts[pathParts.length - 1];
+        if (target && target[lastKey] !== value) {
+          target[lastKey] = value;
+          control.refresh();
+        }
+      }
+    };
 
-    // ---------- 扫描线 ----------
-    const scanlineFolder = this._pane.addFolder({ title: '扫描线', expanded: false });
-    const scanlineEnabled = scanlineFolder.addBinding(this.configData.postprocess.scanline, 'enabled', { label: '启用' });
-    scanlineEnabled.on('change', (ev) => config.set('postprocess.scanline.enabled', ev.value));
-    this.controls.set('postprocess.scanline.enabled', scanlineEnabled);
-
-    const scanlineIntensity = scanlineFolder.addBinding(this.configData.postprocess.scanline, 'intensity', { label: '强度', min: 0, max: 1, step: 0.01 });
-    scanlineIntensity.on('change', (ev) => config.set('postprocess.scanline.intensity', ev.value));
-    this.controls.set('postprocess.scanline.intensity', scanlineIntensity);
-
-    const scanlineDensity = scanlineFolder.addBinding(this.configData.postprocess.scanline, 'density', { label: '密度', min: 10, max: 300, step: 0.1 });
-    scanlineDensity.on('change', (ev) => config.set('postprocess.scanline.density', ev.value));
-    this.controls.set('postprocess.scanline.density', scanlineDensity);
+    eventBus.on('config-changed', refreshControl);
+    eventBus.on('preset-loaded', () => this.refresh());
   }
 
   updateBindings() {
@@ -5193,30 +5280,36 @@ class UIPost {
   }
 }
 
-export default new UIPost();
+const uiPost = new UIPost();
+export default uiPost;
 
 ```
 
-### src/ui/ui-presets.js
+### src/ui/ui-presets.ts
 
-```javascript
+```
 /**
  * @file ui-presets.js
  * @description 预设系统UI - 手动加载 + 保持UI顺序 + 手动更新绑定
- * ✅ 修复：在预设加载后调用所有 UI 的 updateBindings() 方法
+ * ✨ 重构: 移除了对已删除的 ui-material 的引用。
  */
 import { Pane } from 'tweakpane';
-import eventBus from '../event-bus.js';
-import presetManager from '../preset-manager.js';
-import config from '../config.js';
-import logger from '../utils/logger.js';
-import uiContainer from './ui-container.js';
-import uiBasic from './ui-basic.js';
-import uiMaterial from './ui-material.js';
-import uiPost from './ui-post.js';
-import uiCoordinates from './ui-coordinates.js';
+import eventBus from '../event-bus';
+import presetManager from '../preset-manager';
+import config from '../config';
+import logger from '../utils/logger';
+import uiContainer from './ui-container';
+import uiBasic from './ui-basic';
+import uiPost from './ui-post';
+import uiCoordinates from './ui-coordinates';
 
 class UIPresets {
+  private pane: any;
+  private initialized: boolean;
+  private presetSelector: any;
+  private saveNameInput: any;
+  private selectedPresetName: string | null;
+
   constructor() {
     this.pane = null;
     this.initialized = false;
@@ -5251,7 +5344,7 @@ class UIPresets {
 
       return this;
     } catch (err) {
-      logger.error('UIPresets', `初始化失败: ${err.message}`);
+      logger.error('UIPresets', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
@@ -5260,8 +5353,8 @@ class UIPresets {
     const presets = presetManager.getAvailablePresets();
     
     const presetOptions = {};
-    presets.forEach(preset => {
-      presetOptions[preset.name] = preset.name;
+    presets.forEach((preset: any) => {
+      (presetOptions as any)[preset.name] = preset.name;
     });
 
     const defaultValue = presets.length > 0 ? presets[0].name : '';
@@ -5280,7 +5373,7 @@ class UIPresets {
       }
     );
 
-    this.presetSelector.on('change', (ev) => {
+    this.presetSelector.on('change', (ev: any) => {
       this.selectedPresetName = ev.value;
       logger.debug('UIPresets', `已选择预设: ${ev.value}`);
     });
@@ -5341,12 +5434,12 @@ class UIPresets {
         saveParams.name = '';
         this.saveNameInput.refresh();
       } catch (err) {
-        alert(`保存失败: ${err.message}`);
+        alert(`保存失败: ${(err as Error).message}`);
       }
     });
   }
 
-  _loadPreset(presetName) {
+  _loadPreset(presetName: any) {
     try {
       logger.info('UIPresets', `开始加载预设: ${presetName}`);
       
@@ -5354,12 +5447,12 @@ class UIPresets {
         .then(() => {
           logger.info('UIPresets', `预设已加载: ${presetName}`);
         })
-        .catch(err => {
+        .catch((err: any) => {
           alert(`加载预设失败: ${err.message}`);
           logger.error('UIPresets', `加载失败: ${err.message}`);
         });
     } catch (err) {
-      alert(`加载预设失败: ${err.message}`);
+      alert(`加载预设失败: ${(err as Error).message}`);
     }
   }
 
@@ -5367,114 +5460,21 @@ class UIPresets {
     try {
       logger.info('UIPresets', '开始恢复默认配置...');
       
-      // 🟢 改造: 只调用 config.reset()，它会自动触发更新
       config.reset();
       
-      // 刷新UI的操作现在由 'preset-loaded' 事件的监听器统一处理
-      // 手动触发一次，以确保UI同步
-      this._updateAllBindings();
-      this._refreshAllPanes();
+      eventBus.emit('preset-loaded', { name: 'default', data: config.getRaw() });
       
       logger.info('UIPresets', '✅ 已恢复默认配置');
     } catch (err) {
-      logger.error('UIPresets', `恢复默认失败: ${err.message}`);
-      alert(`恢复默认失败: ${err.message}`);
+      logger.error('UIPresets', `恢复默认失败: ${(err as Error).message}`);
+      alert(`恢复默认失败: ${(err as Error).message}`);
     }
   }
 
   _bindEvents() {
     eventBus.on('preset-loaded', () => {
-      // ✅ 核心修复：先调用 updateBindings()，再刷新 Pane
-      this._updateAllBindings();
-      this._refreshAllPanes();
+      logger.debug('UIPresets', '接收到 preset-loaded 事件，UI将各自刷新。');
     });
-  }
-
-  /**
-   * ✅ 核心方法：手动更新所有 UI 模块的临时对象
-   */
-  _updateAllBindings() {
-    logger.info('UIPresets', '开始更新所有UI绑定...');
-
-    const uiModules = [
-      { module: uiBasic, name: 'uiBasic' },
-      { module: uiMaterial, name: 'uiMaterial' },
-      { module: uiPost, name: 'uiPost' },
-      { module: uiCoordinates, name: 'uiCoordinates' }
-    ];
-
-    uiModules.forEach(({ module, name }) => {
-      if (module && typeof module.updateBindings === 'function') {
-        module.updateBindings();
-        logger.debug('UIPresets', `${name} 绑定已更新`);
-      }
-    });
-
-    logger.info('UIPresets', '✅ 所有UI绑定已更新');
-  }
-
-  /**
- * ✅ 正确的刷新逻辑：先更新绑定，再刷新控件，最后刷新 Pane
- */
-_refreshAllPanes() {
-  logger.info('UIPresets', '开始刷新所有UI面板...');
-
-  const uiModules = [
-    { module: uiBasic, name: 'uiBasic' },
-    { module: uiMaterial, name: 'uiMaterial' },
-    { module: uiPost, name: 'uiPost' },
-    { module: uiCoordinates, name: 'uiCoordinates' }
-  ];
-
-  uiModules.forEach(({ module, name }) => {
-    // 1. 刷新所有控件
-    if (module && module.controls) {
-      module.controls.forEach((control) => {
-        if (control && typeof control.refresh === 'function') {
-          control.refresh();
-        }
-      });
-    }
-    
-    // 2. 刷新 Pane 本身
-    if (module && module._pane && typeof module._pane.refresh === 'function') {
-      module._pane.refresh();
-    } else if (module && module.pane && typeof module.pane.refresh === 'function') {
-      module.pane.refresh();
-    }
-    
-    logger.debug('UIPresets', `${name} 已刷新`);
-  });
-
-  logger.info('UIPresets', '✅ 所有UI已刷新');
-}
-
-  /**
-   * 仅在恢复默认时使用（完全重建）
-   */
-  async _refreshAllUI() {
-    logger.info('UIPresets', '开始重建所有UI...');
-
-    const uiModules = [
-      { module: uiBasic, name: 'uiBasic' },
-      { module: uiMaterial, name: 'uiMaterial' },
-      { module: uiPost, name: 'uiPost' },
-      { module: uiCoordinates, name: 'uiCoordinates' }
-    ];
-
-    for (const { module, name } of uiModules) {
-      if (module && typeof module.dispose === 'function') {
-        module.dispose();
-        logger.debug('UIPresets', `${name} 已销毁`);
-      }
-
-      if (module && typeof module.init === 'function') {
-        await module.init({ eventBus });
-        logger.debug('UIPresets', `${name} 已重建`);
-      }
-    }
-
-    logger.info('UIPresets', '✅ 所有UI已重建');
   }
 
   dispose() {
@@ -5492,14 +5492,14 @@ export default uiPresets;
 
 ```
 
-### src/ui/ui-registry.js
+### src/ui/ui-registry.ts
 
-```javascript
+```
 /**
  * @file ui-registry.js
  * @description UI模块注册中心 - 避免循环依赖 + 自动追踪控件
  */
-import logger from '../utils/logger.js';
+import logger from '../utils/logger';
 
 class UIRegistry {
   constructor() {
@@ -5586,12 +5586,13 @@ export default uiRegistry;
 
 ```
 
-### src/utils/logger.js
+### src/utils/logger.ts
 
-```javascript
+```
 /**
- * @file logger.js
+ * @file logger.ts
  * @description 日志工具 - 统一日志输出
+ * ✨ 新增: debugThrottled 方法，用于对高频日志进行节流，避免刷屏。
  */
 
 const LOG_LEVELS = {
@@ -5602,26 +5603,52 @@ const LOG_LEVELS = {
 };
 
 class Logger {
+  private level: number;
+  private enableTimestamp: boolean;
+  private throttledLogs: Map<string, number>; // ✅ 新增: 用于存储节流日志的最后时间戳
+
   constructor() {
     this.level = LOG_LEVELS.INFO;
     this.enableTimestamp = true;
+    this.throttledLogs = new Map();
   }
 
-  setLevel(level) {
-    if (LOG_LEVELS[level.toUpperCase()] !== undefined) {
-      this.level = LOG_LEVELS[level.toUpperCase()];
+  setLevel(level: string) {
+    const upperLevel = level.toUpperCase();
+    if (LOG_LEVELS[upperLevel as keyof typeof LOG_LEVELS] !== undefined) {
+      this.level = LOG_LEVELS[upperLevel as keyof typeof LOG_LEVELS];
     }
   }
 
-  _format(level, module, message) {
+  private _format(level: string, module: string, message: string): string {
     const timestamp = this.enableTimestamp 
       ? `[${new Date().toISOString().slice(11, 23)}]` 
       : '';
     const moduleStr = module ? `[${module}]` : '';
     return `${timestamp}${moduleStr} ${message}`;
   }
+  
+  /**
+   * ✨ 新增: 节流调试日志
+   * 对同一个 key，在指定的 interval 毫秒内只打印一次。
+   * @param module 模块名
+   * @param key 节流的唯一标识符
+   * @param message 日志消息
+   * @param interval 节流间隔（毫秒），默认为 1000ms
+   */
+  debugThrottled(module: string, key: string, message: string, interval = 1000) {
+    if (this.level > LOG_LEVELS.DEBUG) return;
 
-  debug(module, message) {
+    const now = Date.now();
+    const lastTime = this.throttledLogs.get(key) || 0;
+
+    if (now - lastTime > interval) {
+      this.throttledLogs.set(key, now);
+      this.debug(module, message);
+    }
+  }
+
+  debug(module: string, message: string) {
     if (this.level <= LOG_LEVELS.DEBUG) {
       console.log(
         `%c${this._format('DEBUG', module, message)}`,
@@ -5630,7 +5657,7 @@ class Logger {
     }
   }
 
-  info(module, message) {
+  info(module: string, message: string) {
     if (this.level <= LOG_LEVELS.INFO) {
       console.log(
         `%c${this._format('INFO', module, message)}`,
@@ -5639,7 +5666,7 @@ class Logger {
     }
   }
 
-  warn(module, message) {
+  warn(module: string, message: string) {
     if (this.level <= LOG_LEVELS.WARN) {
       console.warn(
         `%c${this._format('WARN', module, message)}`,
@@ -5648,7 +5675,7 @@ class Logger {
     }
   }
 
-  error(module, message) {
+  error(module: string, message: string) {
     if (this.level <= LOG_LEVELS.ERROR) {
       console.error(
         `%c${this._format('ERROR', module, message)}`,
@@ -5669,9 +5696,9 @@ export default logger;
 
 ```
 
-### src/utils/url-resolver.js
+### src/utils/url-resolver.ts
 
-```javascript
+```
 /**
  * @file url-resolver.js
  * @description 统一处理应用内资源URL的工具，确保在不同部署环境下路径正确。
@@ -5690,6 +5717,18 @@ export function resolveAssetUrl(path) {
   // 确保传入的路径没有开头的'/'，避免出现'//'
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
   return `${import.meta.env.BASE_URL}${cleanPath}`;
+}
+
+```
+
+### src/vite-env.d.ts
+
+```
+/// <reference types="vite/client" />
+
+declare module '*?raw' {
+  const content: string;
+  export default content;
 }
 
 ```
@@ -5718,7 +5757,7 @@ const args = Object.fromEntries(
 const ROOT = path.resolve(CWD, args.root && args.root !== true ? args.root : '.');
 const OUT  = path.resolve(CWD, args.out  && args.out  !== true ? args.out  : 'snapshot.md');
 
-const DEFAULT_EXT = '.js,.mjs,.json,.css,.html';
+const DEFAULT_EXT = '.js,.ts,.mjs,.json,.css,.html,.frag,.vert';
 const EXT_LIST = String(args.ext || DEFAULT_EXT).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
 const DEFAULT_IGNORE = 'node_modules,.git,.hg,.svn,dist,build,out,.cache,.parcel-cache,.turbo,.next,.nuxt,.DS_Store';
@@ -5876,24 +5915,106 @@ function fenceLang(p) {
 
 ```
 
-### vite.config.js
+### tsconfig.json
 
-```javascript
+```json
+{
+  "compilerOptions": {
+    /* 基本选项 */
+    "target": "ESNext",            // 编译目标ECMAScript版本
+    "useDefineForClassFields": true, // 使用标准的类字段定义
+    "module": "ESNext",              // 使用的模块系统
+    "lib": ["ESNext", "DOM"],      // 编译时包含的库文件
+    "skipLibCheck": true,          // 跳过对所有声明文件 (*.d.ts) 的类型检查，提高编译速度
+
+    /* 模块解析 */
+    "moduleResolution": "bundler", // 现代打包工具（如Vite）推荐的模块解析策略
+    "allowImportingTsExtensions": true, // 允许导入带 .ts 后缀的文件
+    "resolveJsonModule": true,     // 允许导入 .json 文件
+    "isolatedModules": true,       // 确保每个文件都可以被安全地独立编译，Vite要求
+    "noEmit": true,                // 不生成输出文件，因为Vite/Rollup会处理打包
+
+    /* 源代码映射 */
+    "sourceMap": true,             // 生成 .map 文件，方便调试
+
+    /* JavaScript 支持 */
+    "allowJs": true,               // ✅ 关键：允许编译JS文件，这是渐进式迁移的基石
+    "checkJs": false,              // 不检查JS文件中的错误
+
+    /* 严格类型检查 */
+    "strict": true,                // 启用所有严格类型检查选项
+    "noUnusedLocals": true,        // 报告未使用的局部变量
+    "noUnusedParameters": true,    // 报告未使用的参数
+    "noFallthroughCasesInSwitch": true, // 报告switch语句中的fallthrough情况
+
+    /* 路径别名 */
+    "baseUrl": ".",                // 解析非相对模块名的基准目录
+    "paths": {
+      "@/*": ["src/*"]            // 设置别名，例如 import ... from '@/utils/logger'
+    }
+  },
+  "include": ["src", "vite.config.ts"], // 告诉TS编译器需要检查哪些文件
+  "references": [{ "path": "./tsconfig.node.json" }] // 引用Node环境的配置
+}
+
+```
+
+### tsconfig.node.json
+
+```json
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+
+```
+
+### vite.config.ts
+
+```
+// import { defineConfig } from 'vite'
+
+// // https://vitejs.dev/config/
+// export default defineConfig(({ command }) => {
+//   if (command === 'build') {
+//     // build a project for production
+//     return {
+//       base: '/LangtonAnt3D_dist/', // 你的部署仓库名
+//     }
+//   } else {
+//     // serve a project for development
+//     return {
+//       // 在开发模式下，base 路径默认为 '/'，所以这里可以留空或者显式设置为 '/'
+//       base: '/',
+//     }
+//   }
+// })
+
+/**
+ * @file vite.config.ts
+ * @description Vite 配置文件 (TypeScript版本)
+ */
 import { defineConfig } from 'vite'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
-  if (command === 'build') {
-    // build a project for production
-    return {
-      base: '/LangtonAnt3D_dist/', // 你的部署仓库名
-    }
-  } else {
-    // serve a project for development
-    return {
-      // 在开发模式下，base 路径默认为 '/'，所以这里可以留空或者显式设置为 '/'
-      base: '/',
-    }
+  const isProduction = command === 'build';
+
+  return {
+    base: isProduction ? '/LangtonAnt3D_dist/' : '/',
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
+    // 可以添加更多配置...
   }
 })
 

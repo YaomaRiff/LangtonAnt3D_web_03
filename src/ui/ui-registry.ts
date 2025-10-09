@@ -2,7 +2,7 @@
  * @file ui-registry.js
  * @description UI模块注册中心 - 避免循环依赖 + 自动追踪控件
  */
-import logger from '../utils/logger.js';
+import logger from '../utils/logger';
 
 class UIRegistry {
   constructor() {

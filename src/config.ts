@@ -1,10 +1,11 @@
 /**
- * @file config.js
+ * @file config.ts
  * @description 配置管理器 - 全局配置存储与访问
- * ✅ 新增: sceneComposition 结构，用于定义场景内容
+ * 🔧 修正: 对 set 方法中的日志进行节流处理，防止UI拖动时刷屏。
+ * ✨ 重构: 移除了旧的材质辉光相关配置 (emissiveIntensity)，辉光效果由 postprocess.bloom 统一控制。
  */
-import logger from './utils/logger.js';
-import eventBus from './event-bus.js';
+import logger from './utils/logger';
+import eventBus from './event-bus';
 
 const DEFAULT_CONFIG = {
   // 🟢 新增：场景构成定义
@@ -26,15 +27,10 @@ const DEFAULT_CONFIG = {
 
   data: {
     csvUrl: '../data/data.csv',
-    antData: [],
-    mappedPoints: [],
     availableDatasets: []
   },
   
   animation: {
-    currentStep: 0,
-    lerpT: 0,
-    animating: false,
     speedFactor: 1.65,
     loop: true
   },
@@ -49,18 +45,12 @@ const DEFAULT_CONFIG = {
   
   material: {
     path: {
-      enabled: true,
-      emissiveIntensity: 0.8,
       emissiveColor: '#F0B7B7'
     },
     particles: {
-      enabled: true,
-      emissiveIntensity: 0.3,
       emissiveColor: '#AF85B7'
     },
     movingLight: {
-      enabled: true,
-      emissiveIntensity: 1.5,
       emissiveColor: '#FFFFFF'
     }
   },
@@ -84,9 +74,9 @@ const DEFAULT_CONFIG = {
     dustSize: 0.6,
     dustOpacity: 0.6,
     dustColor: '#AF85B7',
+    pathPointColor: '#F0B7B7',
     pathPointSize: 0.5,
     pathPointOpacity: 0.9,
-    pathPointColor: '#FFFFFF',
     sphereRadius: 1400,
     systemScale: 1.0,
     rotationSpeed: 0,
@@ -119,11 +109,50 @@ const DEFAULT_CONFIG = {
   
   postprocess: {
     enabled: true,
+  
+    // ✅ [重构] 光晕效果 (Bloom)
+    bloom: {
+      enabled: true,
+      intensity: 1.0,         // 效果强度
+      luminanceThreshold: 0.1, // 亮度阈值
+      luminanceSmoothing: 0.2, // 阈值平滑度
+      mipmapBlur: true,         // 是否使用 Mipmap 模糊
+    },
+
+    // ✅ 新增：景深效果 (Bokeh)
+    bokeh: {
+      enabled: true,
+      focus: 40.0,              // 焦距
+      dof: 0.02,                // 景深范围
+      aperture: 0.025,          // 光圈大小
+      maxBlur: 0.01,            // 最大模糊
+    },
+
+    // ✅ 新增：色差效果 (Chromatic Aberration)
+    chromaticAberration: {
+      enabled: false,
+      offset: { x: 0.001, y: 0.001 } // 颜色偏移量
+    },
+    
+    // ✅ 新增：点阵效果 (Dot Screen)
+    dotScreen: {
+      enabled: false,
+      angle: 1.57,              // 角度
+      scale: 1.0                // 缩放
+    },
+
+    // ✅ [替代方案] 胶片效果 (Film) - 替代旧的 Noise 和 Scanline
+    film: {
+      enabled: false,
+      scanlineIntensity: 0.3,   // 扫描线强度
+      noiseIntensity: 0.3,      // 噪点强度
+      scanlineCount: 2048,      // 扫描线数量
+      grayscale: false          // 是否灰度
+    },
+  
+    // ✅ [保留] 色彩调整效果
     hueSaturation: { enabled: false, hue: 0.0, saturation: 0.0 },
     brightnessContrast: { enabled: false, brightness: 0.0, contrast: 0.0 },
-    noise: { enabled: false, intensity: 0.02 },
-    chromaticAberration: { enabled: false, offsetX: 0.002, offsetY: 0.002 },
-    scanline: { enabled: false, intensity: 0.1, density: 100 }
   },
   
   camera: {
@@ -145,12 +174,12 @@ const DEFAULT_CONFIG = {
   }
 };
 
-function deepClone(obj) {
+function deepClone(obj: any): any {
   if (obj === null || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map(item => deepClone(item));
-  const cloned = {};
+  const cloned: any = {};
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if ((obj as Object).hasOwnProperty.call(obj, key)) {
       cloned[key] = deepClone(obj[key]);
     }
   }
@@ -158,6 +187,9 @@ function deepClone(obj) {
 }
 
 class ConfigManager {
+  private _config: any;
+  private initialized: boolean;
+
   constructor() {
     this._config = deepClone(DEFAULT_CONFIG);
     this.initialized = false;
@@ -174,39 +206,39 @@ class ConfigManager {
       this.initialized = true;
       logger.info('Config', '配置初始化完成');
     } catch (err) {
-      logger.error('Config', `配置初始化失败: ${err.message}`);
-      throw err;
+      logger.error('Config', `配置初始化失败: ${(err as Error).message}`);
+      throw err as Error;
     }
   }
 
-  getRaw() {
+  getRaw(): any {
     return this._config;
   }
 
-  get(key) {
+  get(key?: string): any {
     try {
       if (!key) return this._config;
       const keys = key.split('.');
-      let value = this._config;
+      let value: any = this._config as any;
       for (const k of keys) {
         if (value === null || value === undefined) return null;
         value = value[k];
       }
       return value;
     } catch (err) {
-      logger.error('Config', `获取配置异常 [${key}]: ${err.message}`);
+      logger.error('Config', `获取配置异常 [${key}]: ${(err as Error).message}`);
       return null;
     }
   }
 
-  set(key, value) {
+  set(key: string, value: any) {
     try {
       if (!key) {
         logger.error('Config', '设置配置失败: key 不能为空');
         return false;
       }
       const keys = key.split('.');
-      let target = this._config;
+      let target: any = this._config as any;
       for (let i = 0; i < keys.length - 1; i++) {
         const k = keys[i];
         if (!target[k] || typeof target[k] !== 'object') {
@@ -218,16 +250,24 @@ class ConfigManager {
       if (target[lastKey] !== value) {
         target[lastKey] = value;
         eventBus.emit('config-changed', { key, value });
-        logger.debug('Config', `配置已更新: ${key} = ${JSON.stringify(value)}`);
+        
+        // ✅ 核心修正: 使用节流日志替换普通日志，防止刷屏
+        const valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
+        logger.debugThrottled(
+          'Config',
+          `config-set:${key}`, // 使用唯一的 key 来节流
+          `配置已更新: ${key} = ${valueStr}`,
+          1500 // 每 1.5 秒最多打印一次
+        );
       }
       return true;
     } catch (err) {
-      logger.error('Config', `设置配置异常 [${key}]: ${err.message}`);
+      logger.error('Config', `设置配置异常 [${key}]: ${(err as Error).message}`);
       return false;
     }
   }
 
-  applyPresetData(presetData) {
+  applyPresetData(presetData: any) {
     logger.warn('Config', 'applyPresetData 已被弃用，请使用 PresetManager 的新加载逻辑');
     return true;
   }
@@ -238,10 +278,10 @@ class ConfigManager {
     logger.info('Config', '配置已重置为默认值');
     
     // 触发所有顶级key的更新通知
-    Object.keys(DEFAULT_CONFIG).forEach(topKey => {
+    Object.keys(DEFAULT_CONFIG as any).forEach((topKey: string) => {
         // 比较新旧值，只有变化时才发出事件，避免不必要的刷新
-        if (JSON.stringify(oldConfig[topKey]) !== JSON.stringify(DEFAULT_CONFIG[topKey])) {
-            eventBus.emit('config-changed', { key: topKey, value: DEFAULT_CONFIG[topKey] });
+        if (JSON.stringify((oldConfig as any)[topKey]) !== JSON.stringify((DEFAULT_CONFIG as any)[topKey])) {
+            eventBus.emit('config-changed', { key: topKey, value: (DEFAULT_CONFIG as any)[topKey] });
         }
     });
   }
@@ -249,9 +289,11 @@ class ConfigManager {
 
 const configManager = new ConfigManager();
 export default configManager;
+
+// 保持原有的快捷导出不变
 export const initConfig = () => configManager.init();
-export const get = (key) => configManager.get(key);
-export const set = (key, value) => configManager.set(key, value);
-export const getRaw = () => configManager.getRaw();
-export const applyPresetData = (data) => configManager.applyPresetData(data);
+export const get = (key?: string): any => configManager.get(key);
+export const set = (key: string, value: any) => configManager.set(key, value);
+export const getRaw = (): any => configManager.getRaw();
+export const applyPresetData = (data: any) => configManager.applyPresetData(data);
 export const reset = () => configManager.reset();

@@ -2,7 +2,7 @@
  * @file event-bus.js
  * @description 事件总线 - 系统间通信
  */
-import logger from './utils/logger.js';
+import logger from './utils/logger';
 
 class EventBus {
   constructor() {

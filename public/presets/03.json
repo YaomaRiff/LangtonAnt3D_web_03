@@ -14,22 +14,7 @@
     }
   },
   "environment": {
-    "bgColor": "#121414",
     "pathColor": "#F0B7B7"
-  },
-  "material": {
-    "movingLight": {
-      "emissiveIntensity": 1.5,
-      "enabled": true
-    },
-    "particles": {
-      "emissiveIntensity": 0.3,
-      "enabled": true
-    },
-    "path": {
-      "emissiveIntensity": 0.8,
-      "enabled": true
-    }
   },
   "particles": {
     "breathIntensity": 0.1,
@@ -38,8 +23,6 @@
     "dustOpacity": 0.6,
     "dustSize": 0.6,
     "floatIntensity": 0.2,
-    "pathPointColor": "#FFFFFF",
-    "pathPointSize": 0.5,
     "rotationSpeed": 0,
     "rotationTiltXY": 0,
     "rotationTiltXZ": 0,
@@ -50,27 +33,28 @@
     "scale": 1
   },
   "postprocess": {
+    "enabled": true,
+    "bloom": {
+      "enabled": true,
+      "intensity": 0.8,
+      "luminanceSmoothing": 0.2,
+      "luminanceThreshold": 0.1
+    },
     "brightnessContrast": {
       "brightness": 0,
       "contrast": 0,
       "enabled": true
     },
-    "chromaticAberration": {
-      "enabled": false
+    "film": {
+      "enabled": true,
+      "noiseIntensity": 0.06,
+      "scanlineCount": 1064,
+      "scanlineIntensity": 0.77
     },
     "hueSaturation": {
       "enabled": true,
       "hue": 0,
       "saturation": 0.14
-    },
-    "noise": {
-      "enabled": true,
-      "intensity": 0.02
-    },
-    "scanline": {
-      "density": 66.5,
-      "enabled": true,
-      "intensity": 0.77
     }
   }
 }

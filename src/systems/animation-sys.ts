@@ -4,10 +4,22 @@
  * ✅ 核心改造: 监听统一的 'config-changed' 事件来控制动画启停。
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import config from '../config';
+import state from './state';
 
 class AnimationSystem {
+  private eventBus: any;
+  private scene: THREE.Scene | null;
+  private renderer: THREE.WebGLRenderer | null;
+  private controls: any;
+  private particlesSys: any;
+  private initialized: boolean;
+  private currentStep: number;
+  private lerpT: number;
+  private animating: boolean;
+  private mappedPoints: any[];
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -50,12 +62,13 @@ class AnimationSystem {
   }
   
   _loadInitialConfig() {
-    this.animating = config.get('animation.animating') || false;
+    this.animating = state.get('animation.animating') || false; //从 state 读取
   }
 
   _bindEvents() {
     // ✅ 核心改造：监听通用配置变更事件
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
+    this.eventBus.on('state-changed', this._handleStateChange.bind(this));
 
     // ✅ 保留数据信号和命令式事件
     this.eventBus.on('data-loaded', (data) => {
@@ -74,17 +87,18 @@ class AnimationSystem {
     });
   }
 
-  /**
-   * ✅ 新增: 统一处理配置变更
-   */
+  //统一处理配置变更
   _handleConfigChange({ key, value }) {
-    switch (key) {
-      case 'animation.animating':
+    // speedFactor 和 loop 在 update 循环中直接从 config 读取，无需处理
+    // animating 的处理已移至 _handleStateChange
+  }
+
+  //统一处理 *状态* 变更
+  _handleStateChange({ key, value }: { key: string; value: any }) {
+      if (key === 'animation.animating') {
         this.animating = value;
         logger.info('AnimationSystem', `动画状态变更为: ${value ? '播放' : '暂停'}`);
-        break;
-      // speedFactor 和 loop 在 update 循环中直接读取，无需在这里处理
-    }
+      }
   }
 
   update(delta, elapsed) {
@@ -103,8 +117,7 @@ class AnimationSystem {
           this.currentStep = 0;
           logger.debug('AnimationSystem', '动画循环重新开始');
         } else {
-          // 通过 config.set 触发UI和其他系统的更新
-          config.set('animation.animating', false); 
+          state.set('animation.animating', false); 
           this.eventBus.emit('animation-completed');
           logger.info('AnimationSystem', '动画播放完成');
           return;
@@ -115,8 +128,8 @@ class AnimationSystem {
     this._updatePosition();
     
     // 更新配置状态(触发UI刷新)
-    config.set('animation.currentStep', this.currentStep);
-    config.set('animation.lerpT', this.lerpT);
+    state.set('animation.currentStep', this.currentStep);
+    state.set('animation.lerpT', this.lerpT);
 
     this.eventBus.emit('animation-step-updated', this.currentStep);
   }
@@ -134,9 +147,9 @@ class AnimationSystem {
 
   reset() {
     // 通过 config.set 驱动状态变更
-    config.set('animation.currentStep', 0);
-    config.set('animation.lerpT', 0);
-    config.set('animation.animating', false);
+    state.set('animation.currentStep', 0);
+    state.set('animation.lerpT', 0);
+    state.set('animation.animating', false);
 
     // 手动同步内部状态
     this.currentStep = 0;
@@ -153,15 +166,21 @@ class AnimationSystem {
     }
     
     // 通过 config.set 驱动状态变更
-    config.set('animation.currentStep', step);
-    config.set('animation.lerpT', 0);
+    state.set('animation.currentStep', step);
+    state.set('animation.lerpT', 0);
 
     // 手动同步内部状态
     this.currentStep = step;
     this.lerpT = 0;
 
     this._updatePosition();
-    logger.debug('AnimationSystem', `跳转到步骤: ${step}`);
+    // ✅ 使用节流日志，避免拖动进度条时刷屏
+logger.debugThrottled(
+  'AnimationSystem',
+  'animation-step-to', // 节流的唯一Key
+  `跳转到步骤: ${this.currentStep}`,
+  500 // 500毫秒的间隔对进度条拖动更友好
+);
   }
 
   getCurrentStep() { return this.currentStep; }

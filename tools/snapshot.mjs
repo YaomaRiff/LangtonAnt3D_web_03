@@ -19,7 +19,7 @@ const args = Object.fromEntries(
 const ROOT = path.resolve(CWD, args.root && args.root !== true ? args.root : '.');
 const OUT  = path.resolve(CWD, args.out  && args.out  !== true ? args.out  : 'snapshot.md');
 
-const DEFAULT_EXT = '.js,.mjs,.json,.css,.html';
+const DEFAULT_EXT = '.js,.ts,.mjs,.json,.css,.html,.frag,.vert';
 const EXT_LIST = String(args.ext || DEFAULT_EXT).split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
 const DEFAULT_IGNORE = 'node_modules,.git,.hg,.svn,dist,build,out,.cache,.parcel-cache,.turbo,.next,.nuxt,.DS_Store';

@@ -7,6 +7,11 @@ import logger from '../utils/logger.js';
 import config from '../config.js';
 
 class LightingSystem {
+  private scene: THREE.Scene | null;
+  private initialized: boolean;
+  private ambientLight: THREE.AmbientLight | null;
+  private directionalLight: THREE.DirectionalLight | null;
+
   constructor() {
     this.scene = null;
     this.initialized = false;

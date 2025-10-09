@@ -1,41 +1,44 @@
 /**
  * @file main.js
  * @description 应用主入口 - 系统协调与生命周期管理
- * ✅ 已集成坐标系统和音频系统
+ * ✨ 重构: 彻底移除了旧的 ui-material 系统。
  */
 import * as THREE from 'three';
-import logger from './utils/logger.js';
-import config, { initConfig } from './config.js';
-import eventBus from './event-bus.js';
-import presetManager from './preset-manager.js';
+import logger from './utils/logger';
+import config, { initConfig } from './config';
+import eventBus from './event-bus';
+import presetManager from './preset-manager';
 
 // UI 系统
-import uiContainer from './ui/ui-container.js';
-import uiBasic from './ui/ui-basic.js';
-import uiMaterial from './ui/ui-material.js';
-import uiPost from './ui/ui-post.js';
-import uiPresets from './ui/ui-presets.js';
-import uiCoordinates from './ui/ui-coordinates.js';
+import uiContainer from './ui/ui-container';
+import uiBasic from './ui/ui-basic';
+import uiPost from './ui/ui-post';
+import uiPresets from './ui/ui-presets';
+import uiCoordinates from './ui/ui-coordinates';
 
 // 核心系统
-import coordinateSystem from './systems/coordinates-sys.js';
-import cameraSys from './systems/camera-sys.js';
-import dataSys from './systems/data-sys.js';
-import animationSys from './systems/animation-sys.js';
-import particlesSys from './systems/particles-sys.js';
-import postprocessSys from './systems/postprocess-sys.js';
-import audioSys from './systems/audio-sys.js';
-import lightingSys from './systems/lighting-sys.js';
-import environmentSys from './systems/environment-sys.js';
-import materialSys from './systems/material-sys.js';
-import modelSys from './systems/model-sys.js';
-import sceneDirector from './systems/scene-director-sys.js';
+import coordinateSystem from './systems/coordinates-sys';
+import cameraSys from './systems/camera-sys';
+import dataSys from './systems/data-sys';
+import animationSys from './systems/animation-sys';
+import particlesSys from './systems/particles-sys';
+import postprocessSys from './systems/postprocess-sys';
+import audioSys from './systems/audio-sys';
+import lightingSys from './systems/lighting-sys';
+import environmentSys from './systems/environment-sys';
+import materialSys from './systems/material-sys';
+import modelSys from './systems/model-sys';
+import sceneDirector from './systems/scene-director-sys';
 
 // 实体
-import pathSys from './systems/path-sys.js';
-import mathLightSys from './systems/math-light-sys.js';
+import pathSys from './systems/path-sys';
+import mathLightSys from './systems/math-light-sys';
 
 class Application {
+  private scene: THREE.Scene | null;
+  private renderer: THREE.WebGLRenderer | null;
+  private clock: THREE.Clock;
+  private initialized: boolean;
   constructor() {
     this.scene = null;
     this.renderer = null;
@@ -65,8 +68,9 @@ class Application {
         scene: this.scene
       });
 
-      // 将坐标系统存入scene.userData供camera-sys访问
-      this.scene.userData.coordinateSystem = coordinateSystem;
+      if (this.scene) {
+        this.scene.userData.coordinateSystem = coordinateSystem;
+      }
 
       // 4. 初始化相机系统
       cameraSys.init({
@@ -75,33 +79,24 @@ class Application {
         renderer: this.renderer
       });
 
-      // 4.5 初始化光照系统 (新)
       lightingSys.init({ scene: this.scene });
-
-       // 4.6 初始化环境系统 (天空盒)
       environmentSys.init({ scene: this.scene });
 
       const mainCamera = cameraSys.getActiveCamera();
 
-      // 4.7. 初始化后处理系统
       postprocessSys.init({
-        eventBus,
-        scene: this.scene,
-        camera: mainCamera,
-        renderer: this.renderer
+        scene: this.scene as THREE.Scene,
+        camera: mainCamera as THREE.Camera,
+        renderer: this.renderer as THREE.WebGLRenderer
       });
 
-      // 5. 初始化音频系统（在相机之后）
       audioSys.init({
         eventBus,
         camera: cameraSys.getActiveCamera()
       });
 
-      // 6. 初始化 UI 容器
       uiContainer.init();
 
-      // 核心修复：优先初始化数据系统
-      // 这样后续的UI系统就能在第一时间拿到数据
       await dataSys.init({
         eventBus,
         scene: this.scene,
@@ -111,64 +106,51 @@ class Application {
 
       // 7. 初始化基础 UI
       await uiBasic.init();
-
-      // 8. 初始化材质 UI
-      await uiMaterial.init();
-
-      // 9. 初始化后处理 UI
+      // 8. 初始化后处理 UI
       await uiPost.init();
 
       await presetManager.init();
 
-      // 10. 初始化预设系统
+      // 9. 初始化预设系统
       await uiPresets.init();
-
-      // 11. 初始化坐标系统UI
+      // 10. 初始化坐标系统UI
       await uiCoordinates.init({ eventBus });
 
-      // 12. ✅ 初始化核心服务系统 (必须在实体和视觉系统之前)
+      // 11. 初始化核心服务系统
       materialSys.init();
       modelSys.init();
 
-      // 14. 修改: 初始化新的系统（传入coordinateSystem）
       pathSys.init({ 
         eventBus, 
-        scene: this.scene,
+        scene: this.scene as THREE.Scene,
         coordinateSystem 
       });
       
       mathLightSys.init({ 
         eventBus, 
-        scene: this.scene,
+        scene: this.scene as THREE.Scene,
         coordinateSystem 
       });
 
-      // 15. 初始化粒子系统（传入coordinateSystem）
       particlesSys.init({ 
         eventBus, 
-        scene: this.scene,
+        scene: this.scene as THREE.Scene,
         coordinateSystem 
       });
 
-      // 16. 初始化动画系统
       animationSys.init({
         eventBus,
-        scene: this.scene,
-        renderer: this.renderer,
+        scene: this.scene as THREE.Scene,
+        renderer: this.renderer as THREE.WebGLRenderer,
         controls: cameraSys.getControls(),
         particlesSys
       });
 
-      //17.5. 初始化场景导演系统 (在所有视觉系统之后)
       sceneDirector.init({ eventBus });
 
-      // 18. 绑定事件
       this._bindEvents();
-
-      // 19. 启动渲染循环
       this._startRenderLoop();
 
-      // 20. 加载默认数据
       const defaultCSV = config.get('data.csvUrl');
       if (defaultCSV) {
         dataSys.loadCSV(defaultCSV);
@@ -178,14 +160,13 @@ class Application {
       logger.info('App', '✅ 应用初始化完成');
 
     } catch (err) {
-      logger.error('App', `初始化失败: ${err.message}`);
+      logger.error('App', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
   _createScene() {
     this.scene = new THREE.Scene();
-    // 背景色现在由 environment-sys 管理
     logger.debug('App', '场景已创建');
   }
 
@@ -221,12 +202,8 @@ class Application {
       this._handleResize();
     });
 
-    // eventBus.on('bg-color-changed', (color) => {
-    //   this.scene.background = new THREE.Color(color);
-    // });
-
     eventBus.on('show-coordinate-debug', () => {
-      const debugInfo = coordinateSystem.debugInfo();
+      const debugInfo = (coordinateSystem as any).debugInfo?.() || 'N/A';
       console.log('📊 坐标系统调试信息:', debugInfo);
       logger.info('App', '坐标系统调试信息已输出到控制台');
     });
@@ -235,9 +212,16 @@ class Application {
   }
 
   _handleResize() {
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    if (this.renderer) {
+      this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
     postprocessSys.handleResize();
-    logger.debug('App', '窗口大小已调整');
+    logger.debugThrottled(
+      'App',
+      'window-resize',
+      '窗口大小已调整',
+      1000
+    );
   }
 
   _startRenderLoop() {
@@ -252,10 +236,10 @@ class Application {
       pathSys.update(delta);
       animationSys.update(delta, elapsed);
       particlesSys.update(elapsed);
-
+      
       if (config.get('postprocess.enabled')) {
         postprocessSys.render(delta);
-      } else {
+      } else if (this.renderer && this.scene) {
         this.renderer.render(this.scene, cameraSys.getActiveCamera());
       }
     };
@@ -281,7 +265,6 @@ class Application {
     pathSys.dispose();
     mathLightSys.dispose();
     uiBasic.dispose();
-    uiMaterial.dispose();
     uiPost.dispose();
     uiPresets.dispose();
     uiCoordinates.dispose();

@@ -4,13 +4,24 @@
  * ✅ 核心改造: 所有控件的 'change' 事件现在直接调用 config.set()，
  *    不再发出独立的 eventBus 事件。
  */
-import eventBus from '../event-bus.js';
-import config from '../config.js';
-import logger from '../utils/logger.js';
-import uiContainer from './ui-container.js';
-import dataSys from '../systems/data-sys.js';
+import eventBus from '../event-bus';
+import config from '../config';
+import logger from '../utils/logger';
+import uiContainer from './ui-container';
+import dataSys from '../systems/data-sys';
+import state from '../systems/state';
 
 class UIBasic {
+  private controls: Map<string, any>;
+  private folders: Map<string, any>;
+  private _pane: any;
+  private _isInitialized: boolean;
+  private configData: any;
+  private stateData: any;
+  private tempObjects: any;
+  private dataControls: any[];
+  private descriptionBlade: any;
+
   constructor() {
     this.controls = new Map();
     this.folders = new Map();
@@ -18,6 +29,7 @@ class UIBasic {
     this._isInitialized = false;
     
     this.configData = config.getRaw();
+    this.stateData = state.getRaw();
     
     // 临时对象用于Tweakpane的颜色选择器等特殊控件
     this.tempObjects = {
@@ -122,49 +134,50 @@ class UIBasic {
     this.descriptionBlade.value = currentDataset ? currentDataset.description : '---';
   }
 
-  _createAnimationControls() {
+    _createAnimationControls() {
     const folder = this._pane.addFolder({ title: '动画控制', expanded: true });
     
-    const playButton = folder.addButton({ title: config.get('animation.animating') ? '⏸️ 暂停' : '▶️ 播放' });
+    const playButton = folder.addButton({ title: state.get('animation.animating') ? '⏸️ 暂停' : '▶️ 播放' });
     playButton.on('click', () => {
-      const isPlaying = !config.get('animation.animating');
-      // ✅ 直接调用 config.set
-      config.set('animation.animating', isPlaying);
-      playButton.title = isPlaying ? '⏸️ 暂停' : '▶️ 播放';
+      const isPlaying = !state.get('animation.animating');
+      // ✅ 直接调用 state.set
+      state.set('animation.animating', isPlaying);
     });
 
-    eventBus.on('config-changed', ({ key, value }) => {
+    // 监听状态变化来更新按钮标题
+    eventBus.on('state-changed', ({ key, value }) => {
         if (key === 'animation.animating') {
             playButton.title = value ? '⏸️ 暂停' : '▶️ 播放';
         }
     });
     
-    const stepSlider = folder.addBinding(this.configData.animation, 'currentStep', {
+    const stepSlider = folder.addBinding(this.stateData.animation, 'currentStep', { // ✅ 绑定到 stateData
       label: '当前步数', min: 0, max: 100, step: 1
     });
     stepSlider.on('change', (ev) => {
-      // 这是一个命令，保留 eventBus
       eventBus.emit('step-to', ev.value);
     });
-    this.controls.set('animation.currentStep', stepSlider);
+    this.controls.set('animation.currentStep', stepSlider); // ✅ key 保持不变
     
     eventBus.on('data-loaded', (data) => {
       stepSlider.max = data.points.length - 1;
       stepSlider.refresh();
     });
     
+    // speed 和 loop 仍然是配置项，所以绑定到 configData
     const speed = folder.addBinding(this.configData.animation, 'speedFactor', { 
       label: '速度', min: 0.05, max: 5, step: 0.05 
     });
-    speed.on('change', (ev) => config.set('animation.speedFactor', ev.value)); // ✅
+    speed.on('change', (ev) => config.set('animation.speedFactor', ev.value));
     this.controls.set('animation.speedFactor', speed);
     
     const loop = folder.addBinding(this.configData.animation, 'loop', { label: '循环播放' });
-    loop.on('change', (ev) => config.set('animation.loop', ev.value)); // ✅
+    loop.on('change', (ev) => config.set('animation.loop', ev.value));
     this.controls.set('animation.loop', loop);
     
     this.folders.set('animation', folder);
   }
+
 
   _createCameraControls() {
     const folder = this._pane.addFolder({ title: '相机设置', expanded: false });
@@ -205,7 +218,7 @@ class UIBasic {
   _createParticleControls() {
     const folder = this._pane.addFolder({ title: '粒子系统', expanded: false });
     
-    const dustColor = folder.addBinding(this.tempObjects.dustColor, 'dustColor', { label: '粒子颜色' });
+    const dustColor = folder.addBinding(this.tempObjects.dustColor, 'dustColor', { label: '粒子颜色', view: 'color' });
     dustColor.on('change', (ev) => config.set('particles.dustColor', ev.value)); // ✅
     this.controls.set('particles.dustColor', dustColor);
     
@@ -263,11 +276,11 @@ class UIBasic {
   _createPathControls() {
     const folder = this._pane.addFolder({ title: '路径设置', expanded: false });
     
-    const pathColor = folder.addBinding(this.tempObjects.pathColor, 'pathColor', { label: '路径颜色' });
+    const pathColor = folder.addBinding(this.tempObjects.pathColor, 'pathColor', { label: '路径颜色', view: 'color' });
     pathColor.on('change', (ev) => config.set('environment.pathColor', ev.value)); // ✅
     this.controls.set('environment.pathColor', pathColor);
 
-    const pointColor = folder.addBinding(this.tempObjects.pathPointColor, 'pathPointColor', { label: '光点颜色' });
+    const pointColor = folder.addBinding(this.tempObjects.pathPointColor, 'pathPointColor', { label: '光点颜色', view: 'color' });
     pointColor.on('change', (ev) => config.set('particles.pathPointColor', ev.value)); // ✅
     this.controls.set('particles.pathPointColor', pointColor);
     
@@ -312,20 +325,56 @@ class UIBasic {
     this.folders.set('audio', folder);
   }
 
-  _bindEvents() {
+      _bindEvents() {
     eventBus.on('datasets-list-updated', () => this._rebuildDataControls());
-    // 监听config中step的变化，反向更新UI滑块
+
+    // 监听配置变更
     eventBus.on('config-changed', ({ key, value }) => {
-      if (key === 'animation.currentStep') {
-        const stepControl = this.controls.get('animation.currentStep');
-        if (stepControl && this.configData.animation.currentStep !== value) {
-            this.configData.animation.currentStep = value;
-            stepControl.refresh();
-        }
-      }
+      this._updateControl(key, value, this.configData, this.tempObjects);
+    });
+    
+    // ✅ 新增: 监听状态变更
+    eventBus.on('state-changed', ({ key, value }) => {
+      this._updateControl(key, value, this.stateData);
+    });
+
+    eventBus.on('preset-loaded', () => {
+        this.refresh();
     });
   }
-  
+
+  // ✅ 新增: 提取一个可重用的辅助方法来更新UI控件
+  _updateControl(key: string, value: any, primarySource: any, secondarySource?: any) {
+      const control = this.controls.get(key);
+      if (!control) return;
+
+      const pathParts = key.split('.');
+      let target: any;
+      let tempKey: string | undefined;
+
+      // 特殊处理颜色等绑定到 tempObjects 的情况
+      if (secondarySource && (key === 'particles.dustColor' || key === 'environment.pathColor' || key === 'particles.pathPointColor')) {
+          tempKey = pathParts[1]; // e.g., 'dustColor'
+          target = secondarySource[tempKey];
+          if (target && target[tempKey] !== value) {
+              target[tempKey] = value;
+              control.refresh();
+          }
+          return;
+      }
+      
+      // 处理直接绑定到 primarySource (configData or stateData) 的情况
+      target = primarySource;
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        target = target[pathParts[i]];
+      }
+      const lastKey = pathParts[pathParts.length - 1];
+      if (target && target[lastKey] !== value) {
+        target[lastKey] = value;
+        control.refresh();
+      }
+  }
+
   updateBindings() {
     this.tempObjects.dustColor.dustColor = config.get('particles.dustColor');
     this.tempObjects.pathColor.pathColor = config.get('environment.pathColor');

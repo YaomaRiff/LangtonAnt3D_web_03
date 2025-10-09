@@ -4,11 +4,17 @@
  * ✅ 已删除：整体旋转、调试信息按钮
  */
 import { Pane } from 'tweakpane';
-import logger from '../utils/logger.js';
-import uiContainer from './ui-container.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import uiContainer from './ui-container';
+import config from '../config';
 
 class UICoordinates {
+  private pane: any;
+  private eventBus: any;
+  private initialized: boolean;
+  private controls: Map<string, any>;
+  private configData: any;
+
   constructor() {
     this.pane = null;
     this.eventBus = null;
@@ -101,12 +107,36 @@ class UICoordinates {
     });
   }
 
-  _bindEvents() {
+    _bindEvents() {
+    // 监听 reset 命令完成
     this.eventBus.on('coordinate-system-reset-completed', () => {
-      this.pane.refresh();
+      this.refresh();
       logger.info('UICoordinates', '坐标系统 UI 已刷新');
     });
+
+    // 监听外部配置变更
+    this.eventBus.on('config-changed', ({ key, value }) => {
+      const control = this.controls.get(key);
+      if (control) {
+        const pathParts = key.split('.');
+        let target = this.configData;
+        for (let i = 0; i < pathParts.length - 1; i++) {
+          target = target[pathParts[i]];
+        }
+        const lastKey = pathParts[pathParts.length - 1];
+        if (target && target[lastKey] !== value) {
+          target[lastKey] = value;
+          control.refresh();
+        }
+      }
+    });
+
+    // 监听预设加载
+    this.eventBus.on('preset-loaded', () => {
+        this.refresh();
+    });
   }
+
 
   updateBindings() {
     logger.debug('UICoordinates', '绑定检查完成');

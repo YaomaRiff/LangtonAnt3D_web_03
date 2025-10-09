@@ -5,11 +5,11 @@
  *   1. 删除了巨大的 _emitConfigEvents 方法。
  *   2. 加载预设时，通过遍历并调用 config.set() 来自动触发更新。
  */
-import config from './config.js';
-import logger from './utils/logger.js';
-import eventBus from './event-bus.js';
-import uiRegistry from './ui/ui-registry.js';
-import { resolveAssetUrl } from './utils/url-resolver.js';
+import config from './config';
+import logger from './utils/logger';
+import eventBus from './event-bus';
+import uiRegistry from './ui/ui-registry';
+import { resolveAssetUrl } from './utils/url-resolver';
 
 class PresetManager {
   constructor() {

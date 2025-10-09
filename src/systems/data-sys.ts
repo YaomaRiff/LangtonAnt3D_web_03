@@ -5,11 +5,20 @@
  */
 import * as THREE from 'three';
 import Papa from 'papaparse';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-import { resolveAssetUrl } from '../utils/url-resolver.js';
+import logger from '../utils/logger';
+import config from '../config';
+import { resolveAssetUrl } from '../utils/url-resolver';
+import state from './state';
 
 class DataSystem {
+  private eventBus: any;
+  private scene: THREE.Scene | null;
+  private camera: THREE.Camera | null;
+  private controls: any;
+  private initialized: boolean;
+  private rawData: any[];
+  private datasets: any[];
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -141,10 +150,10 @@ class DataSystem {
       }
 
       this.rawData = validData;
-      config.set('data.antData', validData);
+       state.set('data.antData', validData);
 
       const mappedPoints = this._mapToPoints(validData);
-      config.set('data.mappedPoints', mappedPoints);
+      state.set('data.mappedPoints', mappedPoints);
 
       this._adjustCamera(mappedPoints);
 

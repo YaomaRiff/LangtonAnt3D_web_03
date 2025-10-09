@@ -3,10 +3,10 @@
  * @description 环境系统 - 负责管理天空盒、背景和环境反射
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
-import eventBus from '../event-bus.js';
-import { resolveAssetUrl } from '../utils/url-resolver.js';
+import logger from '../utils/logger';
+import config from '../config';
+import eventBus from '../event-bus';
+import { resolveAssetUrl } from '../utils/url-resolver';
 
 class EnvironmentSystem {
   constructor() {
