@@ -1,7 +1,7 @@
 # Project Snapshot
 - Root: `.`
-- Created: 2025-10-09 20:38:37
-- Files: 42 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
+- Created: 2025-10-10 18:33:16
+- Files: 44 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
 - Force-Excluded: package-lock.json
 
 ---
@@ -15,6 +15,7 @@ LangtonAnt3D_web_03/
 │  │  └─ 01.json
 │  ├─ manifest.json
 │  ├─ style.css
+│  ├─ terminal.css
 ├─ src/
 │  ├─ systems/
 │  │  ├─ shaders/
@@ -40,6 +41,7 @@ LangtonAnt3D_web_03/
 │  │  ├─ ui-basic.ts
 │  │  ├─ ui-container.ts
 │  │  ├─ ui-coordinates.ts
+│  │  ├─ ui-monitor.ts
 │  │  ├─ ui-post.ts
 │  │  ├─ ui-presets.ts
 │  │  └─ ui-registry.ts
@@ -74,20 +76,43 @@ LangtonAnt3D_web_03/
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>(OUwNO)Ant</title>
   
-  <!-- 样式 -->
   <link rel="stylesheet" href="/style.css">
 
-  <!-- Favicon and Theme Color (修正位置) -->
+  <!-- Favicon and Theme Color -->
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#1a1a1a">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="app"></div>
+
+  <!-- ✅ 正确的结构: #main-layout 必须在 #app-wrapper 内部 -->
+  <div id="app-wrapper">
+        <div id="main-layout">
+      <!-- 左侧控制面板 -->
+      <div id="left-panel">
+        <!-- UI 容器将在这里创建其内容 -->
+      </div>
+      
+      <!-- 右侧监视器 -->
+      <div id="monitor-container">
+        <!-- 3D Canvas 将被添加到这里 -->
+
+        <!-- 监视器覆盖层UI的挂载点 -->
+        <div id="monitor-overlay-ui">
+          <!-- ui-monitor.ts 将在这里创建内容 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
@@ -100,7 +125,7 @@ LangtonAnt3D_web_03/
 {
   "name": "langtonant3d-web-03",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -132,6 +157,7 @@ LangtonAnt3D_web_03/
     "jszip": "^3.10.1",
     "papaparse": "^5.5.3",
     "postprocessing": "^6.37.8",
+    "terminal.css": "^0.7.5",
     "three": "^0.180.0",
     "three-mesh-bvh": "^0.9.1",
     "three-nebula": "^10.0.3",
@@ -263,124 +289,586 @@ LangtonAnt3D_web_03/
 ### public/style.css
 
 ```css
+/**
+ * @file style.css
+ * @description 全局样式表 - 简洁版
+ * @version 5.0 (Default Tweakpane)
+ * @✅ 修正: 完全移除 Tweakpane 样式覆盖，使用原生默认样式
+ */
+
+/* ==================== CSS 变量 ==================== */
+:root {
+  /* 终端配色 */
+  --terminal-bg: #273030;
+  --terminal-fg: #eceae5;
+  --terminal-accent: #32858b;
+  --terminal-border: #24222a;
+  --terminal-hover: #252321;
+  
+  /* 字体 */
+  --font-mono: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+}
+
+/* ==================== 全局重置 ==================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
 body {
-    margin: 0;
-    background: #000000;
-    font-family: Arial, sans-serif;
-    overflow: hidden;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
 }
 
-#three-container {
-    position: fixed;
-    inset: 0;
-    overflow: hidden;
+body {
+  font-family: var(--font-mono);
+  background: var(--terminal-bg);
+  color: var(--terminal-fg);
+  line-height: 1.6;
+  font-size: 14px;
 }
 
-/* 加载状态UI样式 */
-#loading-status {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 15px;
-    border-radius: 8px;
-    min-width: 250px;
-    z-index: 1000;
-    border: 1px solid #333;
-    transition: opacity 0.3s ease;
+/* ==================== 主布局 ==================== */
+#app-wrapper {
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  display: flex;
 }
 
-.loading-header {
-    font-weight: bold;
-    margin-bottom: 10px;
-    color: #3399ff;
-    border-bottom: 1px solid #333;
-    padding-bottom: 5px;
+#main-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  gap: 10px;
 }
 
-.status-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 5px 0;
-    padding: 3px 0;
+/* ==================== 左侧面板 ==================== */
+#left-panel {
+  width: 320px;
+  flex-shrink: 0;
+  background-color: var(--terminal-bg);
+  border: 2px solid var(--terminal-border);
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
 }
 
-.status-indicator {
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    min-width: 60px;
-    text-align: center;
+/* ==================== 右侧监视器 ==================== */
+#monitor-container {
+  flex: 1;
+  position: relative;
+  border: 2px solid var(--terminal-border);
+  background-color: #000;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.status-indicator.loading {
-    background: #ffa500;
-    color: #000;
+/* 监视器覆盖层UI */
+#monitor-overlay-ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
 }
 
-.status-indicator.success {
-    background: #4CAF50;
-    color: white;
+/* ==================== HUD 监视器样式 ==================== */
+.monitor-info-item {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;  /* 🔧 从 6px 缩小到 3px */
+  background: rgba(0, 20, 40, 0.5);  /* 🔧 从 0.9 降低到 0.5，更透明 */
+  padding: 2px 5px;  /* 🔧 从 3px 10px 缩小到 2px 5px */
+  border: 1px solid rgba(0, 255, 98, 0.3);  /* 🔧 从 0.6 降低到 0.3，边框更暗 */
+  border-radius: 0;
+  text-transform: uppercase;
+  box-shadow: 
+    0 0 8px rgba(0, 255, 145, 0.15),  /* 🔧 发光效果减半 */
+    inset 0 0 8px rgba(0, 255, 89, 0.05);  /* 🔧 内发光减弱 */
 }
 
-.status-indicator.error {
-    background: #f44336;
-    color: white;
+.monitor-info-item .label {
+  color: rgba(0, 255, 98, 0.5);  /* 🔧 从 0.8 降低到 0.5，更暗 */
+  opacity: 0.7;  /* 🔧 从 0.9 降低到 0.7 */
+  font-size: 8px;  /* 🔧 从 16px 缩小到 8px */
+  letter-spacing: 0.75px;  /* 🔧 从 1.5px 缩小到 0.75px */
+  text-shadow: 0 0 2px rgba(0, 255, 68, 0.25);  /* 🔧 文字阴影减弱 */
 }
 
-.status-indicator.waiting {
-    background: #666;
-    color: #ccc;
+.monitor-info-item .value {
+  color: #00ff62;
+  font-size: 8px;  /* 🔧 从 16px 缩小到 8px */
+  font-weight: bold;
+  min-width: 40px;  /* 🔧 从 80px 缩小到 40px */
+  text-align: right;
+  text-shadow: 
+    0 0 4px rgba(0, 255, 102, 0.4),  /* 🔧 发光减半 */
+    0 0 8px rgba(0, 255, 55, 0.2);  /* 🔧 发光减半 */
+  opacity: 0.8;  /* 🔧 新增：整体降低亮度 */
 }
 
-/* 控制面板样式 */
-.control-panel {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    background: rgba(0,0,0,0.6);
-    color: white;
-    padding: 12px;
-    border-radius: 6px;
-    font-size: 13px;
-    z-index: 10;
-    min-width: 320px;
-    max-height: 90vh;
-    overflow-y: auto;
+
+/* ==================== 滚动条样式 ==================== */
+#left-panel::-webkit-scrollbar,
+#ui-scroll-content::-webkit-scrollbar {
+  width: 10px;
 }
 
-.control-panel button {
-    margin: 2px;
-    padding: 5px 10px;
-    background: #333;
-    color: white;
-    border: 1px solid #555;
-    border-radius: 3px;
-    cursor: pointer;
+#left-panel::-webkit-scrollbar-track,
+#ui-scroll-content::-webkit-scrollbar-track {
+  background: var(--terminal-bg);
+  border-left: 1px solid var(--terminal-border);
 }
 
-.control-panel button:hover {
-    background: #555;
+#left-panel::-webkit-scrollbar-thumb,
+#ui-scroll-content::-webkit-scrollbar-thumb {
+  background: var(--terminal-accent);
+  border: 2px solid var(--terminal-bg);
 }
 
-.control-panel input[type="range"] {
-    width: 160px;
+#left-panel::-webkit-scrollbar-thumb:hover,
+#ui-scroll-content::-webkit-scrollbar-thumb:hover {
+  background: var(--terminal-fg);
+  box-shadow: 0 0 8px rgba(50, 133, 139, 0.5);
 }
 
-.control-panel input[type="color"] {
-    margin-left: 10px;
+/* ==================== 响应式适配 ==================== */
+@media (max-width: 768px) {
+  #left-panel {
+    width: 100%;
+    height: auto;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 2px solid var(--terminal-border);
+  }
+  
+  #monitor-container {
+    height: 60vh;
+  }
+  
+  #monitor-overlay-ui {
+    padding: 10px;
+  }
+  
+  .monitor-info-item .value {
+    font-size: 14px;
+    min-width: 70px;
+  }
 }
 
-.control-panel label {
-    display: inline-block;
-    margin-top: 8px;
+```
+
+### public/terminal.css
+
+```css
+/* Fira Code: https://github.com/tonsky/FiraCode */
+@import url('https://cdn.staticdelivr.com/gfonts/css2?family=Fira+Code:wght@300..700&display=swap');
+
+:root {
+  --background: #1a170f;
+  --foreground: #eceae5;
+  --accent: #32858b;
+  --radius: 0;
+  --font-size: 1rem;
+  --line-height: 1.54em;
 }
 
-#loading-status.hidden {
-    opacity: 0;
-    pointer-events: none;
+html {
+  box-sizing: border-box;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family:
+    "Fira Code",
+    "JetBrains Mono",
+    Monaco,
+    Consolas,
+     "Ubuntu Mono",
+    monospace;
+  font-size: var(--font-size);
+  font-weight: 400;
+  line-height: var(--line-height);
+  background-color: var(--background);
+  color: var(--foreground);
+  text-rendering: optimizeLegibility;
+  font-variant-ligatures: contextual;
+  -webkit-overflow-scrolling: touch;
+  -webkit-text-size-adjust: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  font-size: calc(var(--font-size) * 1.45);
+  letter-spacing: 0;
+}
+
+h2 {
+  font-size: calc(var(--font-size) * 1.35);
+  letter-spacing: 0;
+}
+
+h3 {
+  font-size: calc(var(--font-size) * 1.15);
+  letter-spacing: 0;
+}
+
+h4,
+h5,
+h6 {
+  font-size: calc(var(--font-size) * 1);
+  letter-spacing: 0;
+}
+
+h1, h2, h3, h4, h5, h6,
+p, ul, ol,
+img, figure, video,
+table {
+  margin: 25px 0;
+}
+
+a {
+  color: var(--accent);
+}
+
+button {
+  position: relative;
+  font: inherit;
+  font-weight: bold;
+  text-decoration: none;
+  text-align: center;
+  background: transparent;
+  color: var(--accent);
+  padding: 5px 18px;
+  border: 4px solid var(--accent);
+  border-radius: var(--radius);
+  transition: background 0.15s linear;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+}
+
+button:hover {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+fieldset {
+  display: inline-block;
+  border: 2px solid var(--foreground);
+  border-radius: calc(var(--radius) * 1.6);
+  padding: 10px;
+}
+
+fieldset *:first-child {
+  margin-top: 0;
+}
+
+fieldset input,
+fieldset select,
+fieldset textarea,
+fieldset label,
+fieldset button {
+  margin-top: calc(var(--line-height) * 0.5);
+  width: 100%;
+}
+
+label {
+  display: inline-block;
+}
+
+label input {
+  margin-top: 0;
+}
+
+input,
+textarea,
+select {
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--foreground);
+  border-radius: var(--radius);
+  padding: 10px;
+  font: inherit;
+  appearance: none;
+}
+
+input[type="checkbox"] {
+  width: auto;
+}
+
+input:focus-visible,
+input:active,
+textarea:focus-visible,
+textarea:active,
+select:focus-visible,
+select:active {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+input:active,
+textarea:active,
+select:active {
+  box-shadow: none;
+}
+
+select {
+  background-image: linear-gradient(
+      45deg,
+      transparent 50%,
+      var(--foreground) 50%
+    ),
+    linear-gradient(135deg, var(--foreground) 50%, transparent 50%);
+  background-position: calc(100% - 20px), calc(100% - 15px);
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 40px;
+}
+
+select option {
+  background: var(--background);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  vertical-align: middle;
+  padding: 10px;
+  box-shadow: inset 0 0 0 3px var(--background);
+}
+
+input[type="radio"] {
+  display: inline-block;
+  width: 10px !important;
+  height: 10px !important;
+  border-radius: 20px;
+}
+
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  background: var(--accent);
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  border: 8px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 8px;
+  overflow: hidden;
+}
+
+figure img,
+figure video {
+  margin-bottom: 0;
+}
+
+figure figcaption {
+  background: var(--accent);
+  color: var(--background);
+  text-align: center;
+  font-size: 1em;
+  font-weight: normal;
+  margin-top: -8px;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+ul,
+ol {
+  margin-left: 4ch;
+  padding: 0;
+}
+
+ul ul,
+ul ol,
+ol ul,
+ol ol {
+  margin-top: 0;
+}
+
+li::marker {
+  color: var(--accent);
+}
+
+ul li,
+ol li {
+  position: relative;
+}
+
+code,
+kbd {
+  font-family:
+    "Fira Code",
+    "JetBrains Mono",
+    Monaco,
+    Consolas,
+    Ubuntu Mono,
+    monospace !important;
+  font-feature-settings: normal;
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  color: color-mix(in srgb, var(--foreground) 5%, var(--accent));
+  padding: 0 6px;
+  margin: 0 2px;
+  font-size: 0.95em;
+}
+
+code {
+  border: 1px solid color-mix(in srgb, var(--foreground) 25%, transparent);
+}
+
+kbd {
+  border-top: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-left: 1px solid var(--accent);
+  border-right: 1px solid var(--accent);
+  border-bottom: 4px solid var(--accent);
+  border-radius: 4px;
+}
+
+code code {
+  background: transparent;
+  padding: 0;
+  margin: 0;
+}
+
+pre {
+  tab-size: 4;
+  background: color-mix(in srgb, var(--foreground) 5%, transparent) !important;
+  color: color-mix(in srgb, var(--foreground) 5%, var(--accent));
+  padding: 20px 10px;
+  font-size: 0.95em !important;
+  overflow: auto;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--foreground) 25%, transparent);
+}
+
+pre code {
+  background: none !important;
+  margin: 0;
+  padding: 0;
+  font-size: inherit;
+  border: none;
+}
+
+sup {
+  line-height: 0;
+}
+
+abbr {
+  position: relative;
+  text-decoration-style: wavy;
+  text-decoration-color: var(--accent);
+  cursor: help;
+}
+
+sub {
+  bottom: -0.25em;
+}
+
+sup {
+  top: -0.25em;
+}
+
+mark {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--foreground);
+}
+
+blockquote {
+  position: relative;
+  border-top: 1px solid var(--accent);
+  border-bottom: 1px solid var(--accent);
+  margin: 0;
+  padding: 25px;
+}
+
+blockquote:before {
+  content: ">";
+  display: block;
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+blockquote p:first-child {
+  margin-top: 0;
+}
+
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+table {
+  table-layout: auto;
+  border-collapse: collapse;
+}
+
+table,
+th,
+td {
+  border: 2px solid var(--foreground);
+  padding: 10px;
+}
+
+th {
+  border-style: solid;
+  color: var(--foreground);
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+hr {
+  width: 100%;
+  border: none;
+  background: var(--accent);
+  height: 2px;
+}
+
+/* Bold elements */
+
+h1, h2, h3, h4, h5, h6,
+b, strong,
+th,
+button {
+  font-weight: 600;
 }
 
 ```
@@ -956,9 +1444,10 @@ export default eventBus;
 
 ```
 /**
- * @file main.js
+ * @file main.ts
  * @description 应用主入口 - 系统协调与生命周期管理
- * ✨ 重构: 彻底移除了旧的 ui-material 系统。
+ * @✨ 重构: 彻底移除了旧的 ui-material 系统。
+ * @✨ 重构: 适配了新的监视器布局，修改了渲染器挂载和尺寸调整逻辑。
  */
 import * as THREE from 'three';
 import logger from './utils/logger';
@@ -972,6 +1461,7 @@ import uiBasic from './ui/ui-basic';
 import uiPost from './ui/ui-post';
 import uiPresets from './ui/ui-presets';
 import uiCoordinates from './ui/ui-coordinates';
+import uiMonitor from './ui/ui-monitor';
 
 // 核心系统
 import coordinateSystem from './systems/coordinates-sys';
@@ -996,6 +1486,8 @@ class Application {
   private renderer: THREE.WebGLRenderer | null;
   private clock: THREE.Clock;
   private initialized: boolean;
+  private monitorContainer: HTMLElement | null = null; // 新增：监视器容器引用
+
   constructor() {
     this.scene = null;
     this.renderer = null;
@@ -1011,11 +1503,16 @@ class Application {
 
     try {
       logger.info('App', '🚀 应用启动中...');
+      
+      this.monitorContainer = document.getElementById('monitor-container');
+      if (!this.monitorContainer) {
+        throw new Error('启动失败: 未在DOM中找到 #monitor-container。');
+      }
 
       // 1. 初始化配置
       initConfig();
 
-      // 2. 创建场景和渲染器
+      // 2. 创建场景和渲染器 (现在在新的容器中)
       this._createScene();
       this._createRenderer();
 
@@ -1028,8 +1525,11 @@ class Application {
       if (this.scene) {
         this.scene.userData.coordinateSystem = coordinateSystem;
       }
+      
+      // 4. 初始化UI容器 (现在它会找到自己的位置)
+      uiContainer.init();
 
-      // 4. 初始化相机系统
+      // 5. 初始化相机系统
       cameraSys.init({
         eventBus,
         scene: this.scene,
@@ -1052,8 +1552,6 @@ class Application {
         camera: cameraSys.getActiveCamera()
       });
 
-      uiContainer.init();
-
       await dataSys.init({
         eventBus,
         scene: this.scene,
@@ -1072,6 +1570,9 @@ class Application {
       await uiPresets.init();
       // 10. 初始化坐标系统UI
       await uiCoordinates.init({ eventBus });
+
+      //10.5. 初始化监视器UI
+      uiMonitor.init();
 
       // 11. 初始化核心服务系统
       materialSys.init();
@@ -1106,7 +1607,7 @@ class Application {
       sceneDirector.init({ eventBus });
 
       this._bindEvents();
-      this._handleResize();
+      this._handleResize(); // 第一次手动调用以设置正确尺寸
       this._startRenderLoop();
 
       const defaultCSV = config.get('data.csvUrl');
@@ -1135,30 +1636,25 @@ class Application {
       powerPreference: 'high-performance'
     });
 
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    // 尺寸将在 _handleResize 中设置
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
 
     const canvas = this.renderer.domElement;
-    canvas.style.position = 'fixed';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.zIndex = '0';
-    canvas.style.display = 'block';
+    // 移除所有内联定位样式，交给 CSS 处理
+    canvas.style.display = 'block'; 
     
-    document.body.appendChild(canvas);
+    // ✅ 关键修改: 将 Canvas 添加到右侧监视器容器
+    this.monitorContainer!.appendChild(canvas);
     
-    logger.info('App', `✅ Canvas已添加 | 尺寸: ${canvas.width}x${canvas.height}`);
+    logger.info('App', `✅ Canvas 已添加到 #monitor-container`);
     logger.debug('App', '渲染器已创建');
   }
 
-  _bindEvents() {
-    window.addEventListener('resize', () => {
-      this._handleResize();
-    });
+    _bindEvents() {
+    // 监听全局窗口大小变化事件，以便调整渲染器和相机
+    window.addEventListener('resize', this._handleResize.bind(this));
 
     eventBus.on('show-coordinate-debug', () => {
       const debugInfo = (coordinateSystem as any).debugInfo?.() || 'N/A';
@@ -1169,15 +1665,26 @@ class Application {
     logger.debug('App', '事件已绑定');
   }
 
+
+
   _handleResize() {
-    if (this.renderer) {
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-    postprocessSys.handleResize();
+    if (!this.renderer || !this.monitorContainer) return;
+
+    // ✅ 关键修改: 从监视器容器获取尺寸
+    const width = this.monitorContainer.clientWidth;
+    const height = this.monitorContainer.clientHeight;
+
+    // 更新渲染器
+    this.renderer.setSize(width, height);
+    
+    // ✅ 关键修改: 将新尺寸传递给下游系统
+    cameraSys.handleResize(width, height);
+    postprocessSys.handleResize(width, height);
+    
     logger.debugThrottled(
       'App',
       'window-resize',
-      '窗口大小已调整',
+      `窗口大小已调整: ${width}x${height}`,
       1000
     );
   }
@@ -1208,6 +1715,8 @@ class Application {
 
   dispose() {
     logger.info('App', '应用正在销毁...');
+    
+    window.removeEventListener('resize', this._handleResize.bind(this));
 
     sceneDirector.dispose();
     coordinateSystem.dispose();
@@ -1226,6 +1735,7 @@ class Application {
     uiPost.dispose();
     uiPresets.dispose();
     uiCoordinates.dispose();
+    uiMonitor.dispose();
     uiContainer.dispose();
 
     if (this.renderer) {
@@ -1242,7 +1752,7 @@ class Application {
 
 const app = new Application();
 app.init().catch(err => {
-  logger.error('App', `启动失败: ${err.message}`);
+  logger.error('App', `启动失败: ${(err as Error).message}`);
   console.error(err);
 });
 
@@ -1899,9 +2409,10 @@ export default audioSys;
 
 ```
 /**
- * @file camera-sys.js
+ * @file camera-sys.ts
  * @description 相机系统 - 透视/正交切换 + camera-controls 集成
- * ✅ 核心改造: 监听统一的 'config-changed' 事件。
+ * @✅ 核心改造: 监听统一的 'config-changed' 事件。
+ * @✅ 核心改造: 修改 handleResize 方法以接收外部尺寸。
  */
 import * as THREE from 'three';
 import CameraControls from 'camera-controls';
@@ -1912,6 +2423,20 @@ import { applyPerspMouseMapping, applyOrthoMouseMapping } from './controls-util'
 CameraControls.install({ THREE });
 
 class CameraSystem {
+  private eventBus: any;
+  private scene: THREE.Scene | null;
+  private renderer: THREE.WebGLRenderer | null;
+  private initialized: boolean;
+  
+  private perspectiveCamera: THREE.PerspectiveCamera | null;
+  private orthographicCamera: THREE.OrthographicCamera | null;
+  private activeCamera: THREE.Camera | null;
+  private controls: CameraControls | null;
+  private currentMode: string;
+  
+  private orthoFrustumSize: number;
+  private particleSystemRadius: number;
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -1928,7 +2453,7 @@ class CameraSystem {
     this.particleSystemRadius = 100;
   }
 
-  init({ eventBus, scene, renderer }) {
+  init({ eventBus, scene, renderer }: { eventBus: any, scene: THREE.Scene, renderer: THREE.WebGLRenderer }) {
     if (this.initialized) {
       logger.warn('CameraSystem', '相机系统已经初始化过了');
       return this;
@@ -1956,16 +2481,17 @@ class CameraSystem {
 
       return this;
     } catch (err) {
-      logger.error('CameraSystem', `初始化失败: ${err.message}`);
+      logger.error('CameraSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
   _createCameras() {
-    const aspect = window.innerWidth / window.innerHeight;
+    // 初始 aspect 只是一个占位符，将在第一次 handleResize 时被正确设置
+    const aspect = 16 / 9;
     const fov = config.get('camera.fov') || 75;
     const near = config.get('camera.near') || 0.1;
-    const far = config.get('camera.far') || 1000;
+    const far = config.get('camera.far') || 2000;
 
     this.perspectiveCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
     this.perspectiveCamera.position.set(10, 8, 15);
@@ -1985,7 +2511,7 @@ class CameraSystem {
   }
 
   _createControls() {
-    this.controls = new CameraControls(this.activeCamera, this.renderer.domElement);
+    this.controls = new CameraControls(this.activeCamera!, this.renderer!.domElement);
     applyPerspMouseMapping(this.controls);
 
     const controlsConfig = config.get('camera.controls');
@@ -2019,15 +2545,11 @@ class CameraSystem {
   }
 
   _bindEvents() {
-    // ✅ 核心改造：监听通用配置变更事件
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
-
-    // ✅ 保留命令式事件
-    this.eventBus.on('view-changed', (viewKey) => this._applyViewPreset(viewKey));
+    this.eventBus.on('view-changed', (viewKey: string) => this._applyViewPreset(viewKey));
     this.eventBus.on('flip-view', () => this._flipView());
     
-    // ✅ 保留系统间信号
-    this.eventBus.on('coordinate-system-updated', ({ type }) => {
+    this.eventBus.on('coordinate-system-updated', ({ type }: { type: string }) => {
       if (type === 'position') {
         this._setRotationCenterToOrigin();
       }
@@ -2037,13 +2559,10 @@ class CameraSystem {
       logger.info('CameraSystem', '数据处理完成后已锁定旋转中心');
     });
 
-    window.addEventListener('resize', () => this._handleResize());
+    // 不再直接监听 window.resize，由 main.ts 统一调度
   }
   
-  /**
-   * ✅ 新增: 统一处理配置变更
-   */
-  _handleConfigChange({ key, value }) {
+  _handleConfigChange({ key, value }: { key: string, value: any }) {
     switch (key) {
       case 'camera.mode':
         this._switchToMode(value);
@@ -2063,15 +2582,15 @@ class CameraSystem {
     }
   }
 
-  _switchToMode(mode) {
-    if (mode === this.currentMode) return;
+  _switchToMode(mode: string) {
+    if (mode === this.currentMode || !this.controls) return;
 
     const prevCamera = this.activeCamera;
     this.currentMode = mode;
 
     if (mode === 'perspective') {
       this.activeCamera = this.perspectiveCamera;
-      this.controls.camera = this.activeCamera;
+      this.controls.camera = this.activeCamera!;
       applyPerspMouseMapping(this.controls);
       if (prevCamera) {
         const position = prevCamera.position.clone();
@@ -2080,7 +2599,7 @@ class CameraSystem {
       }
     } else if (mode === 'orthographic') {
       this.activeCamera = this.orthographicCamera;
-      this.controls.camera = this.activeCamera;
+      this.controls.camera = this.activeCamera!;
       applyOrthoMouseMapping(this.controls);
       this._applyViewPreset('top');
     }
@@ -2090,7 +2609,8 @@ class CameraSystem {
     logger.info('CameraSystem', `切换到${mode}相机`);
   }
 
-  _applyViewPreset(viewKey) {
+  _applyViewPreset(viewKey: string) {
+    if (!this.controls) return;
     const distance = 50;
     let position;
     switch (viewKey) {
@@ -2103,6 +2623,7 @@ class CameraSystem {
   }
 
   _flipView() {
+    if (!this.controls || !this.activeCamera) return;
     const currentPos = this.activeCamera.position.clone();
     const target = new THREE.Vector3();
     this.controls.getTarget(target);
@@ -2110,26 +2631,30 @@ class CameraSystem {
     this.controls.setLookAt(newPos.x, newPos.y, newPos.z, target.x, target.y, target.z, true);
   }
 
-  _handleResize() {
-    const aspect = window.innerWidth / window.innerHeight;
+  // ✅ 核心修改: 接收 width 和 height
+  handleResize(width: number, height: number) {
+    if (!this.perspectiveCamera || !this.orthographicCamera) return;
+    
+    const aspect = width / height;
+
     this.perspectiveCamera.aspect = aspect;
     this.perspectiveCamera.updateProjectionMatrix();
 
-    const height = this.orthoFrustumSize / this.orthographicCamera.zoom;
-    const width = height * aspect;
-    this.orthographicCamera.left = -width / 2;
-    this.orthographicCamera.right = width / 2;
-    this.orthographicCamera.top = height / 2;
-    this.orthographicCamera.bottom = -height / 2;
+    const orthoHeight = this.orthoFrustumSize / this.orthographicCamera.zoom;
+    const orthoWidth = orthoHeight * aspect;
+    this.orthographicCamera.left = -orthoWidth / 2;
+    this.orthographicCamera.right = orthoWidth / 2;
+    this.orthographicCamera.top = orthoHeight / 2;
+    this.orthographicCamera.bottom = -orthoHeight / 2;
     this.orthographicCamera.updateProjectionMatrix();
   }
 
-  update(delta) {
+  update(delta: number) {
     if (this.controls) this.controls.update(delta);
   }
 
-  getActiveCamera() { return this.activeCamera; }
-  getControls() { return this.controls; }
+  getActiveCamera(): THREE.Camera { return this.activeCamera!; }
+  getControls(): CameraControls { return this.controls!; }
   
   dispose() {
     if (this.controls) this.controls.dispose();
@@ -3721,11 +4246,12 @@ export default pathSys;
 /**
  * @file postprocess-sys.ts
  * @description 后处理系统
- * @version 8.0 (Refactor)
+ * @version 8.2 (Layout-Refactor)
  * @✨ 重构: 将所有效果合并到一个EffectPass中，提升性能与稳定性。
  * @✨ 重构: 优化了相机更新逻辑，避免销毁和重建composer。
  * @🔧 修正: 保留并稳定了基于TextureEffect的扫描线实现。
  * @🔧 清理: 移除了过时的注释和逻辑。
+ * @✅ 改造: 修改 handleResize 方法以接收外部尺寸。
  */
 
 // 1.只使用postprocessing库中的效果，不允许使用自制shader，这条注释不允许删除！
@@ -3788,7 +4314,7 @@ class PostprocessSystem {
       this.updateAllEffectsFromConfig();
 
       this.initialized = true;
-      logger.info('PostprocessSystem', '✅ 后处理系统初始化完成 (v8.1 Fix)');
+      logger.info('PostprocessSystem', '✅ 后处理系统初始化完成 (v8.2)');
       return this;
     } catch (err) {
       logger.error('PostprocessSystem', `初始化失败: ${(err as Error).message}`);
@@ -3811,7 +4337,8 @@ class PostprocessSystem {
       frameBufferType: THREE.UnsignedByteType
     });
     
-    this.composer.setSize(window.innerWidth, window.innerHeight);
+    // 尺寸将在第一次 handleResize 时正确设置
+    // this.composer.setSize(window.innerWidth, window.innerHeight);
 
     // 1. 基础渲染通道，必须是第一个
     const renderPass = new RenderPass(this.mainScene, this.camera);
@@ -3820,7 +4347,7 @@ class PostprocessSystem {
     // 2. 创建所有效果实例
     this._createAllEffects();
     
-    // ✅ 核心修正：将冲突的效果分离到不同的 EffectPass 中，无冲突的合并
+    // 将效果组合到 EffectPass 中
     if (this.bloomEffect) {
         this.composer.addPass(new EffectPass(this.camera, this.bloomEffect));
     }
@@ -3828,16 +4355,15 @@ class PostprocessSystem {
         this.composer.addPass(new EffectPass(this.camera, this.bokehEffect));
     }
     
-    // 将剩余的、无冲突的效果合并到一个 Pass 中以优化性能
     const remainingEffects = [
-        this.chromaticAberrationEffect, // 色差与后面的效果无冲突
+        this.chromaticAberrationEffect,
         this.filmEffect,
         this.scanlineEffect,
         this.brightnessContrastEffect
-    ].filter(Boolean); // 过滤掉可能为null的效果
+    ].filter(Boolean) as any[];
 
     if (remainingEffects.length > 0) {
-        const finalPass = new EffectPass(this.camera as THREE.Camera, ...remainingEffects);
+        const finalPass = new EffectPass(this.camera, ...remainingEffects);
         this.composer!.addPass(finalPass);
     }
   }
@@ -3847,7 +4373,7 @@ class PostprocessSystem {
       blendFunction: BlendFunction.ADD,
       selection: this.selection,
       mipmapBlur: true,
-    } as any);
+    });
     
     this.bokehEffect = new BokehEffect({
         focus: 40.0,
@@ -3864,7 +4390,6 @@ class PostprocessSystem {
   }
 
   private _createScanlineEffect() {
-    // 创建一个 1x2 像素的纹理，上半部分白色，下半部分黑色
     const data = new Uint8Array([ 255, 255, 255, 255, 0, 0, 0, 255 ]);
     const texture = new THREE.DataTexture(data, 1, 2, THREE.RGBAFormat);
     texture.wrapS = THREE.RepeatWrapping;
@@ -3895,8 +4420,9 @@ class PostprocessSystem {
         this.camera = camera;
         if (this.composer) {
             this.composer.passes.forEach(pass => {
-                if (pass instanceof EffectPass) pass.mainCamera = camera;
                 if (pass instanceof RenderPass) pass.camera = camera;
+                // EffectPass 的相机是构造时传入的，通常不需要动态修改
+                // 但如果需要，可以访问 pass.effects.forEach(e => e.camera = camera)
             });
             logger.info('PostprocessSystem', '相机已更新');
         }
@@ -3951,7 +4477,8 @@ class PostprocessSystem {
         }
         if (this.scanlineEffect && this.scanlineTexture) {
             this.scanlineEffect.blendMode.opacity.value = filmEnabled ? cfg.scanlineIntensity : 0.0;
-            this.scanlineTexture.repeat.y = Math.max(1, Math.floor(cfg.scanlineCount / 2));
+            const height = this.composer?.getRenderer().getSize(new THREE.Vector2()).height || 1080;
+            this.scanlineTexture.repeat.y = Math.max(1, Math.floor(cfg.scanlineCount / 2 * (height / 1080)));
             this.scanlineTexture.needsUpdate = true;
         }
         break;
@@ -3977,8 +4504,10 @@ class PostprocessSystem {
     }
   }
 
-  handleResize() {
-    this.composer?.setSize(window.innerWidth, window.innerHeight);
+  // ✅ 核心修改: 接收 width 和 height
+  handleResize(width: number, height: number) {
+    this.composer?.setSize(width, height);
+    // 更新扫描线数量时也需要考虑新的高度
     this.updateEffectFromConfig('postprocess.film');
   }
 
@@ -3986,6 +4515,7 @@ class PostprocessSystem {
     this.composer?.dispose();
     this.scanlineTexture?.dispose();
     this.initialized = false;
+    logger.info('PostprocessSystem', '后处理系统已销毁');
   }
 }
 
@@ -4658,17 +5188,20 @@ export default uiBasic;
 
 ```
 /**
- * @file ui-container.js
- * @description 统一 UI 容器系统 - 左侧可滚动面板
+ * @file ui-container.ts
+ * @description 统一 UI 容器系统 - 管理左侧面板，提供滚动区域和深度美化的主题。
+ * @version 3.0 (Pistachio Theme)
+ * @✨ 主题: 注入了全新的“开心果(Pistachio)”配色方案，增强了UI层级感。
+ * @🔧 修正: 调整了文件夹标题样式，解决了背景过窄和文字居中的问题。
+ * @✨ 优化: 更新了滚动条样式，使其与新主题匹配。
+ * @🔧 简化: 移除了内联的 Tweakpane 主题代码，改为在全局样式中统一管理
  */
 import logger from '../utils/logger';
 
 class UIContainer {
-  constructor() {
-    this.container = null;
-    this.scrollContent = null;
-    this.initialized = false;
-  }
+  private panelContainer: HTMLElement | null = null;
+  private scrollContent: HTMLElement | null = null;
+  private initialized: boolean = false;
 
   init() {
     if (this.initialized) {
@@ -4676,152 +5209,69 @@ class UIContainer {
       return;
     }
 
-    this._createContainer();
+    this.panelContainer = document.getElementById('left-panel');
+
+    if (!this.panelContainer) {
+      logger.error('UIContainer', '初始化失败: 未找到 #left-panel 元素。');
+      return;
+    }
+    
+    this._createScrollContent();
     this._applyStyles();
     this._setupScrollBehavior();
     
     this.initialized = true;
-    logger.info('UIContainer', 'UI 容器已创建');
+    logger.info('UIContainer', 'UI 容器已在 #left-panel 中初始化');
   }
 
-  _createContainer() {
-    this.container = document.createElement('div');
-    this.container.id = 'ui-container';
-    
+  private _createScrollContent() {
+    this.panelContainer!.innerHTML = '';
     this.scrollContent = document.createElement('div');
     this.scrollContent.id = 'ui-scroll-content';
-    
-    this.container.appendChild(this.scrollContent);
-    document.body.appendChild(this.container);
+    this.panelContainer!.appendChild(this.scrollContent);
   }
 
-  _applyStyles() {
-    Object.assign(this.container.style, {
-      position: 'fixed',
-      top: '20px',
-      left: '20px',
-      width: '320px',
-      maxHeight: 'calc(100vh - 40px)',
-      zIndex: '10000',
-      
-      background: 'rgba(18, 20, 25, 0.85)',
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
-      
-      borderRadius: '12px',
-      border: '1px solid rgba(255, 255, 255, 0.08)',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-      
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column'
-    });
-
-    Object.assign(this.scrollContent.style, {
-      flex: '1',
+  private _applyStyles() {
+    Object.assign(this.scrollContent!.style, {
+      height: '100%',
       overflowY: 'auto',
       overflowX: 'hidden',
-      padding: '12px',
-      scrollbarWidth: 'thin',
-      scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
+      boxSizing: 'border-box',
+      scrollbarWidth: 'thin', 
+      scrollbarColor: 'var(--border-color, #75715e) var(--background-color, #272822)'
     });
+    
+    // Terminal.css 风格的样式现在在 public/style.css 中统一管理
+// 这里只保留必要的滚动条行为设置
+const style = document.createElement('style');
+style.textContent = `
+  /* 确保滚动内容使用等宽字体 */
+  #ui-scroll-content {
+    font-family: var(--font-mono, 'Fira Code', monospace);
+  }
+`;
+document.head.appendChild(style);
 
-    const style = document.createElement('style');
-    style.textContent = `
-      #ui-scroll-content::-webkit-scrollbar {
-        width: 8px;
-      }
-      
-      #ui-scroll-content::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.1);
-        border-radius: 4px;
-      }
-      
-      #ui-scroll-content::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-        transition: background 0.2s;
-      }
-      
-      #ui-scroll-content::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-      }
-      
-      .tp-dfwv {
-        background: transparent !important;
-        margin-bottom: 8px !important;
-      }
-      
-      .tp-rotv {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
-        border-radius: 8px !important;
-        margin-bottom: 8px !important;
-      }
-      
-      .tp-rotv_t {
-        color: rgba(255, 255, 255, 0.9) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-        padding: 8px 12px !important;
-        font-weight: 500 !important;
-        user-select: none !important;
-        display: flex !important;
-        align-items: center !important;
-        line-height: 1.4 !important;
-      }
-
-      .tp-rotv_b {
-        align-items: center !important;
-      }
-      
-      .tp-lblv_l {
-        color: rgba(255, 255, 255, 0.7) !important;
-      }
-      
-      .tp-brkv {
-        background: rgba(255, 255, 255, 0.02) !important;
-      }
-      
-      .tp-btnv_b {
-        background: rgba(100, 150, 255, 0.15) !important;
-        border: 1px solid rgba(100, 150, 255, 0.3) !important;
-        color: rgba(150, 200, 255, 1) !important;
-        transition: all 0.2s !important;
-      }
-      
-      .tp-btnv_b:hover {
-        background: rgba(100, 150, 255, 0.25) !important;
-        border-color: rgba(100, 150, 255, 0.5) !important;
-      }
-      
-      .tp-btnv_b:active {
-        background: rgba(100, 150, 255, 0.35) !important;
-      }
-    `;
-    document.head.appendChild(style);
   }
 
-  _setupScrollBehavior() {
-    this.scrollContent.addEventListener('wheel', (e) => {
+  private _setupScrollBehavior() {
+    this.scrollContent!.addEventListener('wheel', (e) => {
       e.stopPropagation();
-    }, { passive: true });
-
-    this.scrollContent.style.scrollBehavior = 'smooth';
+    }, { passive: false });
   }
 
-  getScrollContent() {
+  getScrollContent(): HTMLElement | null {
     return this.scrollContent;
   }
 
   dispose() {
-    if (this.container && this.container.parentNode) {
-      this.container.parentNode.removeChild(this.container);
+    if (this.panelContainer) {
+      this.panelContainer.innerHTML = ''; 
     }
-    this.container = null;
+    this.panelContainer = null;
     this.scrollContent = null;
     this.initialized = false;
-    logger.info('UIContainer', 'UI 容器已清理');
+    logger.info('UIContainer', 'UI 容器内容已清理');
   }
 }
 
@@ -4999,6 +5449,86 @@ class UICoordinates {
 
 const uiCoordinates = new UICoordinates();
 export default uiCoordinates;
+
+```
+
+### src/ui/ui-monitor.ts
+
+```
+/**
+ * @file ui-monitor.ts
+ * @description 监视器覆盖层UI - 在3D视图上显示状态信息。
+ */
+import eventBus from '../event-bus';
+import state from '../systems/state';
+import logger from '../utils/logger';
+
+class UIMonitor {
+  private container: HTMLElement | null = null;
+  private stepDisplay: HTMLElement | null = null;
+  private initialized: boolean = false;
+
+  init() {
+    if (this.initialized) {
+      logger.warn('UIMonitor', 'UI已初始化');
+      return;
+    }
+
+    this.container = document.getElementById('monitor-overlay-ui');
+    if (!this.container) {
+      logger.error('UIMonitor', '初始化失败: 未找到 #monitor-overlay-ui 元素。');
+      return;
+    }
+
+    this._createElements();
+    this._bindEvents();
+
+    this.initialized = true;
+    logger.info('UIMonitor', '监视器UI已初始化');
+  }
+
+  private _createElements() {
+    // 动画步数显示
+    const stepWrapper = document.createElement('div');
+    stepWrapper.className = 'monitor-info-item';
+    stepWrapper.innerHTML = `<span class="label">STEP:</span>`;
+    this.stepDisplay = document.createElement('span');
+    this.stepDisplay.className = 'value';
+    this.stepDisplay.textContent = '0 / 0';
+    stepWrapper.appendChild(this.stepDisplay);
+    
+    this.container!.appendChild(stepWrapper);
+  }
+
+  private _bindEvents() {
+    const updateStepDisplay = () => {
+      const currentStep = state.get('animation.currentStep') || 0;
+      const totalSteps = (state.get('data.mappedPoints') || []).length;
+      if (this.stepDisplay) {
+        this.stepDisplay.textContent = `${currentStep} / ${totalSteps > 0 ? totalSteps -1 : 0}`;
+      }
+    };
+
+    eventBus.on('state-changed', ({ key }: { key: string }) => {
+      if (key === 'animation.currentStep' || key === 'data.mappedPoints') {
+        updateStepDisplay();
+      }
+    });
+
+    // 初始化时也更新一次
+    updateStepDisplay();
+  }
+
+  dispose() {
+    if (this.container) {
+      this.container.innerHTML = '';
+    }
+    this.initialized = false;
+    logger.info('UIMonitor', '监视器UI已销毁');
+  }
+}
+
+export default new UIMonitor();
 
 ```
 

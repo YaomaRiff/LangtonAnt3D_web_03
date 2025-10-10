@@ -1,15 +1,18 @@
 /**
- * @file ui-container.js
- * @description 统一 UI 容器系统 - 左侧可滚动面板
+ * @file ui-container.ts
+ * @description 统一 UI 容器系统 - 管理左侧面板，提供滚动区域和深度美化的主题。
+ * @version 3.0 (Pistachio Theme)
+ * @✨ 主题: 注入了全新的“开心果(Pistachio)”配色方案，增强了UI层级感。
+ * @🔧 修正: 调整了文件夹标题样式，解决了背景过窄和文字居中的问题。
+ * @✨ 优化: 更新了滚动条样式，使其与新主题匹配。
+ * @🔧 简化: 移除了内联的 Tweakpane 主题代码，改为在全局样式中统一管理
  */
 import logger from '../utils/logger';
 
 class UIContainer {
-  constructor() {
-    this.container = null;
-    this.scrollContent = null;
-    this.initialized = false;
-  }
+  private panelContainer: HTMLElement | null = null;
+  private scrollContent: HTMLElement | null = null;
+  private initialized: boolean = false;
 
   init() {
     if (this.initialized) {
@@ -17,152 +20,69 @@ class UIContainer {
       return;
     }
 
-    this._createContainer();
+    this.panelContainer = document.getElementById('left-panel');
+
+    if (!this.panelContainer) {
+      logger.error('UIContainer', '初始化失败: 未找到 #left-panel 元素。');
+      return;
+    }
+    
+    this._createScrollContent();
     this._applyStyles();
     this._setupScrollBehavior();
     
     this.initialized = true;
-    logger.info('UIContainer', 'UI 容器已创建');
+    logger.info('UIContainer', 'UI 容器已在 #left-panel 中初始化');
   }
 
-  _createContainer() {
-    this.container = document.createElement('div');
-    this.container.id = 'ui-container';
-    
+  private _createScrollContent() {
+    this.panelContainer!.innerHTML = '';
     this.scrollContent = document.createElement('div');
     this.scrollContent.id = 'ui-scroll-content';
-    
-    this.container.appendChild(this.scrollContent);
-    document.body.appendChild(this.container);
+    this.panelContainer!.appendChild(this.scrollContent);
   }
 
-  _applyStyles() {
-    Object.assign(this.container.style, {
-      position: 'fixed',
-      top: '20px',
-      left: '20px',
-      width: '320px',
-      maxHeight: 'calc(100vh - 40px)',
-      zIndex: '10000',
-      
-      background: 'rgba(18, 20, 25, 0.85)',
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
-      
-      borderRadius: '12px',
-      border: '1px solid rgba(255, 255, 255, 0.08)',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
-      
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column'
-    });
-
-    Object.assign(this.scrollContent.style, {
-      flex: '1',
+  private _applyStyles() {
+    Object.assign(this.scrollContent!.style, {
+      height: '100%',
       overflowY: 'auto',
       overflowX: 'hidden',
-      padding: '12px',
-      scrollbarWidth: 'thin',
-      scrollbarColor: 'rgba(255, 255, 255, 0.2) transparent'
+      boxSizing: 'border-box',
+      scrollbarWidth: 'thin', 
+      scrollbarColor: 'var(--border-color, #75715e) var(--background-color, #272822)'
     });
+    
+    // Terminal.css 风格的样式现在在 public/style.css 中统一管理
+// 这里只保留必要的滚动条行为设置
+const style = document.createElement('style');
+style.textContent = `
+  /* 确保滚动内容使用等宽字体 */
+  #ui-scroll-content {
+    font-family: var(--font-mono, 'Fira Code', monospace);
+  }
+`;
+document.head.appendChild(style);
 
-    const style = document.createElement('style');
-    style.textContent = `
-      #ui-scroll-content::-webkit-scrollbar {
-        width: 8px;
-      }
-      
-      #ui-scroll-content::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.1);
-        border-radius: 4px;
-      }
-      
-      #ui-scroll-content::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-        transition: background 0.2s;
-      }
-      
-      #ui-scroll-content::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-      }
-      
-      .tp-dfwv {
-        background: transparent !important;
-        margin-bottom: 8px !important;
-      }
-      
-      .tp-rotv {
-        background: rgba(255, 255, 255, 0.03) !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
-        border-radius: 8px !important;
-        margin-bottom: 8px !important;
-      }
-      
-      .tp-rotv_t {
-        color: rgba(255, 255, 255, 0.9) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-        padding: 8px 12px !important;
-        font-weight: 500 !important;
-        user-select: none !important;
-        display: flex !important;
-        align-items: center !important;
-        line-height: 1.4 !important;
-      }
-
-      .tp-rotv_b {
-        align-items: center !important;
-      }
-      
-      .tp-lblv_l {
-        color: rgba(255, 255, 255, 0.7) !important;
-      }
-      
-      .tp-brkv {
-        background: rgba(255, 255, 255, 0.02) !important;
-      }
-      
-      .tp-btnv_b {
-        background: rgba(100, 150, 255, 0.15) !important;
-        border: 1px solid rgba(100, 150, 255, 0.3) !important;
-        color: rgba(150, 200, 255, 1) !important;
-        transition: all 0.2s !important;
-      }
-      
-      .tp-btnv_b:hover {
-        background: rgba(100, 150, 255, 0.25) !important;
-        border-color: rgba(100, 150, 255, 0.5) !important;
-      }
-      
-      .tp-btnv_b:active {
-        background: rgba(100, 150, 255, 0.35) !important;
-      }
-    `;
-    document.head.appendChild(style);
   }
 
-  _setupScrollBehavior() {
-    this.scrollContent.addEventListener('wheel', (e) => {
+  private _setupScrollBehavior() {
+    this.scrollContent!.addEventListener('wheel', (e) => {
       e.stopPropagation();
-    }, { passive: true });
-
-    this.scrollContent.style.scrollBehavior = 'smooth';
+    }, { passive: false });
   }
 
-  getScrollContent() {
+  getScrollContent(): HTMLElement | null {
     return this.scrollContent;
   }
 
   dispose() {
-    if (this.container && this.container.parentNode) {
-      this.container.parentNode.removeChild(this.container);
+    if (this.panelContainer) {
+      this.panelContainer.innerHTML = ''; 
     }
-    this.container = null;
+    this.panelContainer = null;
     this.scrollContent = null;
     this.initialized = false;
-    logger.info('UIContainer', 'UI 容器已清理');
+    logger.info('UIContainer', 'UI 容器内容已清理');
   }
 }
 

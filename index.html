@@ -5,20 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>(OUwNO)Ant</title>
   
-  <!-- 样式 -->
   <link rel="stylesheet" href="/style.css">
 
-  <!-- Favicon and Theme Color (修正位置) -->
+  <!-- Favicon and Theme Color -->
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="/android-chrome-512x512.png">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#1a1a1a">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="app"></div>
+
+  <!-- ✅ 正确的结构: #main-layout 必须在 #app-wrapper 内部 -->
+  <div id="app-wrapper">
+        <div id="main-layout">
+      <!-- 左侧控制面板 -->
+      <div id="left-panel">
+        <!-- UI 容器将在这里创建其内容 -->
+      </div>
+      
+      <!-- 右侧监视器 -->
+      <div id="monitor-container">
+        <!-- 3D Canvas 将被添加到这里 -->
+
+        <!-- 监视器覆盖层UI的挂载点 -->
+        <div id="monitor-overlay-ui">
+          <!-- ui-monitor.ts 将在这里创建内容 -->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

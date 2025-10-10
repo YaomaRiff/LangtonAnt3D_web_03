@@ -1,11 +1,12 @@
 /**
  * @file postprocess-sys.ts
  * @description 后处理系统
- * @version 8.0 (Refactor)
+ * @version 8.2 (Layout-Refactor)
  * @✨ 重构: 将所有效果合并到一个EffectPass中，提升性能与稳定性。
  * @✨ 重构: 优化了相机更新逻辑，避免销毁和重建composer。
  * @🔧 修正: 保留并稳定了基于TextureEffect的扫描线实现。
  * @🔧 清理: 移除了过时的注释和逻辑。
+ * @✅ 改造: 修改 handleResize 方法以接收外部尺寸。
  */
 
 // 1.只使用postprocessing库中的效果，不允许使用自制shader，这条注释不允许删除！
@@ -68,7 +69,7 @@ class PostprocessSystem {
       this.updateAllEffectsFromConfig();
 
       this.initialized = true;
-      logger.info('PostprocessSystem', '✅ 后处理系统初始化完成 (v8.1 Fix)');
+      logger.info('PostprocessSystem', '✅ 后处理系统初始化完成 (v8.2)');
       return this;
     } catch (err) {
       logger.error('PostprocessSystem', `初始化失败: ${(err as Error).message}`);
@@ -91,7 +92,8 @@ class PostprocessSystem {
       frameBufferType: THREE.UnsignedByteType
     });
     
-    this.composer.setSize(window.innerWidth, window.innerHeight);
+    // 尺寸将在第一次 handleResize 时正确设置
+    // this.composer.setSize(window.innerWidth, window.innerHeight);
 
     // 1. 基础渲染通道，必须是第一个
     const renderPass = new RenderPass(this.mainScene, this.camera);
@@ -100,7 +102,7 @@ class PostprocessSystem {
     // 2. 创建所有效果实例
     this._createAllEffects();
     
-    // ✅ 核心修正：将冲突的效果分离到不同的 EffectPass 中，无冲突的合并
+    // 将效果组合到 EffectPass 中
     if (this.bloomEffect) {
         this.composer.addPass(new EffectPass(this.camera, this.bloomEffect));
     }
@@ -108,16 +110,15 @@ class PostprocessSystem {
         this.composer.addPass(new EffectPass(this.camera, this.bokehEffect));
     }
     
-    // 将剩余的、无冲突的效果合并到一个 Pass 中以优化性能
     const remainingEffects = [
-        this.chromaticAberrationEffect, // 色差与后面的效果无冲突
+        this.chromaticAberrationEffect,
         this.filmEffect,
         this.scanlineEffect,
         this.brightnessContrastEffect
-    ].filter(Boolean); // 过滤掉可能为null的效果
+    ].filter(Boolean) as any[];
 
     if (remainingEffects.length > 0) {
-        const finalPass = new EffectPass(this.camera as THREE.Camera, ...remainingEffects);
+        const finalPass = new EffectPass(this.camera, ...remainingEffects);
         this.composer!.addPass(finalPass);
     }
   }
@@ -127,7 +128,7 @@ class PostprocessSystem {
       blendFunction: BlendFunction.ADD,
       selection: this.selection,
       mipmapBlur: true,
-    } as any);
+    });
     
     this.bokehEffect = new BokehEffect({
         focus: 40.0,
@@ -144,7 +145,6 @@ class PostprocessSystem {
   }
 
   private _createScanlineEffect() {
-    // 创建一个 1x2 像素的纹理，上半部分白色，下半部分黑色
     const data = new Uint8Array([ 255, 255, 255, 255, 0, 0, 0, 255 ]);
     const texture = new THREE.DataTexture(data, 1, 2, THREE.RGBAFormat);
     texture.wrapS = THREE.RepeatWrapping;
@@ -175,8 +175,9 @@ class PostprocessSystem {
         this.camera = camera;
         if (this.composer) {
             this.composer.passes.forEach(pass => {
-                if (pass instanceof EffectPass) pass.mainCamera = camera;
                 if (pass instanceof RenderPass) pass.camera = camera;
+                // EffectPass 的相机是构造时传入的，通常不需要动态修改
+                // 但如果需要，可以访问 pass.effects.forEach(e => e.camera = camera)
             });
             logger.info('PostprocessSystem', '相机已更新');
         }
@@ -231,7 +232,8 @@ class PostprocessSystem {
         }
         if (this.scanlineEffect && this.scanlineTexture) {
             this.scanlineEffect.blendMode.opacity.value = filmEnabled ? cfg.scanlineIntensity : 0.0;
-            this.scanlineTexture.repeat.y = Math.max(1, Math.floor(cfg.scanlineCount / 2));
+            const height = this.composer?.getRenderer().getSize(new THREE.Vector2()).height || 1080;
+            this.scanlineTexture.repeat.y = Math.max(1, Math.floor(cfg.scanlineCount / 2 * (height / 1080)));
             this.scanlineTexture.needsUpdate = true;
         }
         break;
@@ -257,8 +259,10 @@ class PostprocessSystem {
     }
   }
 
-  handleResize() {
-    this.composer?.setSize(window.innerWidth, window.innerHeight);
+  // ✅ 核心修改: 接收 width 和 height
+  handleResize(width: number, height: number) {
+    this.composer?.setSize(width, height);
+    // 更新扫描线数量时也需要考虑新的高度
     this.updateEffectFromConfig('postprocess.film');
   }
 
@@ -266,6 +270,7 @@ class PostprocessSystem {
     this.composer?.dispose();
     this.scanlineTexture?.dispose();
     this.initialized = false;
+    logger.info('PostprocessSystem', '后处理系统已销毁');
   }
 }
 

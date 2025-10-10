@@ -1,7 +1,8 @@
 /**
- * @file main.js
+ * @file main.ts
  * @description 应用主入口 - 系统协调与生命周期管理
- * ✨ 重构: 彻底移除了旧的 ui-material 系统。
+ * @✨ 重构: 彻底移除了旧的 ui-material 系统。
+ * @✨ 重构: 适配了新的监视器布局，修改了渲染器挂载和尺寸调整逻辑。
  */
 import * as THREE from 'three';
 import logger from './utils/logger';
@@ -15,6 +16,7 @@ import uiBasic from './ui/ui-basic';
 import uiPost from './ui/ui-post';
 import uiPresets from './ui/ui-presets';
 import uiCoordinates from './ui/ui-coordinates';
+import uiMonitor from './ui/ui-monitor';
 
 // 核心系统
 import coordinateSystem from './systems/coordinates-sys';
@@ -39,6 +41,8 @@ class Application {
   private renderer: THREE.WebGLRenderer | null;
   private clock: THREE.Clock;
   private initialized: boolean;
+  private monitorContainer: HTMLElement | null = null; // 新增：监视器容器引用
+
   constructor() {
     this.scene = null;
     this.renderer = null;
@@ -54,11 +58,16 @@ class Application {
 
     try {
       logger.info('App', '🚀 应用启动中...');
+      
+      this.monitorContainer = document.getElementById('monitor-container');
+      if (!this.monitorContainer) {
+        throw new Error('启动失败: 未在DOM中找到 #monitor-container。');
+      }
 
       // 1. 初始化配置
       initConfig();
 
-      // 2. 创建场景和渲染器
+      // 2. 创建场景和渲染器 (现在在新的容器中)
       this._createScene();
       this._createRenderer();
 
@@ -71,8 +80,11 @@ class Application {
       if (this.scene) {
         this.scene.userData.coordinateSystem = coordinateSystem;
       }
+      
+      // 4. 初始化UI容器 (现在它会找到自己的位置)
+      uiContainer.init();
 
-      // 4. 初始化相机系统
+      // 5. 初始化相机系统
       cameraSys.init({
         eventBus,
         scene: this.scene,
@@ -95,8 +107,6 @@ class Application {
         camera: cameraSys.getActiveCamera()
       });
 
-      uiContainer.init();
-
       await dataSys.init({
         eventBus,
         scene: this.scene,
@@ -115,6 +125,9 @@ class Application {
       await uiPresets.init();
       // 10. 初始化坐标系统UI
       await uiCoordinates.init({ eventBus });
+
+      //10.5. 初始化监视器UI
+      uiMonitor.init();
 
       // 11. 初始化核心服务系统
       materialSys.init();
@@ -149,7 +162,7 @@ class Application {
       sceneDirector.init({ eventBus });
 
       this._bindEvents();
-      this._handleResize();
+      this._handleResize(); // 第一次手动调用以设置正确尺寸
       this._startRenderLoop();
 
       const defaultCSV = config.get('data.csvUrl');
@@ -178,30 +191,25 @@ class Application {
       powerPreference: 'high-performance'
     });
 
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    // 尺寸将在 _handleResize 中设置
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.0;
 
     const canvas = this.renderer.domElement;
-    canvas.style.position = 'fixed';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.zIndex = '0';
-    canvas.style.display = 'block';
+    // 移除所有内联定位样式，交给 CSS 处理
+    canvas.style.display = 'block'; 
     
-    document.body.appendChild(canvas);
+    // ✅ 关键修改: 将 Canvas 添加到右侧监视器容器
+    this.monitorContainer!.appendChild(canvas);
     
-    logger.info('App', `✅ Canvas已添加 | 尺寸: ${canvas.width}x${canvas.height}`);
+    logger.info('App', `✅ Canvas 已添加到 #monitor-container`);
     logger.debug('App', '渲染器已创建');
   }
 
-  _bindEvents() {
-    window.addEventListener('resize', () => {
-      this._handleResize();
-    });
+    _bindEvents() {
+    // 监听全局窗口大小变化事件，以便调整渲染器和相机
+    window.addEventListener('resize', this._handleResize.bind(this));
 
     eventBus.on('show-coordinate-debug', () => {
       const debugInfo = (coordinateSystem as any).debugInfo?.() || 'N/A';
@@ -212,15 +220,26 @@ class Application {
     logger.debug('App', '事件已绑定');
   }
 
+
+
   _handleResize() {
-    if (this.renderer) {
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-    postprocessSys.handleResize();
+    if (!this.renderer || !this.monitorContainer) return;
+
+    // ✅ 关键修改: 从监视器容器获取尺寸
+    const width = this.monitorContainer.clientWidth;
+    const height = this.monitorContainer.clientHeight;
+
+    // 更新渲染器
+    this.renderer.setSize(width, height);
+    
+    // ✅ 关键修改: 将新尺寸传递给下游系统
+    cameraSys.handleResize(width, height);
+    postprocessSys.handleResize(width, height);
+    
     logger.debugThrottled(
       'App',
       'window-resize',
-      '窗口大小已调整',
+      `窗口大小已调整: ${width}x${height}`,
       1000
     );
   }
@@ -251,6 +270,8 @@ class Application {
 
   dispose() {
     logger.info('App', '应用正在销毁...');
+    
+    window.removeEventListener('resize', this._handleResize.bind(this));
 
     sceneDirector.dispose();
     coordinateSystem.dispose();
@@ -269,6 +290,7 @@ class Application {
     uiPost.dispose();
     uiPresets.dispose();
     uiCoordinates.dispose();
+    uiMonitor.dispose();
     uiContainer.dispose();
 
     if (this.renderer) {
@@ -285,7 +307,7 @@ class Application {
 
 const app = new Application();
 app.init().catch(err => {
-  logger.error('App', `启动失败: ${err.message}`);
+  logger.error('App', `启动失败: ${(err as Error).message}`);
   console.error(err);
 });
 

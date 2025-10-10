@@ -1,7 +1,8 @@
 /**
- * @file camera-sys.js
+ * @file camera-sys.ts
  * @description 相机系统 - 透视/正交切换 + camera-controls 集成
- * ✅ 核心改造: 监听统一的 'config-changed' 事件。
+ * @✅ 核心改造: 监听统一的 'config-changed' 事件。
+ * @✅ 核心改造: 修改 handleResize 方法以接收外部尺寸。
  */
 import * as THREE from 'three';
 import CameraControls from 'camera-controls';
@@ -12,6 +13,20 @@ import { applyPerspMouseMapping, applyOrthoMouseMapping } from './controls-util'
 CameraControls.install({ THREE });
 
 class CameraSystem {
+  private eventBus: any;
+  private scene: THREE.Scene | null;
+  private renderer: THREE.WebGLRenderer | null;
+  private initialized: boolean;
+  
+  private perspectiveCamera: THREE.PerspectiveCamera | null;
+  private orthographicCamera: THREE.OrthographicCamera | null;
+  private activeCamera: THREE.Camera | null;
+  private controls: CameraControls | null;
+  private currentMode: string;
+  
+  private orthoFrustumSize: number;
+  private particleSystemRadius: number;
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -28,7 +43,7 @@ class CameraSystem {
     this.particleSystemRadius = 100;
   }
 
-  init({ eventBus, scene, renderer }) {
+  init({ eventBus, scene, renderer }: { eventBus: any, scene: THREE.Scene, renderer: THREE.WebGLRenderer }) {
     if (this.initialized) {
       logger.warn('CameraSystem', '相机系统已经初始化过了');
       return this;
@@ -56,16 +71,17 @@ class CameraSystem {
 
       return this;
     } catch (err) {
-      logger.error('CameraSystem', `初始化失败: ${err.message}`);
+      logger.error('CameraSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
   _createCameras() {
-    const aspect = window.innerWidth / window.innerHeight;
+    // 初始 aspect 只是一个占位符，将在第一次 handleResize 时被正确设置
+    const aspect = 16 / 9;
     const fov = config.get('camera.fov') || 75;
     const near = config.get('camera.near') || 0.1;
-    const far = config.get('camera.far') || 1000;
+    const far = config.get('camera.far') || 2000;
 
     this.perspectiveCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
     this.perspectiveCamera.position.set(10, 8, 15);
@@ -85,7 +101,7 @@ class CameraSystem {
   }
 
   _createControls() {
-    this.controls = new CameraControls(this.activeCamera, this.renderer.domElement);
+    this.controls = new CameraControls(this.activeCamera!, this.renderer!.domElement);
     applyPerspMouseMapping(this.controls);
 
     const controlsConfig = config.get('camera.controls');
@@ -119,15 +135,11 @@ class CameraSystem {
   }
 
   _bindEvents() {
-    // ✅ 核心改造：监听通用配置变更事件
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
-
-    // ✅ 保留命令式事件
-    this.eventBus.on('view-changed', (viewKey) => this._applyViewPreset(viewKey));
+    this.eventBus.on('view-changed', (viewKey: string) => this._applyViewPreset(viewKey));
     this.eventBus.on('flip-view', () => this._flipView());
     
-    // ✅ 保留系统间信号
-    this.eventBus.on('coordinate-system-updated', ({ type }) => {
+    this.eventBus.on('coordinate-system-updated', ({ type }: { type: string }) => {
       if (type === 'position') {
         this._setRotationCenterToOrigin();
       }
@@ -137,13 +149,10 @@ class CameraSystem {
       logger.info('CameraSystem', '数据处理完成后已锁定旋转中心');
     });
 
-    window.addEventListener('resize', () => this._handleResize());
+    // 不再直接监听 window.resize，由 main.ts 统一调度
   }
   
-  /**
-   * ✅ 新增: 统一处理配置变更
-   */
-  _handleConfigChange({ key, value }) {
+  _handleConfigChange({ key, value }: { key: string, value: any }) {
     switch (key) {
       case 'camera.mode':
         this._switchToMode(value);
@@ -163,15 +172,15 @@ class CameraSystem {
     }
   }
 
-  _switchToMode(mode) {
-    if (mode === this.currentMode) return;
+  _switchToMode(mode: string) {
+    if (mode === this.currentMode || !this.controls) return;
 
     const prevCamera = this.activeCamera;
     this.currentMode = mode;
 
     if (mode === 'perspective') {
       this.activeCamera = this.perspectiveCamera;
-      this.controls.camera = this.activeCamera;
+      this.controls.camera = this.activeCamera!;
       applyPerspMouseMapping(this.controls);
       if (prevCamera) {
         const position = prevCamera.position.clone();
@@ -180,7 +189,7 @@ class CameraSystem {
       }
     } else if (mode === 'orthographic') {
       this.activeCamera = this.orthographicCamera;
-      this.controls.camera = this.activeCamera;
+      this.controls.camera = this.activeCamera!;
       applyOrthoMouseMapping(this.controls);
       this._applyViewPreset('top');
     }
@@ -190,7 +199,8 @@ class CameraSystem {
     logger.info('CameraSystem', `切换到${mode}相机`);
   }
 
-  _applyViewPreset(viewKey) {
+  _applyViewPreset(viewKey: string) {
+    if (!this.controls) return;
     const distance = 50;
     let position;
     switch (viewKey) {
@@ -203,6 +213,7 @@ class CameraSystem {
   }
 
   _flipView() {
+    if (!this.controls || !this.activeCamera) return;
     const currentPos = this.activeCamera.position.clone();
     const target = new THREE.Vector3();
     this.controls.getTarget(target);
@@ -210,26 +221,30 @@ class CameraSystem {
     this.controls.setLookAt(newPos.x, newPos.y, newPos.z, target.x, target.y, target.z, true);
   }
 
-  _handleResize() {
-    const aspect = window.innerWidth / window.innerHeight;
+  // ✅ 核心修改: 接收 width 和 height
+  handleResize(width: number, height: number) {
+    if (!this.perspectiveCamera || !this.orthographicCamera) return;
+    
+    const aspect = width / height;
+
     this.perspectiveCamera.aspect = aspect;
     this.perspectiveCamera.updateProjectionMatrix();
 
-    const height = this.orthoFrustumSize / this.orthographicCamera.zoom;
-    const width = height * aspect;
-    this.orthographicCamera.left = -width / 2;
-    this.orthographicCamera.right = width / 2;
-    this.orthographicCamera.top = height / 2;
-    this.orthographicCamera.bottom = -height / 2;
+    const orthoHeight = this.orthoFrustumSize / this.orthographicCamera.zoom;
+    const orthoWidth = orthoHeight * aspect;
+    this.orthographicCamera.left = -orthoWidth / 2;
+    this.orthographicCamera.right = orthoWidth / 2;
+    this.orthographicCamera.top = orthoHeight / 2;
+    this.orthographicCamera.bottom = -orthoHeight / 2;
     this.orthographicCamera.updateProjectionMatrix();
   }
 
-  update(delta) {
+  update(delta: number) {
     if (this.controls) this.controls.update(delta);
   }
 
-  getActiveCamera() { return this.activeCamera; }
-  getControls() { return this.controls; }
+  getActiveCamera(): THREE.Camera { return this.activeCamera!; }
+  getControls(): CameraControls { return this.controls!; }
   
   dispose() {
     if (this.controls) this.controls.dispose();
