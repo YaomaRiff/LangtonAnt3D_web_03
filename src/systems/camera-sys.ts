@@ -14,36 +14,47 @@ CameraControls.install({ THREE });
 
 class CameraSystem {
   private eventBus: any;
-  private scene: THREE.Scene | null;
+
+  // ✅ 公共属性
+  public scene: THREE.Scene | null = null;
+
   private renderer: THREE.WebGLRenderer | null;
   private initialized: boolean;
-  
+
   private perspectiveCamera: THREE.PerspectiveCamera | null;
   private orthographicCamera: THREE.OrthographicCamera | null;
-  private activeCamera: THREE.Camera | null;
+  private activeCamera: THREE.PerspectiveCamera | THREE.OrthographicCamera | null;
   private controls: CameraControls | null;
   private currentMode: string;
-  
+
   private orthoFrustumSize: number;
   private particleSystemRadius: number;
 
   constructor() {
     this.eventBus = null;
-    this.scene = null;
+
     this.renderer = null;
     this.initialized = false;
-    
+
     this.perspectiveCamera = null;
     this.orthographicCamera = null;
     this.activeCamera = null;
     this.controls = null;
     this.currentMode = 'perspective';
-    
+
     this.orthoFrustumSize = 50;
     this.particleSystemRadius = 100;
   }
 
-  init({ eventBus, scene, renderer }: { eventBus: any, scene: THREE.Scene, renderer: THREE.WebGLRenderer }) {
+  init({
+    eventBus,
+    scene,
+    renderer,
+  }: {
+    eventBus: any;
+    scene: THREE.Scene;
+    renderer: THREE.WebGLRenderer;
+  }) {
     if (this.initialized) {
       logger.warn('CameraSystem', '相机系统已经初始化过了');
       return this;
@@ -58,9 +69,9 @@ class CameraSystem {
       this.activeCamera = this.perspectiveCamera;
       this._createControls();
       this._bindEvents();
-      
+
       this._setRotationCenterToOrigin();
-      
+
       const initialMode = config.get('camera.mode') || 'perspective';
       if (initialMode !== 'perspective') {
         this._switchToMode(initialMode);
@@ -70,7 +81,7 @@ class CameraSystem {
       logger.info('CameraSystem', '相机系统初始化完成');
 
       return this;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('CameraSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -89,9 +100,14 @@ class CameraSystem {
 
     const height = this.orthoFrustumSize;
     const width = height * aspect;
-    
+
     this.orthographicCamera = new THREE.OrthographicCamera(
-      -width / 2, width / 2, height / 2, -height / 2, near, far
+      -width / 2,
+      width / 2,
+      height / 2,
+      -height / 2,
+      near,
+      far
     );
     this.orthographicCamera.position.set(0, 50, 0);
     this.orthographicCamera.name = 'OrthographicCamera';
@@ -108,7 +124,7 @@ class CameraSystem {
     this.controls.smoothTime = controlsConfig.smoothTime || 0.05;
     this.controls.draggingSmoothTime = controlsConfig.draggingSmoothTime || 0.25;
     this.controls.minDistance = controlsConfig.minDistance || 1;
-    
+
     setTimeout(() => this._updateMaxDistance(), 100);
 
     logger.debug('CameraSystem', 'camera-controls 初始化完成');
@@ -117,10 +133,10 @@ class CameraSystem {
   _updateMaxDistance() {
     const sphereRadius = config.get('particles.sphereRadius') || 100;
     const systemScale = config.get('particles.systemScale') || 1.0;
-    
+
     this.particleSystemRadius = sphereRadius * systemScale;
     const calculatedMaxDistance = this.particleSystemRadius * 0.8;
-    
+
     if (this.controls) {
       this.controls.maxDistance = calculatedMaxDistance;
       logger.info('CameraSystem', `maxDistance 更新: ${calculatedMaxDistance.toFixed(2)}`);
@@ -138,7 +154,7 @@ class CameraSystem {
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
     this.eventBus.on('view-changed', (viewKey: string) => this._applyViewPreset(viewKey));
     this.eventBus.on('flip-view', () => this._flipView());
-    
+
     this.eventBus.on('coordinate-system-updated', ({ type }: { type: string }) => {
       if (type === 'position') {
         this._setRotationCenterToOrigin();
@@ -151,20 +167,20 @@ class CameraSystem {
 
     // 不再直接监听 window.resize，由 main.ts 统一调度
   }
-  
-  _handleConfigChange({ key, value }: { key: string, value: any }) {
+
+  _handleConfigChange({ key, value }: { key: string; value: any }) {
     switch (key) {
       case 'camera.mode':
         this._switchToMode(value);
         break;
-      
+
       case 'camera.fov':
         if (this.perspectiveCamera && this.currentMode === 'perspective') {
           this.perspectiveCamera.fov = value;
           this.perspectiveCamera.updateProjectionMatrix();
         }
         break;
-        
+
       case 'particles.systemScale':
       case 'particles.sphereRadius':
         this._updateMaxDistance();
@@ -193,7 +209,7 @@ class CameraSystem {
       applyOrthoMouseMapping(this.controls);
       this._applyViewPreset('top');
     }
-    
+
     this.eventBus.emit('camera-mode-switched', mode);
     this.eventBus.emit('camera-changed', this.activeCamera);
     logger.info('CameraSystem', `切换到${mode}相机`);
@@ -204,10 +220,17 @@ class CameraSystem {
     const distance = 50;
     let position;
     switch (viewKey) {
-      case 'top': position = new THREE.Vector3(0, distance, 0); break;
-      case 'front': position = new THREE.Vector3(0, 0, distance); break;
-      case 'side': position = new THREE.Vector3(distance, 0, 0); break;
-      default: return;
+      case 'top':
+        position = new THREE.Vector3(0, distance, 0);
+        break;
+      case 'front':
+        position = new THREE.Vector3(0, 0, distance);
+        break;
+      case 'side':
+        position = new THREE.Vector3(distance, 0, 0);
+        break;
+      default:
+        return;
     }
     this.controls.setLookAt(position.x, position.y, position.z, 0, 0, 0, true);
   }
@@ -224,7 +247,7 @@ class CameraSystem {
   // ✅ 核心修改: 接收 width 和 height
   handleResize(width: number, height: number) {
     if (!this.perspectiveCamera || !this.orthographicCamera) return;
-    
+
     const aspect = width / height;
 
     this.perspectiveCamera.aspect = aspect;
@@ -243,9 +266,13 @@ class CameraSystem {
     if (this.controls) this.controls.update(delta);
   }
 
-  getActiveCamera(): THREE.Camera { return this.activeCamera!; }
-  getControls(): CameraControls { return this.controls!; }
-  
+  getActiveCamera(): THREE.PerspectiveCamera | THREE.OrthographicCamera {
+    return this.activeCamera!;
+  }
+  getControls(): CameraControls {
+    return this.controls!;
+  }
+
   dispose() {
     if (this.controls) this.controls.dispose();
     this.initialized = false;

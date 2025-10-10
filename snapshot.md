@@ -1,7 +1,7 @@
 # Project Snapshot
 - Root: `.`
-- Created: 2025-10-10 18:33:16
-- Files: 44 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
+- Created: 2025-10-10 23:04:17
+- Files: 45 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
 - Force-Excluded: package-lock.json
 
 ---
@@ -15,7 +15,6 @@ LangtonAnt3D_web_03/
 │  │  └─ 01.json
 │  ├─ manifest.json
 │  ├─ style.css
-│  ├─ terminal.css
 ├─ src/
 │  ├─ systems/
 │  │  ├─ shaders/
@@ -37,6 +36,8 @@ LangtonAnt3D_web_03/
 │  │  ├─ postprocess-sys.ts
 │  │  ├─ scene-director-sys.ts
 │  │  └─ state.ts
+│  ├─ types/
+│  │  └─ index.ts
 │  ├─ ui/
 │  │  ├─ ui-basic.ts
 │  │  ├─ ui-container.ts
@@ -55,9 +56,10 @@ LangtonAnt3D_web_03/
 │  └─ vite-env.d.ts
 ├─ tools/
 │  └─ snapshot.mjs
+├─ .prettierrc.json
+├─ eslint.config.js
 ├─ index.html
 ├─ package.json
-├─ snapshot.index.json
 ├─ tsconfig.json
 ├─ tsconfig.node.json
 └─ vite.config.ts
@@ -65,6 +67,103 @@ LangtonAnt3D_web_03/
 
 ---
 ## B. Files (selected types only)
+
+### .prettierrc.json
+
+```json
+{
+  "semi": true,
+  "trailingComma": "es5",
+  "singleQuote": true,
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "arrowParens": "always"
+}
+
+```
+
+### eslint.config.js
+
+```javascript
+// eslint.config.js
+import js from '@eslint/js';
+import tsPlugin from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
+import prettierConfig from 'eslint-config-prettier';
+import prettierPlugin from 'eslint-plugin-prettier';
+
+export default [
+  js.configs.recommended,
+
+  {
+    files: ['src/**/*.ts', 'src/**/*.js'],
+
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+      globals: {
+        // 浏览器环境全局变量（扩充版）
+        window: 'readonly',
+        document: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        requestAnimationFrame: 'readonly',
+        cancelAnimationFrame: 'readonly',
+
+        // 新增：DOM API
+        HTMLElement: 'readonly',
+        Blob: 'readonly',
+        URL: 'readonly',
+
+        // 新增：浏览器弹窗
+        alert: 'readonly',
+        confirm: 'readonly',
+        prompt: 'readonly',
+
+        // 新增：网络请求
+        fetch: 'readonly',
+        XMLHttpRequest: 'readonly',
+
+        // 新增：音频 API
+        AudioContext: 'readonly',
+        webkitAudioContext: 'readonly',
+      },
+    },
+
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+      prettier: prettierPlugin,
+    },
+
+    rules: {
+      'prettier/prettier': 'error',
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      '@typescript-eslint/no-explicit-any': 'off',
+
+      // 新增：放宽一些规则
+      'no-prototype-builtins': 'off', // 允许使用 hasOwnProperty
+      'no-case-declarations': 'off', // 允许 case 块中声明变量
+    },
+  },
+
+  prettierConfig,
+];
+
+```
 
 ### index.html
 
@@ -76,7 +175,7 @@ LangtonAnt3D_web_03/
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>(OUwNO)Ant</title>
   
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="./style.css">
 
   <!-- Favicon and Theme Color -->
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -125,7 +224,7 @@ LangtonAnt3D_web_03/
 {
   "name": "langtonant3d-web-03",
   "private": true,
-  "version": "0.2.2",
+  "version": "0.2.4",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -133,16 +232,26 @@ LangtonAnt3D_web_03/
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "snapshot": "node tools/snapshot.mjs --root . --out snapshot.md",
-    "publish": "npm run build && rimraf ../LangtonAnt3D_dist && ncp dist ../LangtonAnt3D_dist"
+    "publish": "npm run build && rimraf ../LangtonAnt3D_dist && copyfiles -u 1 \"dist/**/*\" ../LangtonAnt3D_dist",
+    "lint": "eslint src --ext .ts,.js",
+    "lint:fix": "eslint src --ext .ts,.js --fix",
+    "format": "prettier --write src/**/*.{ts,js}"
   },
   "devDependencies": {
+    "@tweakpane/core": "^2.0.5",
     "@types/file-saver": "^2.0.7",
     "@types/howler": "^2.2.12",
     "@types/jszip": "^3.4.0",
     "@types/node": "^24.7.0",
     "@types/papaparse": "^5.3.16",
     "@types/three": "^0.180.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.0",
+    "@typescript-eslint/parser": "^8.46.0",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
     "ncp": "^2.0.0",
+    "prettier": "^3.6.2",
     "rimraf": "^6.0.1",
     "typescript": "^5.9.3",
     "vite": "^5.4.10"
@@ -190,8 +299,8 @@ LangtonAnt3D_web_03/
 
 ```json
 {
-  "name": "Your App Name",
-  "short_name": "Your App",
+  "name": "(OUwNO) Ant 3D Visualizer",
+  "short_name": "(OUwNO)Ant",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",
@@ -480,582 +589,6 @@ body {
 
 ```
 
-### public/terminal.css
-
-```css
-/* Fira Code: https://github.com/tonsky/FiraCode */
-@import url('https://cdn.staticdelivr.com/gfonts/css2?family=Fira+Code:wght@300..700&display=swap');
-
-:root {
-  --background: #1a170f;
-  --foreground: #eceae5;
-  --accent: #32858b;
-  --radius: 0;
-  --font-size: 1rem;
-  --line-height: 1.54em;
-}
-
-html {
-  box-sizing: border-box;
-}
-
-*,
-*:before,
-*:after {
-  box-sizing: inherit;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  font-family:
-    "Fira Code",
-    "JetBrains Mono",
-    Monaco,
-    Consolas,
-     "Ubuntu Mono",
-    monospace;
-  font-size: var(--font-size);
-  font-weight: 400;
-  line-height: var(--line-height);
-  background-color: var(--background);
-  color: var(--foreground);
-  text-rendering: optimizeLegibility;
-  font-variant-ligatures: contextual;
-  -webkit-overflow-scrolling: touch;
-  -webkit-text-size-adjust: 100%;
-  margin: 0;
-  padding: 0;
-}
-
-h1 {
-  font-size: calc(var(--font-size) * 1.45);
-  letter-spacing: 0;
-}
-
-h2 {
-  font-size: calc(var(--font-size) * 1.35);
-  letter-spacing: 0;
-}
-
-h3 {
-  font-size: calc(var(--font-size) * 1.15);
-  letter-spacing: 0;
-}
-
-h4,
-h5,
-h6 {
-  font-size: calc(var(--font-size) * 1);
-  letter-spacing: 0;
-}
-
-h1, h2, h3, h4, h5, h6,
-p, ul, ol,
-img, figure, video,
-table {
-  margin: 25px 0;
-}
-
-a {
-  color: var(--accent);
-}
-
-button {
-  position: relative;
-  font: inherit;
-  font-weight: bold;
-  text-decoration: none;
-  text-align: center;
-  background: transparent;
-  color: var(--accent);
-  padding: 5px 18px;
-  border: 4px solid var(--accent);
-  border-radius: var(--radius);
-  transition: background 0.15s linear;
-  appearance: none;
-  cursor: pointer;
-  outline: none;
-}
-
-button:hover {
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
-}
-
-button:focus-visible,
-a:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 2px;
-}
-
-fieldset {
-  display: inline-block;
-  border: 2px solid var(--foreground);
-  border-radius: calc(var(--radius) * 1.6);
-  padding: 10px;
-}
-
-fieldset *:first-child {
-  margin-top: 0;
-}
-
-fieldset input,
-fieldset select,
-fieldset textarea,
-fieldset label,
-fieldset button {
-  margin-top: calc(var(--line-height) * 0.5);
-  width: 100%;
-}
-
-label {
-  display: inline-block;
-}
-
-label input {
-  margin-top: 0;
-}
-
-input,
-textarea,
-select {
-  background: transparent;
-  color: var(--foreground);
-  border: 1px solid var(--foreground);
-  border-radius: var(--radius);
-  padding: 10px;
-  font: inherit;
-  appearance: none;
-}
-
-input[type="checkbox"] {
-  width: auto;
-}
-
-input:focus-visible,
-input:active,
-textarea:focus-visible,
-textarea:active,
-select:focus-visible,
-select:active {
-  border-color: var(--accent);
-  outline: 1px solid var(--accent);
-  outline-offset: 2px;
-}
-
-input:active,
-textarea:active,
-select:active {
-  box-shadow: none;
-}
-
-select {
-  background-image: linear-gradient(
-      45deg,
-      transparent 50%,
-      var(--foreground) 50%
-    ),
-    linear-gradient(135deg, var(--foreground) 50%, transparent 50%);
-  background-position: calc(100% - 20px), calc(100% - 15px);
-  background-size:
-    5px 5px,
-    5px 5px;
-  background-repeat: no-repeat;
-  padding-right: 40px;
-}
-
-select option {
-  background: var(--background);
-}
-
-input[type="checkbox"],
-input[type="radio"] {
-  vertical-align: middle;
-  padding: 10px;
-  box-shadow: inset 0 0 0 3px var(--background);
-}
-
-input[type="radio"] {
-  display: inline-block;
-  width: 10px !important;
-  height: 10px !important;
-  border-radius: 20px;
-}
-
-input[type="checkbox"]:checked,
-input[type="radio"]:checked {
-  background: var(--accent);
-}
-
-img {
-  display: block;
-  max-width: 100%;
-  border: 8px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 8px;
-  overflow: hidden;
-}
-
-figure img,
-figure video {
-  margin-bottom: 0;
-}
-
-figure figcaption {
-  background: var(--accent);
-  color: var(--background);
-  text-align: center;
-  font-size: 1em;
-  font-weight: normal;
-  margin-top: -8px;
-  border-radius: 0 0 var(--radius) var(--radius);
-}
-
-ul,
-ol {
-  margin-left: 4ch;
-  padding: 0;
-}
-
-ul ul,
-ul ol,
-ol ul,
-ol ol {
-  margin-top: 0;
-}
-
-li::marker {
-  color: var(--accent);
-}
-
-ul li,
-ol li {
-  position: relative;
-}
-
-code,
-kbd {
-  font-family:
-    "Fira Code",
-    "JetBrains Mono",
-    Monaco,
-    Consolas,
-    Ubuntu Mono,
-    monospace !important;
-  font-feature-settings: normal;
-  background: color-mix(in srgb, var(--foreground) 5%, transparent);
-  color: color-mix(in srgb, var(--foreground) 5%, var(--accent));
-  padding: 0 6px;
-  margin: 0 2px;
-  font-size: 0.95em;
-}
-
-code {
-  border: 1px solid color-mix(in srgb, var(--foreground) 25%, transparent);
-}
-
-kbd {
-  border-top: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
-  border-left: 1px solid var(--accent);
-  border-right: 1px solid var(--accent);
-  border-bottom: 4px solid var(--accent);
-  border-radius: 4px;
-}
-
-code code {
-  background: transparent;
-  padding: 0;
-  margin: 0;
-}
-
-pre {
-  tab-size: 4;
-  background: color-mix(in srgb, var(--foreground) 5%, transparent) !important;
-  color: color-mix(in srgb, var(--foreground) 5%, var(--accent));
-  padding: 20px 10px;
-  font-size: 0.95em !important;
-  overflow: auto;
-  border-radius: var(--radius);
-  border: 1px solid color-mix(in srgb, var(--foreground) 25%, transparent);
-}
-
-pre code {
-  background: none !important;
-  margin: 0;
-  padding: 0;
-  font-size: inherit;
-  border: none;
-}
-
-sup {
-  line-height: 0;
-}
-
-abbr {
-  position: relative;
-  text-decoration-style: wavy;
-  text-decoration-color: var(--accent);
-  cursor: help;
-}
-
-sub {
-  bottom: -0.25em;
-}
-
-sup {
-  top: -0.25em;
-}
-
-mark {
-  background: color-mix(in srgb, var(--accent) 45%, transparent);
-  color: var(--foreground);
-}
-
-blockquote {
-  position: relative;
-  border-top: 1px solid var(--accent);
-  border-bottom: 1px solid var(--accent);
-  margin: 0;
-  padding: 25px;
-}
-
-blockquote:before {
-  content: ">";
-  display: block;
-  position: absolute;
-  left: 0;
-  color: var(--accent);
-}
-
-blockquote p:first-child {
-  margin-top: 0;
-}
-
-blockquote p:last-child {
-  margin-bottom: 0;
-}
-
-table {
-  table-layout: auto;
-  border-collapse: collapse;
-}
-
-table,
-th,
-td {
-  border: 2px solid var(--foreground);
-  padding: 10px;
-}
-
-th {
-  border-style: solid;
-  color: var(--foreground);
-  text-align: left;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-hr {
-  width: 100%;
-  border: none;
-  background: var(--accent);
-  height: 2px;
-}
-
-/* Bold elements */
-
-h1, h2, h3, h4, h5, h6,
-b, strong,
-th,
-button {
-  font-weight: 600;
-}
-
-```
-
-### snapshot.index.json
-
-```json
-[
-  {
-    "id": 1,
-    "path": "index.html"
-  },
-  {
-    "id": 2,
-    "path": "package-lock.json"
-  },
-  {
-    "id": 3,
-    "path": "package.json"
-  },
-  {
-    "id": 4,
-    "path": "public/manifest.json"
-  },
-  {
-    "id": 5,
-    "path": "public/style.css"
-  },
-  {
-    "id": 6,
-    "path": "src/components/animation-comp.js"
-  },
-  {
-    "id": 7,
-    "path": "src/components/audio-comp.js"
-  },
-  {
-    "id": 8,
-    "path": "src/components/camera-comp.js"
-  },
-  {
-    "id": 9,
-    "path": "src/components/data-comp.js"
-  },
-  {
-    "id": 10,
-    "path": "src/components/environment-comp.js"
-  },
-  {
-    "id": 11,
-    "path": "src/components/particles-comp.js"
-  },
-  {
-    "id": 12,
-    "path": "src/components/postprocess-comp.js"
-  },
-  {
-    "id": 13,
-    "path": "src/config.js"
-  },
-  {
-    "id": 14,
-    "path": "src/entities/core-ent.js"
-  },
-  {
-    "id": 15,
-    "path": "src/entities/light-ent.js"
-  },
-  {
-    "id": 16,
-    "path": "src/entities/marker-ent.js"
-  },
-  {
-    "id": 17,
-    "path": "src/entities/model-ent.js"
-  },
-  {
-    "id": 18,
-    "path": "src/entities/particles-ent.js"
-  },
-  {
-    "id": 19,
-    "path": "src/event-bus.js"
-  },
-  {
-    "id": 20,
-    "path": "src/main.js"
-  },
-  {
-    "id": 21,
-    "path": "src/shaders/basic-sh.js"
-  },
-  {
-    "id": 22,
-    "path": "src/shaders/crt-sh.js"
-  },
-  {
-    "id": 23,
-    "path": "src/shaders/custom-sh.js"
-  },
-  {
-    "id": 24,
-    "path": "src/shaders/fisheye-sh.js"
-  },
-  {
-    "id": 25,
-    "path": "src/shaders/progress-sh.js"
-  },
-  {
-    "id": 26,
-    "path": "src/systems/animation-sys.js"
-  },
-  {
-    "id": 27,
-    "path": "src/systems/audio-sys.js"
-  },
-  {
-    "id": 28,
-    "path": "src/systems/camera-sys.js"
-  },
-  {
-    "id": 29,
-    "path": "src/systems/controls-util.js"
-  },
-  {
-    "id": 30,
-    "path": "src/systems/data-sys.js"
-  },
-  {
-    "id": 31,
-    "path": "src/systems/filters-sys.js"
-  },
-  {
-    "id": 32,
-    "path": "src/systems/model-sys.js"
-  },
-  {
-    "id": 33,
-    "path": "src/systems/particles-sys.js"
-  },
-  {
-    "id": 34,
-    "path": "src/systems/postprocess-sys.js"
-  },
-  {
-    "id": 35,
-    "path": "src/systems/presets-sys.js"
-  },
-  {
-    "id": 36,
-    "path": "src/systems/ui-sys.js"
-  },
-  {
-    "id": 37,
-    "path": "src/systems/views-sys.js"
-  },
-  {
-    "id": 38,
-    "path": "src/utils/config-printer.js"
-  },
-  {
-    "id": 39,
-    "path": "src/utils/control-map.js"
-  },
-  {
-    "id": 40,
-    "path": "src/utils/dom-utils.js"
-  },
-  {
-    "id": 41,
-    "path": "src/utils/logger.js"
-  },
-  {
-    "id": 42,
-    "path": "src/utils/math-utils.js"
-  },
-  {
-    "id": 43,
-    "path": "src/vite.config.js"
-  },
-  {
-    "id": 44,
-    "path": "tools/snapshot.mjs"
-  }
-]
-```
-
 ### src/config.ts
 
 ```
@@ -1068,66 +601,66 @@ button {
  */
 import logger from './utils/logger';
 import eventBus from './event-bus';
-import { fa } from 'zod/locales';
 
 const DEFAULT_CONFIG = {
   // 🟢 新增：场景构成定义
   sceneComposition: {
     active: 'defaultMath', // 当前激活的构成方案
     compositions: {
-      defaultMath: [ // 默认的数学可视化场景
+      defaultMath: [
+        // 默认的数学可视化场景
         { type: 'math-path', enabled: true },
         { type: 'math-light', enabled: true },
-        { type: 'particle-dust', enabled: true }
+        { type: 'particle-dust', enabled: true },
       ],
       // 预留一个模型场景的例子，未来使用
       modelAnt: [
         { type: 'model', name: 'ant', path: '/models/ant.glb', enabled: true },
-        { type: 'particle-dust', enabled: false }
-      ]
-    }
+        { type: 'particle-dust', enabled: false },
+      ],
+    },
   },
 
   data: {
     csvUrl: '../data/data.csv',
-    availableDatasets: []
+    availableDatasets: [],
   },
-  
+
   animation: {
     speedFactor: 1.65,
-    loop: true
+    loop: true,
   },
 
   coordinates: {
     dataSpace: {
       scale: 1.4,
       rotation: { x: 0, y: 0, z: 0 },
-      position: { x: 0, y: 0, z: 0 }
-    }
+      position: { x: 0, y: 0, z: 0 },
+    },
   },
-  
+
   material: {
     path: {
-      emissiveColor: '#F0B7B7'
+      emissiveColor: '#F0B7B7',
     },
     particles: {
-      emissiveColor: '#AF85B7'
+      emissiveColor: '#AF85B7',
     },
     movingLight: {
-      emissiveColor: '#FFFFFF'
-    }
+      emissiveColor: '#FFFFFF',
+    },
   },
 
   lighting: {
     ambient: {
       color: '#ffffff',
-      intensity: 0.2
+      intensity: 0.2,
     },
     directional: {
       color: '#ffffff',
       intensity: 1.0,
-      position: { x: 5, y: 10, z: 7.5 }
-    }
+      position: { x: 5, y: 10, z: 7.5 },
+    },
   },
 
   particles: {
@@ -1144,19 +677,19 @@ const DEFAULT_CONFIG = {
     systemScale: 1.0,
     rotationSpeed: 0,
     rotationTiltXZ: 0,
-    rotationTiltXY: 0
+    rotationTiltXY: 0,
   },
-  
+
   path: {
     depthIntensity: 0.5,
     depthEnhanced: true,
-    scale: 1.0
+    scale: 1.0,
   },
-  
+
   environment: {
     skybox: {
       enabled: true,
-      path: '/skybox/Medium_Monochrome_Nebulae/'
+      path: '/skybox/Medium_Monochrome_Nebulae/',
     },
     fogDensity: 0.015,
     fogVolumeScale: 1.0,
@@ -1167,49 +700,49 @@ const DEFAULT_CONFIG = {
     yScale: 1.0,
     cameraDistFactor: 2.5,
     ambientLightIntensity: 0.5,
-    directionalLightIntensity: 0.8
+    directionalLightIntensity: 0.8,
   },
-  
+
   postprocess: {
     enabled: true,
-  
+
     // 光晕效果 (Bloom)
     bloom: {
       enabled: false,
-      intensity: 1.0,         // 效果强度
+      intensity: 1.0, // 效果强度
       luminanceThreshold: 0.1, // 亮度阈值
       luminanceSmoothing: 0.2, // 阈值平滑度
-      mipmapBlur: true,         // 是否使用 Mipmap 模糊
+      mipmapBlur: true, // 是否使用 Mipmap 模糊
     },
 
     // 景深效果 (Bokeh)
     bokeh: {
       enabled: false,
-      focus: 40.0,              // 焦距
-      dof: 0.02,                // 景深范围
-      aperture: 0.025,          // 光圈大小
-      maxBlur: 0.01,            // 最大模糊
+      focus: 40.0, // 焦距
+      dof: 0.02, // 景深范围
+      aperture: 0.025, // 光圈大小
+      maxBlur: 0.01, // 最大模糊
     },
 
     // 色差效果 (Chromatic Aberration)
     chromaticAberration: {
       enabled: false,
-      offset: { x: 0.001, y: 0.001 } // 颜色偏移量
+      offset: { x: 0.001, y: 0.001 }, // 颜色偏移量
     },
 
     // 胶片效果 (Film) - 替代旧的 Noise 和 Scanline
     film: {
       enabled: false,
-      scanlineIntensity: 0.3,   // 扫描线强度
-      noiseIntensity: 0.3,      // 噪点强度
-      scanlineCount: 2048,      // 扫描线数量
-      grayscale: false          // 是否灰度
+      scanlineIntensity: 0.3, // 扫描线强度
+      noiseIntensity: 0.3, // 噪点强度
+      scanlineCount: 2048, // 扫描线数量
+      grayscale: false, // 是否灰度
     },
-  
+
     // 色彩调整效果
     brightnessContrast: { enabled: false, brightness: 0.0, contrast: 0.0 },
   },
-  
+
   camera: {
     mode: 'perspective',
     view: 'free',
@@ -1224,14 +757,14 @@ const DEFAULT_CONFIG = {
       smoothTime: 0.05,
       draggingSmoothTime: 0.25,
       minDistance: 1,
-      maxDistance: 100
-    }
-  }
+      maxDistance: 100,
+    },
+  },
 };
 
 function deepClone(obj: any): any {
   if (obj === null || typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) return obj.map(item => deepClone(item));
+  if (Array.isArray(obj)) return obj.map((item) => deepClone(item));
   const cloned: any = {};
   for (const key in obj) {
     if ((obj as Object).hasOwnProperty.call(obj, key)) {
@@ -1255,12 +788,12 @@ class ConfigManager {
       logger.warn('Config', '配置已经初始化过了');
       return;
     }
-    
+
     try {
       this._config = deepClone(DEFAULT_CONFIG);
       this.initialized = true;
       logger.info('Config', '配置初始化完成');
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('Config', `配置初始化失败: ${(err as Error).message}`);
       throw err as Error;
     }
@@ -1276,11 +809,12 @@ class ConfigManager {
       const keys = key.split('.');
       let value: any = this._config as any;
       for (const k of keys) {
+        if (!k) continue; // ✅ 跳过空字符串
         if (value === null || value === undefined) return null;
-        value = value[k];
+        if (value) value = value[k];
       }
       return value;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('Config', `获取配置异常 [${key}]: ${(err as Error).message}`);
       return null;
     }
@@ -1296,16 +830,17 @@ class ConfigManager {
       let target: any = this._config as any;
       for (let i = 0; i < keys.length - 1; i++) {
         const k = keys[i];
-        if (!target[k] || typeof target[k] !== 'object') {
+        if (!k) continue; // ✅ 跳过 undefined
+        if (k && (!target[k] || typeof target[k] !== 'object')) {
           target[k] = {};
         }
         target = target[k];
       }
-      const lastKey = keys[keys.length - 1];
-      if (target[lastKey] !== value) {
-        target[lastKey] = value;
+      const lastKey = keys[keys.length - 1]!; // ✅ 非空断言
+      if (target[lastKey!] !== value) {
+        target[lastKey!] = value;
         eventBus.emit('config-changed', { key, value });
-        
+
         // ✅ 核心修正: 使用节流日志替换普通日志，防止刷屏
         const valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
         logger.debugThrottled(
@@ -1316,13 +851,13 @@ class ConfigManager {
         );
       }
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('Config', `设置配置异常 [${key}]: ${(err as Error).message}`);
       return false;
     }
   }
 
-  applyPresetData(presetData: any) {
+  applyPresetData(_presetData: any) {
     logger.warn('Config', 'applyPresetData 已被弃用，请使用 PresetManager 的新加载逻辑');
     return true;
   }
@@ -1331,13 +866,16 @@ class ConfigManager {
     const oldConfig = this._config;
     this._config = deepClone(DEFAULT_CONFIG);
     logger.info('Config', '配置已重置为默认值');
-    
+
     // 触发所有顶级key的更新通知
     Object.keys(DEFAULT_CONFIG as any).forEach((topKey: string) => {
-        // 比较新旧值，只有变化时才发出事件，避免不必要的刷新
-        if (JSON.stringify((oldConfig as any)[topKey]) !== JSON.stringify((DEFAULT_CONFIG as any)[topKey])) {
-            eventBus.emit('config-changed', { key: topKey, value: (DEFAULT_CONFIG as any)[topKey] });
-        }
+      // 比较新旧值，只有变化时才发出事件，避免不必要的刷新
+      if (
+        JSON.stringify((oldConfig as any)[topKey]) !==
+        JSON.stringify((DEFAULT_CONFIG as any)[topKey])
+      ) {
+        eventBus.emit('config-changed', { key: topKey, value: (DEFAULT_CONFIG as any)[topKey] });
+      }
     });
   }
 }
@@ -1396,10 +934,10 @@ class EventBus {
 
   off(event: string, callback: Function) {
     if (!this.events.has(event)) return;
-    
+
     const callbacks = this.events.get(event)!;
     const index = callbacks.indexOf(callback);
-    
+
     if (index !== -1) {
       callbacks.splice(index, 1);
       logger.debug('EventBus', `移除事件: ${event}`);
@@ -1408,13 +946,13 @@ class EventBus {
 
   emit(event: string, ...args: any[]) {
     if (!this.events.has(event)) return;
-    
+
     // 创建回调数组的副本，以防回调函数内部修改原始数组（如在 once 中调用 off）
     const callbacks = [...this.events.get(event)!];
-    callbacks.forEach(callback => {
+    callbacks.forEach((callback) => {
       try {
         callback(...args);
-      } catch (err) {
+      } catch (err: unknown) {
         logger.error('EventBus', `事件回调异常 [${event}]: ${(err as Error).message}`);
       }
     });
@@ -1436,7 +974,6 @@ class EventBus {
 
 const eventBus = new EventBus();
 export default eventBus;
-
 
 ```
 
@@ -1503,7 +1040,7 @@ class Application {
 
     try {
       logger.info('App', '🚀 应用启动中...');
-      
+
       this.monitorContainer = document.getElementById('monitor-container');
       if (!this.monitorContainer) {
         throw new Error('启动失败: 未在DOM中找到 #monitor-container。');
@@ -1519,21 +1056,25 @@ class Application {
       // 3. 初始化坐标系统（必须在相机之前）
       coordinateSystem.init({
         eventBus,
-        scene: this.scene
+        scene: this.scene,
       });
 
       if (this.scene) {
         this.scene.userData.coordinateSystem = coordinateSystem;
       }
-      
+
       // 4. 初始化UI容器 (现在它会找到自己的位置)
       uiContainer.init();
 
       // 5. 初始化相机系统
+      if (!this.scene || !this.renderer) {
+        throw new Error('场景或渲染器未初始化');
+      }
+
       cameraSys.init({
         eventBus,
         scene: this.scene,
-        renderer: this.renderer
+        renderer: this.renderer!,
       });
 
       lightingSys.init({ scene: this.scene });
@@ -1544,19 +1085,19 @@ class Application {
       postprocessSys.init({
         scene: this.scene as THREE.Scene,
         camera: mainCamera as THREE.Camera,
-        renderer: this.renderer as THREE.WebGLRenderer
+        renderer: this.renderer as THREE.WebGLRenderer,
       });
 
       audioSys.init({
         eventBus,
-        camera: cameraSys.getActiveCamera()
+        camera: cameraSys.getActiveCamera(),
       });
 
       await dataSys.init({
         eventBus,
         scene: this.scene,
         camera: cameraSys.getActiveCamera(),
-        controls: cameraSys.getControls()
+        controls: cameraSys.getControls(),
       });
 
       // 7. 初始化基础 UI
@@ -1578,22 +1119,22 @@ class Application {
       materialSys.init();
       modelSys.init();
 
-      pathSys.init({ 
-        eventBus, 
+      pathSys.init({
+        eventBus,
         scene: this.scene as THREE.Scene,
-        coordinateSystem 
-      });
-      
-      mathLightSys.init({ 
-        eventBus, 
-        scene: this.scene as THREE.Scene,
-        coordinateSystem 
+        coordinateSystem,
       });
 
-      particlesSys.init({ 
-        eventBus, 
+      mathLightSys.init({
+        eventBus,
         scene: this.scene as THREE.Scene,
-        coordinateSystem 
+        coordinateSystem,
+      });
+
+      particlesSys.init({
+        eventBus,
+        scene: this.scene as THREE.Scene,
+        coordinateSystem,
       });
 
       animationSys.init({
@@ -1601,7 +1142,7 @@ class Application {
         scene: this.scene as THREE.Scene,
         renderer: this.renderer as THREE.WebGLRenderer,
         controls: cameraSys.getControls(),
-        particlesSys
+        particlesSys,
       });
 
       sceneDirector.init({ eventBus });
@@ -1617,8 +1158,7 @@ class Application {
 
       this.initialized = true;
       logger.info('App', '✅ 应用初始化完成');
-
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('App', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -1633,7 +1173,7 @@ class Application {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: false,
-      powerPreference: 'high-performance'
+      powerPreference: 'high-performance',
     });
 
     // 尺寸将在 _handleResize 中设置
@@ -1643,16 +1183,16 @@ class Application {
 
     const canvas = this.renderer.domElement;
     // 移除所有内联定位样式，交给 CSS 处理
-    canvas.style.display = 'block'; 
-    
+    canvas.style.display = 'block';
+
     // ✅ 关键修改: 将 Canvas 添加到右侧监视器容器
     this.monitorContainer!.appendChild(canvas);
-    
+
     logger.info('App', `✅ Canvas 已添加到 #monitor-container`);
     logger.debug('App', '渲染器已创建');
   }
 
-    _bindEvents() {
+  _bindEvents() {
     // 监听全局窗口大小变化事件，以便调整渲染器和相机
     window.addEventListener('resize', this._handleResize.bind(this));
 
@@ -1665,8 +1205,6 @@ class Application {
     logger.debug('App', '事件已绑定');
   }
 
-
-
   _handleResize() {
     if (!this.renderer || !this.monitorContainer) return;
 
@@ -1676,17 +1214,12 @@ class Application {
 
     // 更新渲染器
     this.renderer.setSize(width, height);
-    
+
     // ✅ 关键修改: 将新尺寸传递给下游系统
     cameraSys.handleResize(width, height);
     postprocessSys.handleResize(width, height);
-    
-    logger.debugThrottled(
-      'App',
-      'window-resize',
-      `窗口大小已调整: ${width}x${height}`,
-      1000
-    );
+
+    logger.debugThrottled('App', 'window-resize', `窗口大小已调整: ${width}x${height}`, 1000);
   }
 
   _startRenderLoop() {
@@ -1701,7 +1234,7 @@ class Application {
       pathSys.update(delta);
       animationSys.update(delta, elapsed);
       particlesSys.update(elapsed);
-      
+
       if (config.get('postprocess.enabled')) {
         postprocessSys.render(delta);
       } else if (this.renderer && this.scene) {
@@ -1715,7 +1248,7 @@ class Application {
 
   dispose() {
     logger.info('App', '应用正在销毁...');
-    
+
     window.removeEventListener('resize', this._handleResize.bind(this));
 
     sceneDirector.dispose();
@@ -1751,7 +1284,7 @@ class Application {
 }
 
 const app = new Application();
-app.init().catch(err => {
+app.init().catch((err) => {
   logger.error('App', `启动失败: ${(err as Error).message}`);
   console.error(err);
 });
@@ -1764,11 +1297,9 @@ export default app;
 
 ```
 /**
- * @file preset-manager.js
- * @description 预设管理器 - 加载、保存和应用配置快照。通过 config.set() 自动触发更新事件。
- * ✅ 核心改造:
- *   1. 删除了巨大的 _emitConfigEvents 方法。
- *   2. 加载预设时，通过遍历并调用 config.set() 来自动触发更新。
+ * @file preset-manager.ts
+ * @description 预设管理器 - 加载、保存和应用配置快照
+ * ✅ 修复: 添加了完整的类型守卫，修复所有 TypeScript 严格模式错误
  */
 import config from './config';
 import logger from './utils/logger';
@@ -1777,12 +1308,10 @@ import uiRegistry from './ui/ui-registry';
 import { resolveAssetUrl } from './utils/url-resolver';
 
 class PresetManager {
-  constructor() {
-    this.initialized = false;
-    this.availablePresets = [];
-    this.currentPreset = null;
-    this.presetBaseUrl = '/presets';
-  }
+  private initialized = false;
+  private availablePresets: any[] = [];
+  private currentPreset: string | null = null;
+  private presetBaseUrl = '/presets';
 
   async init() {
     if (this.initialized) {
@@ -1792,33 +1321,33 @@ class PresetManager {
 
     try {
       await this._scanPresets();
-      
+
       this.initialized = true;
-      logger.info('PresetManager', `预设管理器已初始化 | 发现 ${this.availablePresets.length} 个预设`);
-      
+      logger.info(
+        'PresetManager',
+        `预设管理器已初始化 | 发现 ${this.availablePresets.length} 个预设`
+      );
+
       return this;
-    } catch (err) {
-      logger.error('PresetManager', `初始化失败: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error('PresetManager', `初始化失败: ${errorMsg}`);
       throw err;
     }
   }
 
   async _scanPresets() {
     try {
-      const presetFiles = [
-        '01.json',
-        '02.json',
-        '03.json'
-      ];
+      const presetFiles = ['01.json', '02.json', '03.json'];
 
-      this.availablePresets = presetFiles.map(filename => ({
+      this.availablePresets = presetFiles.map((filename) => ({
         name: filename.replace('.json', ''),
         filename: filename,
-        path: `${this.presetBaseUrl}/${filename}`
+        path: `${this.presetBaseUrl}/${filename}`,
       }));
-
-    } catch (err) {
-      logger.warn('PresetManager', `扫描预设失败: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.warn('PresetManager', `扫描预设失败: ${errorMsg}`);
       this.availablePresets = [];
     }
   }
@@ -1827,9 +1356,9 @@ class PresetManager {
     return this.availablePresets;
   }
 
-  async loadPreset(presetName) {
+  async loadPreset(presetName: string) {
     try {
-      const preset = this.availablePresets.find(p => p.name === presetName);
+      const preset = this.availablePresets.find((p) => p.name === presetName);
       if (!preset) {
         throw new Error(`预设不存在: ${presetName}`);
       }
@@ -1842,41 +1371,35 @@ class PresetManager {
       }
 
       const presetData = await response.json();
-      
-      // 1. ✅ 应用配置到内存, 这个过程会通过 config.set() 自动发出所有事件
-      this._applyPresetToConfig(presetData);
 
-      // 2. 标记当前预设
+      this._applyPresetToConfig(presetData);
       this.currentPreset = presetName;
-      
-      // 3. ✅ 最后通知UI刷新 (例如刷新Tweakpane面板)
+
       eventBus.emit('preset-loaded', { name: presetName, data: presetData });
-      
+
       logger.info('PresetManager', `✅ 预设已加载: ${presetName}`);
-      
+
       return presetData;
-    } catch (err) {
-      logger.error('PresetManager', `加载预设失败: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error('PresetManager', `加载预设失败: ${errorMsg}`);
       throw err;
     }
   }
 
-  /**
-   * ✅ 核心修改: 重写此方法，通过递归调用 config.set() 应用配置
-   */
-  _applyPresetToConfig(presetData) {
+  _applyPresetToConfig(presetData: any) {
     if (!presetData || typeof presetData !== 'object') {
       throw new Error('预设数据格式无效');
     }
 
-    const applyRecursively = (obj, pathPrefix = '') => {
+    const applyRecursively = (obj: any, pathPrefix = '') => {
       for (const key in obj) {
-        // 跳过元数据字段
         if (key === 'name' || key === 'timestamp') continue;
-        
+        if (!key) continue;
+
         const value = obj[key];
         const fullPath = pathPrefix ? `${pathPrefix}.${key}` : key;
-        
+
         if (typeof value === 'object' && !Array.isArray(value) && value !== null) {
           applyRecursively(value, fullPath);
         } else {
@@ -1889,12 +1412,7 @@ class PresetManager {
     logger.debug('PresetManager', '配置已通过 config.set() 应用完成');
   }
 
-  /**
-   * ❌ 已删除: 这个巨大的、难以维护的函数已被移除
-   */
-  // _emitConfigEvents(presetData) { ... }
-
-  savePreset(presetName) {
+  savePreset(presetName: string) {
     if (!presetName || typeof presetName !== 'string') {
       throw new Error('预设名称无效');
     }
@@ -1902,14 +1420,20 @@ class PresetManager {
     try {
       const presetData = {
         name: presetName,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       const allPaths = uiRegistry.getAllControls();
       logger.info('PresetManager', `准备保存 ${allPaths.length} 个控件的数据`);
 
       const configSnapshot = config.getRaw();
-      allPaths.forEach(path => {
+      allPaths.forEach((path) => {
+        // ✅ 添加类型守卫
+        if (typeof path !== 'string') {
+          logger.warn('PresetManager', `跳过无效路径: ${path}`);
+          return;
+        }
+
         const value = this._getNestedValue(configSnapshot, path);
         if (value !== undefined) {
           this._setNestedValue(presetData, path, value);
@@ -1918,7 +1442,7 @@ class PresetManager {
 
       const jsonContent = JSON.stringify(presetData, null, 2);
       const blob = new Blob([jsonContent], { type: 'application/json' });
-      
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1930,14 +1454,14 @@ class PresetManager {
 
       logger.info('PresetManager', `✅ 预设已保存: ${presetName}.json`);
       eventBus.emit('preset-saved', { name: presetName });
-
-    } catch (err) {
-      logger.error('PresetManager', `保存预设失败: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      logger.error('PresetManager', `保存预设失败: ${errorMsg}`);
       throw err;
     }
   }
-  
-  _getNestedValue(obj, path) {
+
+  _getNestedValue(obj: any, path: string) {
     const keys = path.split('.');
     let value = obj;
     for (const key of keys) {
@@ -1947,19 +1471,25 @@ class PresetManager {
     return value;
   }
 
-  _setNestedValue(obj, path, value) {
+  _setNestedValue(obj: any, path: string, value: any) {
     const keys = path.split('.');
     let target = obj;
-    
+
     for (let i = 0; i < keys.length - 1; i++) {
       const key = keys[i];
+      // ✅ 核心修复：添加类型守卫
+      if (!key) continue;
       if (!target[key] || typeof target[key] !== 'object') {
         target[key] = {};
       }
       target = target[key];
     }
-    
-    target[keys[keys.length - 1]] = JSON.parse(JSON.stringify(value));
+
+    // ✅ 核心修复：确保 lastKey 存在
+    const lastKey = keys[keys.length - 1];
+    if (lastKey) {
+      target[lastKey] = JSON.parse(JSON.stringify(value));
+    }
   }
 
   getCurrentPreset() {
@@ -1985,7 +1515,7 @@ export default presetManager;
 /**
  * @file animation-sys.js
  * @description 动画系统 - 路径插值与步进控制
- * ✅ 核心改造: 监听统一的 'config-changed' 事件来控制动画启停。
+ * 核心改造: 监听统一的 'config-changed' 事件来控制动画启停。
  */
 import * as THREE from 'three';
 import logger from '../utils/logger';
@@ -1994,10 +1524,13 @@ import state from './state';
 
 class AnimationSystem {
   private eventBus: any;
-  private scene: THREE.Scene | null;
-  private renderer: THREE.WebGLRenderer | null;
-  private controls: any;
-  private particlesSys: any;
+
+  // 公共属性
+  public scene: THREE.Scene | null = null;
+  public renderer: THREE.WebGLRenderer | null = null;
+  public controls: any = null;
+  public particlesSys: any = null;
+
   private initialized: boolean;
   private currentStep: number;
   private lerpT: number;
@@ -2006,12 +1539,9 @@ class AnimationSystem {
 
   constructor() {
     this.eventBus = null;
-    this.scene = null;
-    this.renderer = null;
-    this.controls = null;
-    this.particlesSys = null;
+
     this.initialized = false;
-    
+
     // 动画状态
     this.currentStep = 0;
     this.lerpT = 0;
@@ -2019,7 +1549,7 @@ class AnimationSystem {
     this.mappedPoints = [];
   }
 
-  init({ eventBus, scene, renderer, controls, particlesSys }) {
+  init({ eventBus, scene, renderer, controls, particlesSys }: any) {
     if (this.initialized) {
       logger.warn('AnimationSystem', '动画系统已经初始化过了');
       return this;
@@ -2031,7 +1561,7 @@ class AnimationSystem {
       this.renderer = renderer;
       this.controls = controls;
       this.particlesSys = particlesSys;
-      
+
       this._loadInitialConfig();
       this._bindEvents();
 
@@ -2039,12 +1569,12 @@ class AnimationSystem {
       logger.info('AnimationSystem', '动画系统初始化完成');
 
       return this;
-    } catch (err) {
-      logger.error('AnimationSystem', `初始化失败: ${err.message}`);
+    } catch (err: unknown) {
+      logger.error('AnimationSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
-  
+
   _loadInitialConfig() {
     this.animating = state.get('animation.animating') || false; //从 state 读取
   }
@@ -2055,7 +1585,7 @@ class AnimationSystem {
     this.eventBus.on('state-changed', this._handleStateChange.bind(this));
 
     // ✅ 保留数据信号和命令式事件
-    this.eventBus.on('data-loaded', (data) => {
+    this.eventBus.on('data-loaded', (data: { points: THREE.Vector3[] }) => {
       this.mappedPoints = data.points;
       this.currentStep = 0;
       this.lerpT = 0;
@@ -2066,26 +1596,26 @@ class AnimationSystem {
       this.reset();
     });
 
-    this.eventBus.on('step-to', (step) => {
+    this.eventBus.on('step-to', (step: number) => {
       this.stepTo(step);
     });
   }
 
   //统一处理配置变更
-  _handleConfigChange({ key, value }) {
+  _handleConfigChange(_params: { key: string; value: any }): void {
     // speedFactor 和 loop 在 update 循环中直接从 config 读取，无需处理
     // animating 的处理已移至 _handleStateChange
   }
 
   //统一处理 *状态* 变更
   _handleStateChange({ key, value }: { key: string; value: any }) {
-      if (key === 'animation.animating') {
-        this.animating = value;
-        logger.info('AnimationSystem', `动画状态变更为: ${value ? '播放' : '暂停'}`);
-      }
+    if (key === 'animation.animating') {
+      this.animating = value;
+      logger.info('AnimationSystem', `动画状态变更为: ${value ? '播放' : '暂停'}`);
+    }
   }
 
-  update(delta, elapsed) {
+  update(delta: number, _elapsed: number) {
     if (!this.animating || this.mappedPoints.length === 0) return;
 
     const speedFactor = config.get('animation.speedFactor') || 0.1;
@@ -2101,7 +1631,7 @@ class AnimationSystem {
           this.currentStep = 0;
           logger.debug('AnimationSystem', '动画循环重新开始');
         } else {
-          state.set('animation.animating', false); 
+          state.set('animation.animating', false);
           this.eventBus.emit('animation-completed');
           logger.info('AnimationSystem', '动画播放完成');
           return;
@@ -2110,7 +1640,7 @@ class AnimationSystem {
     }
 
     this._updatePosition();
-    
+
     // 更新配置状态(触发UI刷新)
     state.set('animation.currentStep', this.currentStep);
     state.set('animation.lerpT', this.lerpT);
@@ -2143,12 +1673,12 @@ class AnimationSystem {
     this.eventBus.emit('animation-reset');
   }
 
-  stepTo(step) {
+  stepTo(step: number): void {
     if (step < 0 || step >= this.mappedPoints.length) {
       logger.warn('AnimationSystem', `无效的步骤: ${step}`);
       return;
     }
-    
+
     // 通过 config.set 驱动状态变更
     state.set('animation.currentStep', step);
     state.set('animation.lerpT', 0);
@@ -2159,17 +1689,21 @@ class AnimationSystem {
 
     this._updatePosition();
     // ✅ 使用节流日志，避免拖动进度条时刷屏
-logger.debugThrottled(
-  'AnimationSystem',
-  'animation-step-to', // 节流的唯一Key
-  `跳转到步骤: ${this.currentStep}`,
-  500 // 500毫秒的间隔对进度条拖动更友好
-);
+    logger.debugThrottled(
+      'AnimationSystem',
+      'animation-step-to', // 节流的唯一Key
+      `跳转到步骤: ${this.currentStep}`,
+      500 // 500毫秒的间隔对进度条拖动更友好
+    );
   }
 
-  getCurrentStep() { return this.currentStep; }
-  getTotalSteps() { return this.mappedPoints.length; }
-  
+  getCurrentStep() {
+    return this.currentStep;
+  }
+  getTotalSteps() {
+    return this.mappedPoints.length;
+  }
+
   getProgress() {
     if (this.mappedPoints.length === 0) return 0;
     return (this.currentStep + this.lerpT) / this.mappedPoints.length;
@@ -2199,7 +1733,7 @@ export default animationSys;
  */
 import * as THREE from 'three';
 import logger from '../utils/logger';
-import config from '../config';
+
 import { resolveAssetUrl } from '../utils/url-resolver'; // ✅ 核心修正：导入URL解析工具
 
 class AudioSystem {
@@ -2209,12 +1743,11 @@ class AudioSystem {
   private sound: THREE.Audio | null;
   private audioLoader: THREE.AudioLoader;
   private initialized: boolean;
-  
+
   private isPlaying: boolean;
   private volume: number;
-  private currentUrl: string | null;
   private audioContext: AudioContext | null;
-  
+
   private listenerCreated: boolean;
 
   constructor() {
@@ -2224,16 +1757,16 @@ class AudioSystem {
     this.sound = null;
     this.audioLoader = new THREE.AudioLoader();
     this.initialized = false;
-    
+
     this.isPlaying = false;
     this.volume = 0.5;
-    this.currentUrl = null;
+
     this.audioContext = null;
-    
+
     this.listenerCreated = false;
   }
 
-  async init({ eventBus, camera }: { eventBus: any, camera: THREE.Camera }) {
+  async init({ eventBus, camera }: { eventBus: any; camera: THREE.Camera }) {
     if (this.initialized) {
       logger.warn('AudioSystem', '音频系统已经初始化过了');
       return this;
@@ -2242,14 +1775,14 @@ class AudioSystem {
     try {
       this.eventBus = eventBus;
       this.camera = camera;
-      
+
       this._bindEvents();
-      
+
       this.initialized = true;
       logger.info('AudioSystem', '音频系统初始化完成(延迟创建 AudioContext)');
-      
+
       return this;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('AudioSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -2257,17 +1790,17 @@ class AudioSystem {
 
   _ensureListenerCreated() {
     if (this.listenerCreated || !this.camera) return;
-    
+
     try {
       this.listener = new THREE.AudioListener();
       this.camera.add(this.listener);
-      
+
       this.audioContext = this.listener.context;
       this.sound = new THREE.Audio(this.listener);
-      
+
       this.listenerCreated = true;
       logger.info('AudioSystem', 'AudioListener 已创建');
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('AudioSystem', `创建 AudioListener 失败: ${(err as Error).message}`);
       throw err;
     }
@@ -2305,7 +1838,7 @@ class AudioSystem {
     this._ensureListenerCreated();
     if (!this.sound) return;
 
-    // ✅ 核心修正: 使用 resolveAssetUrl 包装路径
+    // 核心修正: 使用 resolveAssetUrl 包装路径
     const fetchUrl = resolveAssetUrl(url);
 
     logger.info('AudioSystem', `开始加载音频: ${fetchUrl}`);
@@ -2317,18 +1850,17 @@ class AudioSystem {
         if (this.sound.isPlaying) {
           this.sound.stop();
         }
-        
+
         this.sound.setBuffer(buffer);
         this.sound.setLoop(true);
         this.sound.setVolume(this.volume);
-        this.currentUrl = url;
-        
-        logger.info('AudioSystem', '✅ 音频加载成功');
+
+        logger.info('AudioSystem', '音频加载成功');
         this.eventBus.emit('audio-loaded', url);
       },
       undefined,
-      (error) => {
-        logger.error('AudioSystem', `加载失败: ${error.message || '未知错误'}`);
+      (error: unknown) => {
+        logger.error('AudioSystem', `加载失败: ${(error as Error).message || '未知错误'}`);
         this.eventBus.emit('audio-load-error', error);
       }
     );
@@ -2344,7 +1876,7 @@ class AudioSystem {
       try {
         await this.audioContext.resume();
         logger.info('AudioSystem', 'AudioContext 已恢复');
-      } catch (err) {
+      } catch (err: unknown) {
         logger.error('AudioSystem', `恢复 AudioContext 失败: ${(err as Error).message}`);
         return;
       }
@@ -2424,36 +1956,47 @@ CameraControls.install({ THREE });
 
 class CameraSystem {
   private eventBus: any;
-  private scene: THREE.Scene | null;
+
+  // ✅ 公共属性
+  public scene: THREE.Scene | null = null;
+
   private renderer: THREE.WebGLRenderer | null;
   private initialized: boolean;
-  
+
   private perspectiveCamera: THREE.PerspectiveCamera | null;
   private orthographicCamera: THREE.OrthographicCamera | null;
-  private activeCamera: THREE.Camera | null;
+  private activeCamera: THREE.PerspectiveCamera | THREE.OrthographicCamera | null;
   private controls: CameraControls | null;
   private currentMode: string;
-  
+
   private orthoFrustumSize: number;
   private particleSystemRadius: number;
 
   constructor() {
     this.eventBus = null;
-    this.scene = null;
+
     this.renderer = null;
     this.initialized = false;
-    
+
     this.perspectiveCamera = null;
     this.orthographicCamera = null;
     this.activeCamera = null;
     this.controls = null;
     this.currentMode = 'perspective';
-    
+
     this.orthoFrustumSize = 50;
     this.particleSystemRadius = 100;
   }
 
-  init({ eventBus, scene, renderer }: { eventBus: any, scene: THREE.Scene, renderer: THREE.WebGLRenderer }) {
+  init({
+    eventBus,
+    scene,
+    renderer,
+  }: {
+    eventBus: any;
+    scene: THREE.Scene;
+    renderer: THREE.WebGLRenderer;
+  }) {
     if (this.initialized) {
       logger.warn('CameraSystem', '相机系统已经初始化过了');
       return this;
@@ -2468,9 +2011,9 @@ class CameraSystem {
       this.activeCamera = this.perspectiveCamera;
       this._createControls();
       this._bindEvents();
-      
+
       this._setRotationCenterToOrigin();
-      
+
       const initialMode = config.get('camera.mode') || 'perspective';
       if (initialMode !== 'perspective') {
         this._switchToMode(initialMode);
@@ -2480,7 +2023,7 @@ class CameraSystem {
       logger.info('CameraSystem', '相机系统初始化完成');
 
       return this;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('CameraSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -2499,9 +2042,14 @@ class CameraSystem {
 
     const height = this.orthoFrustumSize;
     const width = height * aspect;
-    
+
     this.orthographicCamera = new THREE.OrthographicCamera(
-      -width / 2, width / 2, height / 2, -height / 2, near, far
+      -width / 2,
+      width / 2,
+      height / 2,
+      -height / 2,
+      near,
+      far
     );
     this.orthographicCamera.position.set(0, 50, 0);
     this.orthographicCamera.name = 'OrthographicCamera';
@@ -2518,7 +2066,7 @@ class CameraSystem {
     this.controls.smoothTime = controlsConfig.smoothTime || 0.05;
     this.controls.draggingSmoothTime = controlsConfig.draggingSmoothTime || 0.25;
     this.controls.minDistance = controlsConfig.minDistance || 1;
-    
+
     setTimeout(() => this._updateMaxDistance(), 100);
 
     logger.debug('CameraSystem', 'camera-controls 初始化完成');
@@ -2527,10 +2075,10 @@ class CameraSystem {
   _updateMaxDistance() {
     const sphereRadius = config.get('particles.sphereRadius') || 100;
     const systemScale = config.get('particles.systemScale') || 1.0;
-    
+
     this.particleSystemRadius = sphereRadius * systemScale;
     const calculatedMaxDistance = this.particleSystemRadius * 0.8;
-    
+
     if (this.controls) {
       this.controls.maxDistance = calculatedMaxDistance;
       logger.info('CameraSystem', `maxDistance 更新: ${calculatedMaxDistance.toFixed(2)}`);
@@ -2548,7 +2096,7 @@ class CameraSystem {
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
     this.eventBus.on('view-changed', (viewKey: string) => this._applyViewPreset(viewKey));
     this.eventBus.on('flip-view', () => this._flipView());
-    
+
     this.eventBus.on('coordinate-system-updated', ({ type }: { type: string }) => {
       if (type === 'position') {
         this._setRotationCenterToOrigin();
@@ -2561,20 +2109,20 @@ class CameraSystem {
 
     // 不再直接监听 window.resize，由 main.ts 统一调度
   }
-  
-  _handleConfigChange({ key, value }: { key: string, value: any }) {
+
+  _handleConfigChange({ key, value }: { key: string; value: any }) {
     switch (key) {
       case 'camera.mode':
         this._switchToMode(value);
         break;
-      
+
       case 'camera.fov':
         if (this.perspectiveCamera && this.currentMode === 'perspective') {
           this.perspectiveCamera.fov = value;
           this.perspectiveCamera.updateProjectionMatrix();
         }
         break;
-        
+
       case 'particles.systemScale':
       case 'particles.sphereRadius':
         this._updateMaxDistance();
@@ -2603,7 +2151,7 @@ class CameraSystem {
       applyOrthoMouseMapping(this.controls);
       this._applyViewPreset('top');
     }
-    
+
     this.eventBus.emit('camera-mode-switched', mode);
     this.eventBus.emit('camera-changed', this.activeCamera);
     logger.info('CameraSystem', `切换到${mode}相机`);
@@ -2614,10 +2162,17 @@ class CameraSystem {
     const distance = 50;
     let position;
     switch (viewKey) {
-      case 'top': position = new THREE.Vector3(0, distance, 0); break;
-      case 'front': position = new THREE.Vector3(0, 0, distance); break;
-      case 'side': position = new THREE.Vector3(distance, 0, 0); break;
-      default: return;
+      case 'top':
+        position = new THREE.Vector3(0, distance, 0);
+        break;
+      case 'front':
+        position = new THREE.Vector3(0, 0, distance);
+        break;
+      case 'side':
+        position = new THREE.Vector3(distance, 0, 0);
+        break;
+      default:
+        return;
     }
     this.controls.setLookAt(position.x, position.y, position.z, 0, 0, 0, true);
   }
@@ -2634,7 +2189,7 @@ class CameraSystem {
   // ✅ 核心修改: 接收 width 和 height
   handleResize(width: number, height: number) {
     if (!this.perspectiveCamera || !this.orthographicCamera) return;
-    
+
     const aspect = width / height;
 
     this.perspectiveCamera.aspect = aspect;
@@ -2653,9 +2208,13 @@ class CameraSystem {
     if (this.controls) this.controls.update(delta);
   }
 
-  getActiveCamera(): THREE.Camera { return this.activeCamera!; }
-  getControls(): CameraControls { return this.controls!; }
-  
+  getActiveCamera(): THREE.PerspectiveCamera | THREE.OrthographicCamera {
+    return this.activeCamera!;
+  }
+  getControls(): CameraControls {
+    return this.controls!;
+  }
+
   dispose() {
     if (this.controls) this.controls.dispose();
     this.initialized = false;
@@ -2675,44 +2234,44 @@ export default cameraSys;
 import CameraControls from 'camera-controls';
 
 // 透视：常规轨道（滚轮：DOLLY；禁用 dollyToCursor，避免 target 被推偏）
-export function applyPerspMouseMapping(controls) {
+export function applyPerspMouseMapping(controls: any) {
   const A = CameraControls.ACTION;
-  controls.mouseButtons.left   = A.ROTATE;
-  controls.mouseButtons.middle = A.TRUCK;     // 中键平移
-  controls.mouseButtons.right  = A.TRUCK;     // 右键平移
-  controls.mouseButtons.wheel  = A.DOLLY;     // 滚轮推拉（透视）
+  controls.mouseButtons.left = A.ROTATE;
+  controls.mouseButtons.middle = A.TRUCK; // 中键平移
+  controls.mouseButtons.right = A.TRUCK; // 右键平移
+  controls.mouseButtons.wheel = A.DOLLY; // 滚轮推拉（透视）
 
   // 触控
-  controls.touches.one   = A.TOUCH_ROTATE;
-  controls.touches.two   = A.TOUCH_TRUCK;
+  controls.touches.one = A.TOUCH_ROTATE;
+  controls.touches.two = A.TOUCH_TRUCK;
   controls.touches.three = A.TOUCH_DOLLY_TRUCK;
 
   // 手感：滚轮力度；并明确关闭“朝指针处推拉”以保 target 固定
-  controls.dollySpeed     = 0.8;
-  controls.dollyToCursor  = false; // ✅ 根因修复
-  controls.zoomToCursor   = false;
+  controls.dollySpeed = 0.8;
+  controls.dollyToCursor = false; // ✅ 根因修复
+  controls.zoomToCursor = false;
 }
 
 // 正交：禁用旋转；滚轮用 ZOOM（必须），开启 zoomToCursor
-export function applyOrthoMouseMapping(controls) {
+export function applyOrthoMouseMapping(controls: any) {
   const A = CameraControls.ACTION;
-  controls.mouseButtons.left   = A.NONE;      // 禁止左键旋转
-  controls.mouseButtons.middle = A.TRUCK;     // 中键平移
-  controls.mouseButtons.right  = A.TRUCK;     // 右键平移
-  controls.mouseButtons.wheel  = A.ZOOM;      // ✅ 正交必须用 ZOOM
+  controls.mouseButtons.left = A.NONE; // 禁止左键旋转
+  controls.mouseButtons.middle = A.TRUCK; // 中键平移
+  controls.mouseButtons.right = A.TRUCK; // 右键平移
+  controls.mouseButtons.wheel = A.ZOOM; // ✅ 正交必须用 ZOOM
 
-  controls.touches.one   = A.NONE;
-  controls.touches.two   = A.TOUCH_TRUCK;
+  controls.touches.one = A.NONE;
+  controls.touches.two = A.TOUCH_TRUCK;
   controls.touches.three = A.TOUCH_DOLLY_TRUCK;
 
   // 正交缩放更有力，并以指针为中心缩放
-  controls.dollySpeed     = 1.5;
-  controls.zoomToCursor   = true;
-  controls.dollyToCursor  = false;
+  controls.dollySpeed = 1.5;
+  controls.zoomToCursor = true;
+  controls.dollyToCursor = false;
 }
 
 // 默认（向后兼容）
-export function applyDefaultMouseMapping(controls) {
+export function applyDefaultMouseMapping(controls: any) {
   applyPerspMouseMapping(controls);
 }
 
@@ -2724,15 +2283,24 @@ export function applyDefaultMouseMapping(controls) {
 /**
  * @file coordinates-sys.js
  * @description 统一坐标系统 - 管理所有3D对象的坐标空间
- * ✅ 核心改造: 
+ * ✅ 核心改造:
  *   1. 监听统一的 'config-changed' 事件。
  *   2. 移除了方法内的 config.set() 调用，确保单向数据流。
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import config from '../config';
 
 class CoordinateSystem {
+  private eventBus: any = null;
+  private scene: THREE.Scene | null = null;
+  private initialized = false;
+  private worldRoot: THREE.Group | null = null;
+  private dataSpace: THREE.Group | null = null;
+  private particleAnchor: THREE.Group | null = null;
+  private pathAnchor: THREE.Group | null = null;
+  private lightAnchor: THREE.Group | null = null;
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -2745,7 +2313,7 @@ class CoordinateSystem {
     this.lightAnchor = null;
   }
 
-  init({ eventBus, scene }) {
+  init({ eventBus, scene }: any) {
     if (this.initialized) {
       logger.warn('CoordinateSystem', '坐标系统已经初始化过了');
       return this;
@@ -2763,8 +2331,8 @@ class CoordinateSystem {
       logger.info('CoordinateSystem', '坐标系统初始化完成');
 
       return this;
-    } catch (err) {
-      logger.error('CoordinateSystem', `初始化失败: ${err.message}`);
+    } catch (err: unknown) {
+      logger.error('CoordinateSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
@@ -2772,7 +2340,7 @@ class CoordinateSystem {
   _createHierarchy() {
     this.worldRoot = new THREE.Group();
     this.worldRoot.name = 'WorldRoot';
-    this.scene.add(this.worldRoot);
+    if (this.scene && this.worldRoot) this.scene.add(this.worldRoot);
 
     this.dataSpace = new THREE.Group();
     this.dataSpace.name = 'DataSpace';
@@ -2796,7 +2364,7 @@ class CoordinateSystem {
   _bindEvents() {
     // ✅ 核心改造：监听通用配置变更事件
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
-    
+
     // ✅ 保留命令式事件
     this.eventBus.on('coordinate-system-reset', () => this.reset());
   }
@@ -2804,40 +2372,44 @@ class CoordinateSystem {
   _loadInitialConfig() {
     const scale = config.get('coordinates.dataSpace.scale');
     this.setDataSpaceScale(scale);
-    
+
     const rotation = config.get('coordinates.dataSpace.rotation');
-    this.dataSpace.rotation.set(rotation.x || 0, rotation.y || 0, rotation.z || 0);
+    if (this.dataSpace)
+      this.dataSpace.rotation.set(rotation.x || 0, rotation.y || 0, rotation.z || 0);
 
     const position = config.get('coordinates.dataSpace.position');
-    this.dataSpace.position.set(position.x || 0, position.y || 0, position.z || 0);
+    if (this.dataSpace)
+      this.dataSpace.position.set(position.x || 0, position.y || 0, position.z || 0);
 
     logger.info('CoordinateSystem', `✅ 配置已加载 | 缩放: ${scale}x`);
   }
-  
+
   /**
    * ✅ 新增: 统一处理配置变更
    */
-  _handleConfigChange({ key, value }) {
+  _handleConfigChange({ key, value }: { key: string; value: any }) {
     // 使用 startsWith 来捕获对对象内部属性（如 rotation.x）的更改
     if (key.startsWith('coordinates.dataSpace')) {
       switch (key) {
         case 'coordinates.dataSpace.scale':
           this.setDataSpaceScale(value);
           break;
-        
+
         // 当 rotation 或 position 的任何子属性变化时，都完整更新
         case 'coordinates.dataSpace.rotation.x':
         case 'coordinates.dataSpace.rotation.y':
         case 'coordinates.dataSpace.rotation.z':
           const rot = config.get('coordinates.dataSpace.rotation');
-          this.dataSpace.rotation.set(rot.x, rot.y, rot.z);
+          if (this.dataSpace && rot) {
+            this.dataSpace.rotation.set(rot.x ?? 0, rot.y ?? 0, rot.z ?? 0);
+          }
           break;
-          
+
         case 'coordinates.dataSpace.position.x':
         case 'coordinates.dataSpace.position.y':
         case 'coordinates.dataSpace.position.z':
           const pos = config.get('coordinates.dataSpace.position');
-          this.dataSpace.position.set(pos.x, pos.y, pos.z);
+          if (this.dataSpace) this.dataSpace.position.set(pos.x, pos.y, pos.z);
           break;
       }
     }
@@ -2846,10 +2418,12 @@ class CoordinateSystem {
   /**
    * 设置DataSpace整体缩放
    */
-  setDataSpaceScale(scale) {
+  setDataSpaceScale(scale: number) {
     if (scale <= 0) return;
-    this.dataSpace.scale.setScalar(scale);
-    // ❌ 移除 config.set 以避免循环
+    // ✅ 添加空值检查
+    if (this.dataSpace) {
+      this.dataSpace.scale.setScalar(scale);
+    }
     this.eventBus.emit('coordinate-system-updated', { type: 'scale', value: scale });
   }
 
@@ -2866,12 +2440,21 @@ class CoordinateSystem {
     this.eventBus.emit('coordinate-system-reset-completed');
   }
 
-  getParticleAnchor() { return this.particleAnchor; }
-  getPathAnchor() { return this.pathAnchor; }
-  getLightAnchor() { return this.lightAnchor; }
+  getParticleAnchor() {
+    return this.particleAnchor;
+  }
+  getPathAnchor() {
+    return this.pathAnchor;
+  }
+  getLightAnchor() {
+    return this.lightAnchor;
+  }
 
   dispose() {
-    if (this.worldRoot) this.scene.remove(this.worldRoot);
+    // ✅ 添加空值检查
+    if (this.worldRoot && this.scene) {
+      this.scene.remove(this.worldRoot);
+    }
     this.initialized = false;
     logger.info('CoordinateSystem', '坐标系统已销毁');
   }
@@ -2888,7 +2471,7 @@ export default coordinateSystem;
 /**
  * @file data-sys.js
  * @description 数据加载系统 - CSV解析与坐标映射
- * ✅ 修复: 初始化时动态加载数据源清单 (manifest.json)，并提供主动查询方法。
+ * 修复: 初始化时动态加载数据源清单 (manifest.json)，并提供主动查询方法。
  */
 import * as THREE from 'three';
 import Papa from 'papaparse';
@@ -2899,26 +2482,28 @@ import state from './state';
 
 class DataSystem {
   private eventBus: any;
-  private scene: THREE.Scene | null;
-  private camera: THREE.Camera | null;
+
+  // 公共属性
+  public scene: THREE.Scene | null = null;
+  public camera: THREE.Camera | null = null;
+  public rawData: any[] = [];
+
   private controls: any;
   private initialized: boolean;
-  private rawData: any[];
+
   private datasets: any[];
 
   constructor() {
     this.eventBus = null;
-    this.scene = null;
-    this.camera = null;
+
     this.controls = null;
     this.initialized = false;
-    
-    this.rawData = [];
-    this.datasets = []; // ✅ 新增：用一个内部变量存储数据集列表
+
+    this.datasets = []; // 新增：用一个内部变量存储数据集列表
   }
 
   // init 方法保持 async 不变
-  async init({ eventBus, scene, camera, controls }) {
+  async init({ eventBus, scene, camera, controls }: any) {
     if (this.initialized) {
       // logger.warn('DataSystem', '数据系统已经初始化过了'); // 暂时注释掉，因为我们修复了重复调用的问题
       return this;
@@ -2930,7 +2515,7 @@ class DataSystem {
       this.camera = camera;
       this.controls = controls;
 
-      this.eventBus.on('data-load-requested', (csvUrl) => {
+      this.eventBus.on('data-load-requested', (csvUrl: string) => {
         this.loadCSV(csvUrl);
       });
 
@@ -2940,43 +2525,43 @@ class DataSystem {
       logger.info('DataSystem', '数据系统初始化完成');
 
       return this;
-    } catch (err) {
-      logger.error('DataSystem', `初始化失败: ${err.message}`);
+    } catch (err: unknown) {
+      logger.error('DataSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
   /**
-   * ✅ 新增：提供一个公共的 getter 方法
+   * 新增：提供一个公共的 getter 方法
    */
   getAvailableDatasets() {
     return this.datasets;
   }
-  
+
   async _loadAvailableDatasets() {
     try {
-      // ✅ 2. 使用 resolveAssetUrl 包装路径
+      // 2. 使用 resolveAssetUrl 包装路径
       const response = await fetch(resolveAssetUrl('data/manifest.json'));
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       const manifestData = await response.json();
-      
+
       if (Array.isArray(manifestData) && manifestData.length > 0) {
         this.datasets = manifestData;
         config.set('data.availableDatasets', manifestData);
-        
+
         // 设置默认加载的数据为清单中的第一个
         // 注意：这里的路径现在是相对于 public 的，不再需要 '../'
-        const defaultPath = manifestData[0].path; 
+        const defaultPath = manifestData[0].path;
         config.set('data.csvUrl', defaultPath);
-        
+
         logger.info('DataSystem', `成功加载 ${manifestData.length} 个数据集清单`);
       } else {
         throw new Error('清单格式无效或为空');
       }
-    } catch (err) {
-      logger.error('DataSystem', `加载数据集清单失败: ${err.message}`);
+    } catch (err: unknown) {
+      logger.error('DataSystem', `加载数据集清单失败: ${(err as Error).message}`);
       this.datasets = [];
       config.set('data.availableDatasets', []);
     } finally {
@@ -2984,13 +2569,13 @@ class DataSystem {
     }
   }
 
-  async loadCSV(csvUrl) {
+  async loadCSV(csvUrl: string) {
     if (!csvUrl) {
       logger.warn('DataSystem', 'CSV URL 为空');
       return;
     }
 
-    // ✅ 3. 同样，解析从 manifest.json 中读到的路径
+    // 3. 同样，解析从 manifest.json 中读到的路径
     const fetchUrl = resolveAssetUrl(csvUrl);
 
     logger.info('DataSystem', `开始加载 CSV: ${fetchUrl}`);
@@ -3002,7 +2587,7 @@ class DataSystem {
       }
       // ... 函数剩余部分保持不变 ...
       const csvText = await response.text();
-      
+
       Papa.parse(csvText, {
         header: true,
         dynamicTyping: true,
@@ -3010,26 +2595,28 @@ class DataSystem {
         complete: (results) => {
           this._processData(results.data);
         },
-        error: (error) => {
-          logger.error('DataSystem', `CSV 解析错误: ${error.message}`);
+        error: (error: any) => {
+          logger.error('DataSystem', `CSV 解析错误: ${(error as Error).message}`);
           this.eventBus.emit('data-load-error', error);
-        }
+        },
       });
-    } catch (err) {
-      logger.error('DataSystem', `CSV 加载失败: ${err.message}`);
+    } catch (err: unknown) {
+      logger.error('DataSystem', `CSV 加载失败: ${(err as Error).message}`);
       this.eventBus.emit('data-load-error', err);
     }
   }
 
-  _processData(rawData) {
+  _processData(rawData: any[]) {
     try {
-      const validData = rawData.filter(row => {
-        return row.x !== null && 
-               row.y !== null && 
-               row.z !== null &&
-               !isNaN(row.x) &&
-               !isNaN(row.y) &&
-               !isNaN(row.z);
+      const validData = rawData.filter((row) => {
+        return (
+          row.x !== null &&
+          row.y !== null &&
+          row.z !== null &&
+          !isNaN(row.x) &&
+          !isNaN(row.y) &&
+          !isNaN(row.z)
+        );
       });
 
       if (validData.length === 0) {
@@ -3037,7 +2624,7 @@ class DataSystem {
       }
 
       this.rawData = validData;
-       state.set('data.antData', validData);
+      state.set('data.antData', validData);
 
       const mappedPoints = this._mapToPoints(validData);
       state.set('data.mappedPoints', mappedPoints);
@@ -3045,38 +2632,33 @@ class DataSystem {
       this._adjustCamera(mappedPoints);
 
       logger.info('DataSystem', `数据处理完成: ${validData.length} 个点`);
-      this.eventBus.emit('data-loaded', { 
-        rawData: validData, 
-        points: mappedPoints 
+      this.eventBus.emit('data-loaded', {
+        _rawData: validData,
+        points: mappedPoints,
       });
-      
+
       this.eventBus.emit('data-processing-completed');
-    } catch (err)
- {
-      logger.error('DataSystem', `数据处理失败: ${err.message}`);
+    } catch (err: unknown) {
+      logger.error('DataSystem', `数据处理失败: ${(err as Error).message}`);
       this.eventBus.emit('data-load-error', err);
     }
   }
 
-  _mapToPoints(data) {
+  _mapToPoints(data: any[]) {
     const positionScale = config.get('environment.positionScale') || 2.0;
 
-    return data.map(row => {
-      return new THREE.Vector3(
-        row.x * positionScale,
-        row.y * positionScale,
-        row.z * positionScale
-      );
+    return data.map((row) => {
+      return new THREE.Vector3(row.x * positionScale, row.y * positionScale, row.z * positionScale);
     });
   }
 
-  _adjustCamera(points) {
+  _adjustCamera(points: THREE.Vector3[]) {
     if (!points || points.length === 0) return;
 
     this.eventBus.emit('data-processing-started');
 
     const box = new THREE.Box3();
-    points.forEach(p => box.expandByPoint(p));
+    points.forEach((p: THREE.Vector3) => box.expandByPoint(p));
 
     const size = box.getSize(new THREE.Vector3());
     const maxDim = Math.max(size.x, size.y, size.z);
@@ -3085,17 +2667,12 @@ class DataSystem {
     const distance = maxDim * cameraDistFactor;
 
     if (this.controls) {
-      this.controls.setPosition(
-        distance * 0.6,
-        distance * 0.4,
-        distance * 0.8,
-        false
-      );
-      
+      this.controls.setPosition(distance * 0.6, distance * 0.4, distance * 0.8, false);
+
       this.controls.setTarget(0, 0, 0, false);
     }
 
-    logger.info('DataSystem', `✅ 相机已调整 | 距离: ${distance.toFixed(2)} | 目标: (0,0,0)`);
+    logger.info('DataSystem', `相机已调整 | 距离: ${distance.toFixed(2)} | 目标: (0,0,0)`);
   }
 
   dispose() {
@@ -3124,6 +2701,11 @@ import eventBus from '../event-bus';
 import { resolveAssetUrl } from '../utils/url-resolver';
 
 class EnvironmentSystem {
+  private scene: THREE.Scene | null = null;
+  private initialized = false;
+  private cubeTextureLoader: THREE.CubeTextureLoader;
+  private fallbackColor: THREE.Color;
+
   constructor() {
     this.scene = null;
     this.initialized = false;
@@ -3131,7 +2713,7 @@ class EnvironmentSystem {
     this.fallbackColor = new THREE.Color('#121414'); // 默认背景色
   }
 
-  init({ scene }) {
+  init({ scene }: any) {
     if (this.initialized) return this;
     this.scene = scene;
 
@@ -3142,15 +2724,15 @@ class EnvironmentSystem {
     logger.info('EnvironmentSystem', '环境系统初始化完成');
     return this;
   }
-  
+
   _bindEvents() {
     // 监听背景颜色变化，用于在禁用天空盒时切换
-    eventBus.on('bg-color-changed', (color) => {
-        const skyboxEnabled = config.get('environment.skybox.enabled');
-        if (!skyboxEnabled) {
-            this.fallbackColor.set(color);
-            this.scene.background = this.fallbackColor;
-        }
+    eventBus.on('bg-color-changed', (color: any) => {
+      const skyboxEnabled = config.get('environment.skybox.enabled');
+      if (!skyboxEnabled) {
+        this.fallbackColor.set(color);
+        if (this.scene) this.scene.background = this.fallbackColor;
+      }
     });
   }
 
@@ -3159,38 +2741,46 @@ class EnvironmentSystem {
 
     if (!skyboxConfig || !skyboxConfig.enabled || !skyboxConfig.path) {
       logger.warn('EnvironmentSystem', '天空盒未配置或未启用，使用纯色背景');
-      this.scene.background = this.fallbackColor;
+      if (this.scene) this.scene.background = this.fallbackColor;
       return;
     }
 
     // ✅ 2. 使用 resolveAssetUrl 包装基础路径
     const basePath = resolveAssetUrl(skyboxConfig.path);
     const urls = [
-      basePath + 'px.png', basePath + 'nx.png', // 右, 左
-      basePath + 'py.png', basePath + 'ny.png', // 上, 下
-      basePath + 'nz.png', basePath + 'pz.png'  // 前, 后
+      basePath + 'px.png',
+      basePath + 'nx.png', // 右, 左
+      basePath + 'py.png',
+      basePath + 'ny.png', // 上, 下
+      basePath + 'nz.png',
+      basePath + 'pz.png', // 前, 后
     ];
 
     logger.debug('EnvironmentSystem', `正在加载天空盒: ${basePath}`);
-    
+
     this.cubeTextureLoader.load(
       urls,
       (texture) => {
-        this.scene.background = texture;
-        this.scene.environment = texture;
+        if (this.scene) {
+          this.scene.background = texture;
+          this.scene.environment = texture;
+        }
         logger.info('EnvironmentSystem', '✅ 天空盒加载成功并应用');
       },
       undefined,
       (error) => {
-        logger.error('EnvironmentSystem', `天空盒加载失败: ${error.message}`);
-        this.scene.background = this.fallbackColor;
+        logger.error('EnvironmentSystem', `天空盒加载失败: ${(error as Error).message}`);
+        // ✅ 添加空值检查
+        if (this.scene) {
+          this.scene.background = this.fallbackColor;
+        }
       }
     );
   }
 
   dispose() {
-    this.scene.background = null;
-    this.scene.environment = null;
+    if (this.scene) this.scene.background = null;
+    if (this.scene) this.scene.environment = null;
     this.initialized = false;
     logger.info('EnvironmentSystem', '环境系统已销毁');
   }
@@ -3209,8 +2799,8 @@ export default environmentSys;
  * @description 光照系统 - 管理场景中的环境光与直接光
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import config from '../config';
 
 class LightingSystem {
   private scene: THREE.Scene | null;
@@ -3225,7 +2815,7 @@ class LightingSystem {
     this.directionalLight = null;
   }
 
-  init({ scene }) {
+  init({ scene }: any) {
     if (this.initialized) return this;
     this.scene = scene;
 
@@ -3241,40 +2831,38 @@ class LightingSystem {
     // 1. 环境光 (AmbientLight)
     // 为整个场景提供基础光照，防止模型暗部全黑
     const ambientConfig = config.get('lighting.ambient');
-    this.ambientLight = new THREE.AmbientLight(
-      ambientConfig.color,
-      ambientConfig.intensity
-    );
+    this.ambientLight = new THREE.AmbientLight(ambientConfig.color, ambientConfig.intensity);
     this.ambientLight.name = 'AmbientLight';
-    this.scene.add(this.ambientLight);
+    if (this.scene) {
+      this.scene.add(this.ambientLight);
+    }
 
     // 2. 平行光 (DirectionalLight)
     // 模拟一个无限远的光源（如太阳），产生高光和阴影
     const dirConfig = config.get('lighting.directional');
-    this.directionalLight = new THREE.DirectionalLight(
-      dirConfig.color,
-      dirConfig.intensity
-    );
+    this.directionalLight = new THREE.DirectionalLight(dirConfig.color, dirConfig.intensity);
     this.directionalLight.name = 'DirectionalLight';
     this.directionalLight.position.set(
       dirConfig.position.x,
       dirConfig.position.y,
       dirConfig.position.z
     );
-    this.scene.add(this.directionalLight);
+    if (this.scene) {
+      this.scene.add(this.directionalLight);
+    }
 
     logger.debug('LightingSystem', '环境光和平行光已创建');
   }
 
   // 未来可以添加更新光照参数的方法，例如通过UI
-  updateAmbient(color, intensity) {
+  updateAmbient(color: any, intensity: number) {
     if (this.ambientLight) {
       this.ambientLight.color.set(color);
       this.ambientLight.intensity = intensity;
     }
   }
-  
-  updateDirectional(color, intensity) {
+
+  updateDirectional(color: any, intensity: number) {
     if (this.directionalLight) {
       this.directionalLight.color.set(color);
       this.directionalLight.intensity = intensity;
@@ -3282,8 +2870,13 @@ class LightingSystem {
   }
 
   dispose() {
-    if (this.ambientLight) this.scene.remove(this.ambientLight);
-    if (this.directionalLight) this.scene.remove(this.directionalLight);
+    // ✅ 添加空值检查
+    if (this.ambientLight && this.scene) {
+      this.scene.remove(this.ambientLight);
+    }
+    if (this.directionalLight && this.scene) {
+      this.scene.remove(this.directionalLight);
+    }
     this.ambientLight = null;
     this.directionalLight = null;
     this.initialized = false;
@@ -3348,16 +2941,16 @@ class MaterialService {
       uniforms: {
         uEmissive: { value: new THREE.Color(envCfg.pathColor) },
         uDepthIntensity: { value: pathCfg.depthIntensity },
-        uCameraPosition: { value: new THREE.Vector3() }
+        uCameraPosition: { value: new THREE.Vector3() },
       },
       vertexShader: pathVertexShader,
       fragmentShader: pathFragmentShader,
       transparent: true,
       blending: THREE.AdditiveBlending,
-      depthWrite: false
+      depthWrite: false,
     });
     this.materials.set('pathLine', pathMaterial);
-    
+
     // ✅ 修正：为尘埃粒子材质提供完整的配置
     const dustParticlesMaterial = new THREE.PointsMaterial({
       color: new THREE.Color(particlesCfg.dustColor),
@@ -3367,7 +2960,7 @@ class MaterialService {
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       sizeAttenuation: true, // 粒子大小随距离衰减
-      vertexColors: false
+      vertexColors: false,
     });
     this.materials.set('dustParticles', dustParticlesMaterial);
 
@@ -3376,13 +2969,13 @@ class MaterialService {
       color: new THREE.Color(materialCfg.movingLight.emissiveColor),
       transparent: true,
       blending: THREE.AdditiveBlending,
-      depthWrite: false
+      depthWrite: false,
     });
     this.materials.set('movingLight', movingLightMaterial);
   }
 
   _bindEvents() {
-    eventBus.on('config-changed', ({ key, value }: { key: string, value: any }) => {
+    eventBus.on('config-changed', ({ key, value }: { key: string; value: any }) => {
       this._updateMaterialProperty(key, value);
     });
   }
@@ -3398,12 +2991,13 @@ class MaterialService {
       // PathLine Material updates
       case 'environment.pathColor':
         if (pathLineMat instanceof THREE.ShaderMaterial) {
-          pathLineMat.uniforms.uEmissive.value.set(value);
+          pathLineMat.uniforms?.uEmissive?.value.set(value);
         }
         break;
       case 'path.depthIntensity':
         if (pathLineMat instanceof THREE.ShaderMaterial) {
-          pathLineMat.uniforms.uDepthIntensity.value = value;
+          pathLineMat.uniforms?.uDepthIntensity &&
+            (pathLineMat.uniforms.uDepthIntensity.value = value);
         }
         break;
 
@@ -3426,7 +3020,7 @@ class MaterialService {
 
       // Moving Light Material updates
       case 'material.movingLight.emissiveColor':
-         if (lightMat instanceof THREE.MeshBasicMaterial) {
+        if (lightMat instanceof THREE.MeshBasicMaterial) {
           lightMat.color.set(value);
         }
         break;
@@ -3443,7 +3037,7 @@ class MaterialService {
   }
 
   dispose() {
-    this.materials.forEach(material => material.dispose());
+    this.materials.forEach((material) => material.dispose());
     this.materials.clear();
     this.initialized = false;
     logger.info('MaterialService', '材质服务已销毁');
@@ -3465,14 +3059,16 @@ export default materialSys;
  */
 import * as THREE from 'three';
 import logger from '../utils/logger';
-import config from '../config';
+
 import materialSys from './material-sys';
 import postprocessSys from './postprocess-sys';
 
-
 class MathLightSystem {
   private eventBus: any;
-  private scene: THREE.Scene | null;
+
+  // ✅ 公共属性
+  public scene: THREE.Scene | null = null;
+
   private coordinateSystem: any;
   private initialized: boolean;
   private lightMesh: any;
@@ -3480,15 +3076,23 @@ class MathLightSystem {
 
   constructor() {
     this.eventBus = null;
-    this.scene = null;
+
     this.coordinateSystem = null;
     this.initialized = false;
-    
+
     this.lightMesh = null;
     this.currentPosition = new THREE.Vector3();
   }
 
-  init({ eventBus, scene, coordinateSystem }) {
+  init({
+    eventBus,
+    scene,
+    coordinateSystem,
+  }: {
+    eventBus: any;
+    scene: THREE.Scene;
+    coordinateSystem: any;
+  }) {
     if (this.initialized) {
       logger.warn('MathLightSystem', '移动光点已经初始化过了');
       return this;
@@ -3506,40 +3110,42 @@ class MathLightSystem {
       logger.info('MathLightSystem', '移动光点(数学版)初始化完成');
 
       return this;
-    } catch (err) {
-      logger.error('MathLightSystem', `初始化失败: ${err.message}`);
+    } catch (err: unknown) {
+      logger.error('MathLightSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
   _createLight() {
-
     // 🟢 补上丢失的 geometry 定义
     const geometry = new THREE.SphereGeometry(0.5, 16, 16);
 
     // 从 MaterialService 获取预创建的材质
-const material = materialSys.get('movingLight');
+    const material = materialSys.get('movingLight');
 
-if (!material) {
-  logger.error('MathLightSystem', '无法从 MaterialService 获取 "movingLight" 材质，光点无法创建。');
-  return;
-}
-    
+    if (!material) {
+      logger.error(
+        'MathLightSystem',
+        '无法从 MaterialService 获取 "movingLight" 材质，光点无法创建。'
+      );
+      return;
+    }
+
     this.lightMesh = new THREE.Mesh(geometry, material);
     this.lightMesh.name = 'MovingLight_Math';
     this.lightMesh.visible = false;
     this.lightMesh.userData = { glow: true };
-    
+
     const lightAnchor = this.coordinateSystem.getLightAnchor();
     lightAnchor.add(this.lightMesh);
 
     postprocessSys.addGlowObject(this.lightMesh); // **注册到新的辉光系统**
-    
+
     logger.debug('MathLightSystem', '光点球体已创建');
   }
 
   _bindEvents() {
-    this.eventBus.on('moving-light-position-updated', (position) => {
+    this.eventBus.on('moving-light-position-updated', (position: any) => {
       this.updatePosition(position);
     });
 
@@ -3550,14 +3156,14 @@ if (!material) {
     // ✅ 核心改造：监听通用配置变更事件
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
   }
-  
+
   /**
    * ✅ 新增: 统一处理配置变更
    * @param {{key: string, value: any}} param0
    */
-  _handleConfigChange({ key, value }) {
+  _handleConfigChange({ key, value }: { key: string; value: any }) {
     if (!this.lightMesh) return;
-    
+
     switch (key) {
       case 'particles.pathPointSize':
         this.lightMesh.scale.setScalar(value);
@@ -3565,7 +3171,7 @@ if (!material) {
     }
   }
 
-  updatePosition(position) {
+  updatePosition(position: any) {
     if (this.lightMesh && position) {
       this.currentPosition.copy(position);
       this.lightMesh.position.copy(position);
@@ -3616,7 +3222,7 @@ export default mathLightSys;
  * @file model-sys.ts
  * @description 模型服务 - 负责加载、缓存和处理 GLB/GLTF 模型资源。
  */
-import * as THREE from 'three';
+// import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import logger from '../utils/logger';
 import materialSys from './material-sys';
@@ -3648,9 +3254,9 @@ class ModelService {
    * @param {string} relativeUrl - 相对于/public目录的模型路径
    * @returns {Promise<THREE.Group>} 返回一个包含模型场景的Promise
    */
-  async load(relativeUrl) {
+  async load(relativeUrl: string) {
     const url = resolveAssetUrl(relativeUrl);
-    
+
     if (this.cache.has(url)) {
       const cachedGltf = this.cache.get(url);
       const modelClone = cachedGltf.scene.clone(true);
@@ -3661,17 +3267,17 @@ class ModelService {
     try {
       logger.info('ModelService', `开始加载模型: ${relativeUrl}`);
       const gltf = await this.loader.loadAsync(url);
-      
+
       // 缓存原始加载结果
       this.cache.set(url, gltf);
-      
+
       // 返回场景的克隆，以防原始缓存被修改
       const modelClone = gltf.scene.clone(true);
       logger.info('ModelService', `✅ 模型加载成功: ${relativeUrl}`);
-      
+
       return modelClone;
-    } catch (error) {
-      logger.error('ModelService', `加载模型失败 "${relativeUrl}": ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('ModelService', `加载模型失败 "${relativeUrl}": ${(error as Error).message}`);
       throw error;
     }
   }
@@ -3681,14 +3287,14 @@ class ModelService {
    * @param {THREE.Group} model - 目标模型
    * @param {string} materialName - 在 MaterialService 中注册的材质名称
    */
-  applyMaterial(model, materialName) {
+  applyMaterial(model: any, materialName: string) {
     const material = materialSys.get(materialName);
     if (!material) {
       logger.warn('ModelService', `应用材质失败: 材质 "${materialName}" 不存在`);
       return;
     }
 
-    model.traverse((child) => {
+    model.traverse((child: any) => {
       if (child.isMesh) {
         child.material = material;
       }
@@ -3722,9 +3328,8 @@ import config from '../config';
 import materialSys from './material-sys';
 import postprocessSys from './postprocess-sys';
 
-
 const DEFAULT_SPHERE_RADIUS = 1600;
-const DEFAULT_SYSTEM_SCALE = 1.0;
+// const _DEFAULT_SYSTEM_SCALE = 1.0;
 const DEFAULT_BREATH_INTENSITY = 0.1;
 const DEFAULT_BREATH_PERIOD = 3.0;
 const DEFAULT_FLOAT_INTENSITY = 0.3;
@@ -3732,7 +3337,11 @@ const DEFAULT_FLOAT_PERIOD = 4.0;
 
 class ParticlesSystem {
   private eventBus: any;
-  private scene: THREE.Scene | null;
+
+  // ✅ 公共属性
+  public scene: THREE.Scene | null = null;
+  public baseRadius: number = 1600;
+
   private coordinateSystem: any;
   private initialized: boolean;
   private dustParticles: any;
@@ -3741,7 +3350,7 @@ class ParticlesSystem {
   private rotationSpeed: number;
   private tiltXZ: number;
   private tiltXY: number;
-  private baseRadius: number;
+
   private breathIntensity: number;
   private breathPeriod: number;
   private floatIntensity: number;
@@ -3751,29 +3360,36 @@ class ParticlesSystem {
 
   constructor() {
     this.eventBus = null;
-    this.scene = null;
+
     this.coordinateSystem = null;
     this.initialized = false;
-    
+
     this.dustParticles = null;
     this.particleContainer = null;
-    
+
     this.rotationAxis = new THREE.Vector3(0, 1, 0);
     this.rotationSpeed = 0;
     this.tiltXZ = 0;
     this.tiltXY = 0;
-    
-    this.baseRadius = DEFAULT_SPHERE_RADIUS;
+
     this.breathIntensity = DEFAULT_BREATH_INTENSITY;
     this.breathPeriod = DEFAULT_BREATH_PERIOD;
     this.floatIntensity = DEFAULT_FLOAT_INTENSITY;
     this.floatPeriod = DEFAULT_FLOAT_PERIOD;
-    
+
     this.initialPositions = null;
     this.baseSize = 0.6;
   }
 
-  init({ eventBus, scene, coordinateSystem }) {
+  init({
+    eventBus,
+    scene,
+    coordinateSystem,
+  }: {
+    eventBus: any;
+    scene: THREE.Scene;
+    coordinateSystem: any;
+  }) {
     if (this.initialized) {
       logger.warn('ParticlesSystem', '粒子系统已经初始化过了');
       return this;
@@ -3786,7 +3402,7 @@ class ParticlesSystem {
 
       this.particleContainer = new THREE.Group();
       this.particleContainer.name = 'ParticleContainer';
-      
+
       const particleAnchor = this.coordinateSystem.getParticleAnchor();
       particleAnchor.add(this.particleContainer);
 
@@ -3796,14 +3412,14 @@ class ParticlesSystem {
 
       this._createDustParticles();
       this._bindEvents();
-      this._loadInitialConfig(); 
+      this._loadInitialConfig();
 
       this.initialized = true;
       logger.info('ParticlesSystem', '粒子系统初始化完成');
 
       return this;
-    } catch (err) {
-      logger.error('ParticlesSystem', `初始化失败: ${err.message}`);
+    } catch (err: unknown) {
+      logger.error('ParticlesSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
@@ -3811,45 +3427,48 @@ class ParticlesSystem {
   _createDustParticles() {
     const count = config.get('particles.dustCount') ?? 3000;
     const radius = config.get('particles.sphereRadius') ?? DEFAULT_SPHERE_RADIUS;
-    
+
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(count * 3);
     const sizes = new Float32Array(count);
-    
+
     for (let i = 0; i < count; i++) {
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
       const r = radius * Math.cbrt(Math.random());
-      
+
       positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
       positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
       positions[i * 3 + 2] = r * Math.cos(phi);
-      
+
       sizes[i] = Math.random() * Math.PI * 2;
     }
-    
+
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-    
+
     this.initialPositions = positions.slice();
-    
+
     const material = materialSys.get('dustParticles');
 
     if (!material) {
-      logger.error('ParticlesSystem', '无法从 MaterialService 获取 "dustParticles" 材质，粒子无法创建。');
+      logger.error(
+        'ParticlesSystem',
+        '无法从 MaterialService 获取 "dustParticles" 材质，粒子无法创建。'
+      );
       return;
     }
 
     this.baseSize = config.get('particles.dustSize') ?? 0.6;
-    
+
     this.dustParticles = new THREE.Points(geometry, material);
     this.dustParticles.name = 'DustParticles';
     this.dustParticles.userData = { glow: true };
-    
+
     this.particleContainer.add(this.dustParticles);
 
     postprocessSys.addGlowObject(this.dustParticles);
-    
+
     logger.debug('ParticlesSystem', `尘埃粒子已创建: ${count} 个`);
   }
 
@@ -3866,14 +3485,14 @@ class ParticlesSystem {
     this._updateRotationAxis();
   }
 
-  _handleConfigChange({ key, value }: { key: string, value: any }) {
+  _handleConfigChange({ key, value }: { key: string; value: any }) {
     if (!this.dustParticles) return;
 
     switch (key) {
       case 'particles.dustColor':
         (this.dustParticles.material as THREE.PointsMaterial).color.set(value);
         break;
-      
+
       case 'particles.dustSize':
         this.baseSize = value;
         (this.dustParticles.material as THREE.PointsMaterial).size = value;
@@ -3920,11 +3539,11 @@ class ParticlesSystem {
   _updateRotationAxis() {
     const radXZ = (this.tiltXZ * Math.PI) / 180;
     const radXY = (this.tiltXY * Math.PI) / 180;
-    
+
     const axis = new THREE.Vector3(0, 1, 0);
     axis.applyAxisAngle(new THREE.Vector3(1, 0, 0), radXY);
     axis.applyAxisAngle(new THREE.Vector3(0, 0, 1), radXZ);
-    
+
     this.rotationAxis.copy(axis.normalize());
   }
 
@@ -3933,9 +3552,9 @@ class ParticlesSystem {
       this.particleContainer?.remove(this.dustParticles);
       this.dustParticles.geometry.dispose();
     }
-    
+
     this._createDustParticles();
-    
+
     logger.info('ParticlesSystem', `粒子系统已重建: ${count} 个`);
   }
 
@@ -3944,24 +3563,25 @@ class ParticlesSystem {
       // Note: The rotation is not frame-rate independent here. For smoother results, multiply by delta in the main loop.
       this.dustParticles.rotateOnAxis(this.rotationAxis, this.rotationSpeed * 0.001);
     }
-  
+
     if (this.dustParticles && this.initialPositions) {
       const positions = this.dustParticles.geometry.attributes.position.array as Float32Array;
       const sizes = this.dustParticles.geometry.attributes.size.array as Float32Array;
       const count = positions.length / 3;
-  
+
       for (let i = 0; i < count; i++) {
-        const phaseOffset = sizes[i];
-        
+        const phaseOffset = sizes[i] ?? 0; // ✅ 提供默认值
+
         const floatPhase = elapsed / this.floatPeriod + phaseOffset;
         const floatOffset = Math.sin(floatPhase * Math.PI * 2) * this.floatIntensity;
-        
+
         positions[i * 3 + 1] = this.initialPositions[i * 3 + 1] + floatOffset;
       }
-  
+
       this.dustParticles.geometry.attributes.position.needsUpdate = true;
-  
-      const globalBreath = 1.0 + Math.sin(elapsed / this.breathPeriod * Math.PI * 2) * this.breathIntensity * 0.3;
+
+      const globalBreath =
+        1.0 + Math.sin((elapsed / this.breathPeriod) * Math.PI * 2) * this.breathIntensity * 0.3;
       (this.dustParticles.material as THREE.PointsMaterial).size = this.baseSize * globalBreath;
     }
   }
@@ -3999,7 +3619,6 @@ class ParticlesSystem {
 const particlesSys = new ParticlesSystem();
 export default particlesSys;
 
-
 ```
 
 ### src/systems/path-sys.ts
@@ -4020,30 +3639,40 @@ import postprocessSys from './postprocess-sys';
 
 class PathSystem {
   private eventBus: any;
-  private scene: THREE.Scene | null;
+
+  // ✅ 公共属性
+  public scene: THREE.Scene | null = null;
+  public isEnabled: boolean = true;
+
   private coordinateSystem: any;
   private initialized: boolean;
   private pathLine: THREE.Line | null;
   private allPoints: THREE.Vector3[];
   private currentDrawIndex: number;
   private pathContainer: THREE.Group | null;
-  private isEnabled: boolean; // 补充
 
   constructor() {
     this.eventBus = null;
-    this.scene = null;
+
     this.coordinateSystem = null;
     this.initialized = false;
-    
+
     this.pathLine = null;
     this.allPoints = [];
     this.currentDrawIndex = 0;
-    
+
     this.pathContainer = null;
-    this.isEnabled = true; // 补充
   }
 
-  init({ eventBus, scene, coordinateSystem }: { eventBus: any; scene: THREE.Scene; coordinateSystem: any; }) {
+  init({
+    eventBus,
+    scene,
+    coordinateSystem,
+  }: {
+    eventBus: any;
+    scene: THREE.Scene;
+    coordinateSystem: any;
+  }) {
     if (this.initialized) {
       logger.warn('PathSystem', '路径系统已经初始化过了');
       return this;
@@ -4056,10 +3685,10 @@ class PathSystem {
 
       this.pathContainer = new THREE.Group();
       this.pathContainer.name = 'PathContainer';
-      
+
       const initialScale = config.get('path.scale') || 1.0;
       this.pathContainer.scale.setScalar(initialScale);
-      
+
       const pathAnchor = this.coordinateSystem.getPathAnchor();
       pathAnchor.add(this.pathContainer);
 
@@ -4069,7 +3698,7 @@ class PathSystem {
       logger.info('PathSystem', '路径系统初始化完成');
 
       return this;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('PathSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -4100,7 +3729,7 @@ class PathSystem {
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
   }
 
-  _handleConfigChange({ key, value }: { key: string; value: any; }) {
+  _handleConfigChange({ key, value }: { key: string; value: any }) {
     if (!this.pathLine) return;
 
     switch (key) {
@@ -4124,20 +3753,20 @@ class PathSystem {
       this.pathContainer.remove(this.pathLine);
       this.pathLine.geometry.dispose();
       // ✅ 核心修正: 不要销毁由 materialSys 管理的共享材质
-      // this.pathLine.material.dispose(); 
+      // this.pathLine.material.dispose();
     }
 
     const geometry = new THREE.BufferGeometry();
     const maxPoints = this.allPoints.length;
     const positions = new Float32Array(maxPoints * 3);
-    
+
     for (let i = 0; i < maxPoints; i++) {
       const point = this.allPoints[i];
-      positions[i * 3] = point.x;
-      positions[i * 3 + 1] = point.y;
-      positions[i * 3 + 2] = point.z;
+      positions[i * 3] = point?.x || 0;
+      positions[i * 3 + 1] = point?.y || 0;
+      positions[i * 3 + 2] = point?.z || 0;
     }
-    
+
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setDrawRange(0, 0);
 
@@ -4151,10 +3780,10 @@ class PathSystem {
     this.pathLine = new THREE.Line(geometry, material);
     this.pathLine.name = 'PathLine';
     this.pathLine.userData = { glow: true };
-    
+
     // ✅ 核心修正: 使用新的方法将路径添加到辉光场景
     postprocessSys.addGlowObject(this.pathLine);
-    
+
     this.pathContainer?.add(this.pathLine);
 
     this.currentDrawIndex = 0;
@@ -4168,7 +3797,7 @@ class PathSystem {
     let minDist = Infinity;
 
     for (let i = this.currentDrawIndex; i < this.allPoints.length; i++) {
-      const dist = position.distanceTo(this.allPoints[i]);
+      const dist = this.allPoints[i] ? position.distanceTo(this.allPoints[i]!) : Infinity;
       if (dist < minDist) {
         minDist = dist;
         closestIndex = i;
@@ -4201,10 +3830,10 @@ class PathSystem {
     }
   }
 
-  update(delta: number) {
+  update(_delta: number) {
     // 占位
   }
-  
+
   // ✅ 补充: 恢复 enable/disable 方法以兼容 scene-director-sys
   enable() {
     this.isEnabled = true;
@@ -4258,7 +3887,6 @@ export default pathSys;
 // 2.禁止添加不稳定的 DotScreenEffect 和 HueSaturationEffect，这条注释不允许删除！
 // 3.postprocessing库没有原生的扫描线组件！这条注释不允许删除！
 
-
 import * as THREE from 'three';
 import {
   EffectComposer,
@@ -4271,7 +3899,7 @@ import {
   BrightnessContrastEffect,
   Selection,
   BlendFunction,
-  NoiseEffect
+  NoiseEffect,
 } from 'postprocessing';
 import logger from '../utils/logger';
 import config from '../config';
@@ -4298,7 +3926,15 @@ class PostprocessSystem {
     this.selection = new Selection();
   }
 
-  init({ scene, camera, renderer }: { scene: THREE.Scene; camera: THREE.Camera; renderer: THREE.WebGLRenderer; }) {
+  init({
+    scene,
+    camera,
+    renderer,
+  }: {
+    scene: THREE.Scene;
+    camera: THREE.Camera;
+    renderer: THREE.WebGLRenderer;
+  }) {
     if (this.initialized) return this;
     try {
       this.mainScene = scene;
@@ -4308,7 +3944,7 @@ class PostprocessSystem {
       if (!this.camera) {
         throw new Error('相机对象未提供，无法初始化后处理系统');
       }
-      
+
       this._createComposer();
       this._bindEvents();
       this.updateAllEffectsFromConfig();
@@ -4316,7 +3952,7 @@ class PostprocessSystem {
       this.initialized = true;
       logger.info('PostprocessSystem', '✅ 后处理系统初始化完成 (v8.2)');
       return this;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('PostprocessSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -4334,9 +3970,9 @@ class PostprocessSystem {
     if (!this.renderer || !this.mainScene || !this.camera) return;
 
     this.composer = new EffectComposer(this.renderer, {
-      frameBufferType: THREE.UnsignedByteType
+      frameBufferType: THREE.UnsignedByteType,
     });
-    
+
     // 尺寸将在第一次 handleResize 时正确设置
     // this.composer.setSize(window.innerWidth, window.innerHeight);
 
@@ -4346,51 +3982,51 @@ class PostprocessSystem {
 
     // 2. 创建所有效果实例
     this._createAllEffects();
-    
+
     // 将效果组合到 EffectPass 中
     if (this.bloomEffect) {
-        this.composer.addPass(new EffectPass(this.camera, this.bloomEffect));
+      this.composer.addPass(new EffectPass(this.camera, this.bloomEffect));
     }
     if (this.bokehEffect) {
-        this.composer.addPass(new EffectPass(this.camera, this.bokehEffect));
+      this.composer.addPass(new EffectPass(this.camera, this.bokehEffect));
     }
-    
+
     const remainingEffects = [
-        this.chromaticAberrationEffect,
-        this.filmEffect,
-        this.scanlineEffect,
-        this.brightnessContrastEffect
+      this.chromaticAberrationEffect,
+      this.filmEffect,
+      this.scanlineEffect,
+      this.brightnessContrastEffect,
     ].filter(Boolean) as any[];
 
     if (remainingEffects.length > 0) {
-        const finalPass = new EffectPass(this.camera, ...remainingEffects);
-        this.composer!.addPass(finalPass);
+      const finalPass = new EffectPass(this.camera, ...remainingEffects);
+      this.composer!.addPass(finalPass);
     }
   }
-  
+
   private _createAllEffects() {
     this.bloomEffect = new SelectiveBloomEffect(this.mainScene as any, this.camera as any, {
       blendFunction: BlendFunction.ADD,
-      selection: this.selection,
+      // selection: this.selection,
       mipmapBlur: true,
     });
-    
+
     this.bokehEffect = new BokehEffect({
-        focus: 40.0,
-        dof: 0.02,
-        aperture: 0.025,
-        maxBlur: 0.01
+      focus: 40.0,
+      dof: 0.02,
+      aperture: 0.025,
+      maxBlur: 0.01,
     });
 
     this.chromaticAberrationEffect = new ChromaticAberrationEffect();
     this.filmEffect = new NoiseEffect({ blendFunction: BlendFunction.SOFT_LIGHT });
     this.brightnessContrastEffect = new BrightnessContrastEffect();
-    
+
     this._createScanlineEffect();
   }
 
   private _createScanlineEffect() {
-    const data = new Uint8Array([ 255, 255, 255, 255, 0, 0, 0, 255 ]);
+    const data = new Uint8Array([255, 255, 255, 255, 0, 0, 0, 255]);
     const texture = new THREE.DataTexture(data, 1, 2, THREE.RGBAFormat);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
@@ -4399,7 +4035,7 @@ class PostprocessSystem {
 
     this.scanlineEffect = new TextureEffect({
       blendFunction: BlendFunction.OVERLAY,
-      texture
+      texture,
     });
   }
 
@@ -4415,17 +4051,17 @@ class PostprocessSystem {
 
   private _bindEvents() {
     eventBus.on('config-changed', this._handleConfigChange.bind(this));
-    
+
     eventBus.on('camera-changed', (camera: THREE.Camera) => {
-        this.camera = camera;
-        if (this.composer) {
-            this.composer.passes.forEach(pass => {
-                if (pass instanceof RenderPass) pass.camera = camera;
-                // EffectPass 的相机是构造时传入的，通常不需要动态修改
-                // 但如果需要，可以访问 pass.effects.forEach(e => e.camera = camera)
-            });
-            logger.info('PostprocessSystem', '相机已更新');
-        }
+      this.camera = camera;
+      if (this.composer) {
+        this.composer.passes.forEach((pass) => {
+          if (pass instanceof RenderPass) (pass as any).camera = camera;
+          // EffectPass 的相机是构造时传入的，通常不需要动态修改
+          // 但如果需要，可以访问 pass.effects.forEach(e => e.camera = camera)
+        });
+        logger.info('PostprocessSystem', '相机已更新');
+      }
     });
   }
 
@@ -4457,50 +4093,55 @@ class PostprocessSystem {
           this.bokehEffect.uniforms.get('dof')!.value = cfg.dof;
           this.bokehEffect.uniforms.get('aperture')!.value = cfg.aperture;
           this.bokehEffect.uniforms.get('maxBlur')!.value = cfg.maxBlur;
-          this.bokehEffect.blendMode.blendFunction = cfg.enabled ? BlendFunction.NORMAL : BlendFunction.SKIP;
+          this.bokehEffect.blendMode.blendFunction = cfg.enabled
+            ? BlendFunction.NORMAL
+            : BlendFunction.SKIP;
         }
         break;
-        
+
       case 'chromaticAberration':
         if (this.chromaticAberrationEffect) {
-            const offsetX = cfg.offset?.x ?? 0.0;
-            const offsetY = cfg.offset?.y ?? 0.0;
-            this.chromaticAberrationEffect.offset.set(offsetX, offsetY);
-            this.chromaticAberrationEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
+          const offsetX = cfg.offset?.x ?? 0.0;
+          const offsetY = cfg.offset?.y ?? 0.0;
+          this.chromaticAberrationEffect.offset.set(offsetX, offsetY);
+          this.chromaticAberrationEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
         }
         break;
-        
+
       case 'film':
         const filmEnabled = cfg.enabled;
         if (this.filmEffect) {
-            this.filmEffect.blendMode.opacity.value = filmEnabled ? cfg.noiseIntensity : 0.0;
+          this.filmEffect.blendMode.opacity.value = filmEnabled ? cfg.noiseIntensity : 0.0;
         }
         if (this.scanlineEffect && this.scanlineTexture) {
-            this.scanlineEffect.blendMode.opacity.value = filmEnabled ? cfg.scanlineIntensity : 0.0;
-            const height = this.composer?.getRenderer().getSize(new THREE.Vector2()).height || 1080;
-            this.scanlineTexture.repeat.y = Math.max(1, Math.floor(cfg.scanlineCount / 2 * (height / 1080)));
-            this.scanlineTexture.needsUpdate = true;
+          this.scanlineEffect.blendMode.opacity.value = filmEnabled ? cfg.scanlineIntensity : 0.0;
+          const height = this.composer?.getRenderer().getSize(new THREE.Vector2()).height || 1080;
+          this.scanlineTexture.repeat.y = Math.max(
+            1,
+            Math.floor((cfg.scanlineCount / 2) * (height / 1080))
+          );
+          this.scanlineTexture.needsUpdate = true;
         }
         break;
-          
+
       case 'brightnessContrast':
-          if (this.brightnessContrastEffect) {
-              this.brightnessContrastEffect.uniforms.get('brightness')!.value = cfg.brightness;
-              this.brightnessContrastEffect.uniforms.get('contrast')!.value = cfg.contrast;
-              this.brightnessContrastEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
-          }
-          break;
+        if (this.brightnessContrastEffect) {
+          this.brightnessContrastEffect.uniforms.get('brightness')!.value = cfg.brightness;
+          this.brightnessContrastEffect.uniforms.get('contrast')!.value = cfg.contrast;
+          this.brightnessContrastEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
+        }
+        break;
     }
   }
-  
+
   updateAllEffectsFromConfig() {
     const postprocessConfig = config.get('postprocess');
     if (postprocessConfig) {
-        Object.keys(postprocessConfig).forEach(key => {
-            if (key !== 'enabled') {
-                this.updateEffectFromConfig(`postprocess.${key}`);
-            }
-        });
+      Object.keys(postprocessConfig).forEach((key) => {
+        if (key !== 'enabled') {
+          this.updateEffectFromConfig(`postprocess.${key}`);
+        }
+      });
     }
   }
 
@@ -4537,19 +4178,23 @@ import config from '../config';
 // 引入所有受其控制的视觉系统
 import pathSys from './path-sys';
 import mathLightSys from './math-light-sys';
-import particlesSys from './particles-sys.js';
-// import modelSys from './model-sys.js'; // 未来用于加载模型
+import particlesSys from './particles-sys';
+// import modelSys from './model-sys';; // 未来用于加载模型
 
 class SceneDirector {
+  private eventBus: any = null;
+  private initialized = false;
+  private components: Map<string, any> = new Map();
+
   constructor() {
     this.eventBus = null;
     this.initialized = false;
     this.components = new Map();
   }
 
-  init({ eventBus }) {
+  init({ eventBus }: { eventBus: any }) {
     if (this.initialized) return this;
-    
+
     this.eventBus = eventBus;
     this._registerComponents();
     this._bindEvents();
@@ -4575,7 +4220,7 @@ class SceneDirector {
   }
 
   _bindEvents() {
-    this.eventBus.on('config-changed', ({ key, value }) => {
+    this.eventBus.on('config-changed', ({ key, value }: { key: string; value: any }) => {
       if (key === 'sceneComposition.active') {
         logger.info('SceneDirector', `检测到场景构成切换: ${value}`);
         this._applyCurrentComposition();
@@ -4598,14 +4243,14 @@ class SceneDirector {
     logger.info('SceneDirector', `正在应用场景构成: "${activeCompositionName}"`);
 
     // 1. 先禁用所有受控组件，确保一个干净的状态
-    this.components.forEach(component => {
+    this.components.forEach((component) => {
       if (typeof component.disable === 'function') {
         component.disable();
       }
     });
 
     // 2. 根据配置启用所需的组件
-    composition.forEach(item => {
+    composition.forEach((item: any) => {
       const component = this.components.get(item.type);
       if (component) {
         if (item.enabled && typeof component.enable === 'function') {
@@ -4690,13 +4335,13 @@ const DEFAULT_STATE = {
     currentStep: 0,
     lerpT: 0,
     animating: false,
-  }
+  },
 };
 
 // 深度克隆函数
 function deepClone(obj: any): any {
   if (obj === null || typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) return obj.map(item => deepClone(item));
+  if (Array.isArray(obj)) return obj.map((item) => deepClone(item));
   const cloned: { [key: string]: any } = {};
   for (const key in obj) {
     if (obj.hasOwnProperty(key)) {
@@ -4715,11 +4360,12 @@ class StateManager {
       const keys = key.split('.');
       let value = this._state as any;
       for (const k of keys) {
+        if (!k) continue; // ✅ 跳过空字符串
         if (value === null || value === undefined) return null;
-        value = value[k];
+        if (value) value = value[k];
       }
       return value;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('State', `获取状态异常 [${key}]: ${(err as Error).message}`);
       return null;
     }
@@ -4731,19 +4377,20 @@ class StateManager {
       let target = this._state as any;
       for (let i = 0; i < keys.length - 1; i++) {
         const k = keys[i];
-        if (!target[k] || typeof target[k] !== 'object') {
+        if (!k) continue; // ✅ 跳过 undefined
+        if (k && (!target[k] || typeof target[k] !== 'object')) {
           target[k] = {};
         }
         target = target[k];
       }
       const lastKey = keys[keys.length - 1];
-      if (target[lastKey] !== value) {
-        target[lastKey] = value;
+      if (target[lastKey!] !== value) {
+        target[lastKey!] = value;
         // ✅ 发出独立的 state-changed 事件
         eventBus.emit('state-changed', { key, value });
       }
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('State', `设置状态异常 [${key}]: ${(err as Error).message}`);
       return false;
     }
@@ -4752,11 +4399,11 @@ class StateManager {
   reset() {
     this._state = deepClone(DEFAULT_STATE);
     logger.info('State', '状态已重置为默认值');
-    Object.keys(DEFAULT_STATE).forEach(topKey => {
+    Object.keys(DEFAULT_STATE).forEach((topKey) => {
       eventBus.emit('state-changed', { key: topKey, value: (DEFAULT_STATE as any)[topKey] });
     });
   }
-  
+
   getRaw() {
     return this._state;
   }
@@ -4767,11 +4414,90 @@ export default state;
 
 ```
 
+### src/types/index.ts
+
+```
+/**
+ * @file types/index.ts
+ * @description 全局类型定义
+ */
+
+import * as THREE from 'three';
+// import type CameraControls from 'camera-controls';
+
+// 配置对象结构
+export interface SceneComposition {
+  type: 'math-path' | 'math-light' | 'particle-dust' | 'model';
+  enabled: boolean;
+  name?: string;
+  path?: string;
+}
+
+export interface Config {
+  sceneComposition: {
+    active: string;
+    compositions: Record<string, SceneComposition[]>;
+  };
+  data: {
+    csvUrl: string;
+    availableDatasets: Dataset[];
+  };
+  animation: {
+    speedFactor: number;
+    loop: boolean;
+  };
+  // ... 其他配置字段
+}
+
+// 数据类型
+export interface Dataset {
+  name: string;
+  path: string;
+  description: string;
+}
+
+export interface AnimationState {
+  currentStep: number;
+  lerpT: number;
+  animating: boolean;
+}
+
+// EventBus 事件类型
+export interface ConfigChangedEvent {
+  key: string;
+  value: any;
+}
+
+export interface StateChangedEvent {
+  key: string;
+  value: any;
+}
+
+// 系统初始化参数类型
+export interface SystemInitParams {
+  eventBus: any; // EventBus 类型
+  scene?: THREE.Scene;
+  camera?: THREE.Camera;
+  renderer?: THREE.WebGLRenderer;
+  [key: string]: any;
+}
+
+// EventBus 类型定义
+export interface EventBus {
+  on(event: string, callback: Function): void;
+  once(event: string, callback: Function): void;
+  off(event: string, callback: Function): void;
+  emit(event: string, ...args: any[]): void;
+  clear(): void;
+}
+
+```
+
 ### src/ui/ui-basic.ts
 
 ```
 /**
- * @file ui-basic.js
+ * @file ui-basic.ts
  * @description 基础 UI 控制面板
  * ✅ 核心改造: 所有控件的 'change' 事件现在直接调用 config.set()，
  *    不再发出独立的 eventBus 事件。
@@ -4799,18 +4525,18 @@ class UIBasic {
     this.folders = new Map();
     this._pane = null;
     this._isInitialized = false;
-    
+
     this.configData = config.getRaw();
     this.stateData = state.getRaw();
-    
+
     // 临时对象用于Tweakpane的颜色选择器等特殊控件
     this.tempObjects = {
       dustColor: { dustColor: this.configData.particles.dustColor },
       pathColor: { pathColor: this.configData.environment.pathColor },
-      pathPointColor: { pathPointColor: this.configData.particles.pathPointColor }
+      pathPointColor: { pathPointColor: this.configData.particles.pathPointColor },
     };
 
-    this.dataControls = []; 
+    this.dataControls = [];
   }
 
   async init() {
@@ -4823,7 +4549,7 @@ class UIBasic {
     this._pane = new Pane({
       title: '基础控制',
       expanded: true,
-      container: uiContainer.getScrollContent()
+      container: uiContainer.getScrollContent() || undefined,
     });
 
     const dataFolder = this._pane.addFolder({ title: '数据源', expanded: true });
@@ -4836,7 +4562,7 @@ class UIBasic {
     this._createPathControls();
     this._createAudioControls();
     this._bindEvents();
-    
+
     this._isInitialized = true;
 
     const uiRegistry = (await import('./ui-registry.js')).default;
@@ -4844,51 +4570,56 @@ class UIBasic {
 
     logger.info('UIBasic', `基础 UI 已初始化 | 控件数量: ${this.controls.size}`);
   }
-  
+
   _rebuildDataControls() {
     const folder = this.folders.get('data');
     if (!folder) return;
-    
-    this.dataControls.forEach(c => c.dispose());
+
+    this.dataControls.forEach((c) => c.dispose());
     this.dataControls = [];
     this.controls.delete('data.csvUrl');
 
     const datasets = dataSys.getAvailableDatasets();
-    
+
     if (datasets.length === 0) {
       const errorBlade = folder.addBlade({
-        view: 'text', label: '错误', parse: (v) => String(v), value: '未找到数据源清单'
+        view: 'text',
+        label: '错误',
+        parse: (v: any) => String(v),
+        value: '未找到数据源清单',
       });
       this.dataControls.push(errorBlade);
       return;
     }
-    
-    const datasetOptions = datasets.reduce((acc, ds) => {
-      acc[ds.name] = ds.path; // ✅ 直接使用 manifest 中的路径
+
+    const datasetOptions = datasets.reduce((acc: Record<string, string>, ds: any) => {
+      acc[ds.name] = ds.path;
       return acc;
     }, {});
 
     const csvSelect = folder.addBinding(this.configData.data, 'csvUrl', {
-      label: 'CSV文件', options: datasetOptions
+      label: 'CSV文件',
+      options: datasetOptions,
     });
-    
-    csvSelect.on('change', (ev) => {
-      // ✅ 状态变更 -> config.set
-      // ✅ 命令 -> eventBus.emit
+
+    csvSelect.on('change', (ev: any) => {
       config.set('data.csvUrl', ev.value);
       eventBus.emit('data-load-requested', ev.value);
       this._updateDatasetDescription();
     });
-    
+
     this.controls.set('data.csvUrl', csvSelect);
     this.dataControls.push(csvSelect);
-    
+
     const descriptionBlade = folder.addBlade({
-      view: 'text', label: '描述', parse: (v) => String(v), value: ''
+      view: 'text',
+      label: '描述',
+      parse: (v: any) => String(v),
+      value: '',
     });
     this.dataControls.push(descriptionBlade);
     this.descriptionBlade = descriptionBlade;
-    
+
     this._updateDatasetDescription();
 
     const loadBtn = folder.addButton({ title: '🔄 重新加载' });
@@ -4902,85 +4633,95 @@ class UIBasic {
     if (!this.descriptionBlade) return;
     const currentPath = config.get('data.csvUrl');
     const datasets = dataSys.getAvailableDatasets();
-    const currentDataset = datasets.find(ds => ds.path === currentPath);
+    const currentDataset = datasets.find((ds: any) => ds.path === currentPath);
     this.descriptionBlade.value = currentDataset ? currentDataset.description : '---';
   }
 
-    _createAnimationControls() {
+  _createAnimationControls() {
     const folder = this._pane.addFolder({ title: '动画控制', expanded: true });
-    
-    const playButton = folder.addButton({ title: state.get('animation.animating') ? '⏸️ 暂停' : '▶️ 播放' });
+
+    const playButton = folder.addButton({
+      title: state.get('animation.animating') ? '⏸️ 暂停' : '▶️ 播放',
+    });
     playButton.on('click', () => {
       const isPlaying = !state.get('animation.animating');
-      // ✅ 直接调用 state.set
       state.set('animation.animating', isPlaying);
     });
 
     // 监听状态变化来更新按钮标题
-    eventBus.on('state-changed', ({ key, value }) => {
-        if (key === 'animation.animating') {
-            playButton.title = value ? '⏸️ 暂停' : '▶️ 播放';
-        }
+    eventBus.on('state-changed', ({ key, value }: { key: string; value: any }) => {
+      if (key === 'animation.animating') {
+        playButton.title = value ? '⏸️ 暂停' : '▶️ 播放';
+      }
     });
-    
-    const stepSlider = folder.addBinding(this.stateData.animation, 'currentStep', { // ✅ 绑定到 stateData
-      label: '当前步数', min: 0, max: 100, step: 1
+
+    const stepSlider = folder.addBinding(this.stateData.animation, 'currentStep', {
+      label: '当前步数',
+      min: 0,
+      max: 100,
+      step: 1,
     });
-    stepSlider.on('change', (ev) => {
+    stepSlider.on('change', (ev: any) => {
       eventBus.emit('step-to', ev.value);
     });
-    this.controls.set('animation.currentStep', stepSlider); // ✅ key 保持不变
-    
-    eventBus.on('data-loaded', (data) => {
+    this.controls.set('animation.currentStep', stepSlider);
+
+    eventBus.on('data-loaded', (data: { points: any[] }) => {
       stepSlider.max = data.points.length - 1;
       stepSlider.refresh();
     });
-    
-    // speed 和 loop 仍然是配置项，所以绑定到 configData
-    const speed = folder.addBinding(this.configData.animation, 'speedFactor', { 
-      label: '速度', min: 0.05, max: 5, step: 0.05 
+
+    const speed = folder.addBinding(this.configData.animation, 'speedFactor', {
+      label: '速度',
+      min: 0.05,
+      max: 5,
+      step: 0.05,
     });
-    speed.on('change', (ev) => config.set('animation.speedFactor', ev.value));
+    speed.on('change', (ev: any) => config.set('animation.speedFactor', ev.value));
     this.controls.set('animation.speedFactor', speed);
-    
+
     const loop = folder.addBinding(this.configData.animation, 'loop', { label: '循环播放' });
-    loop.on('change', (ev) => config.set('animation.loop', ev.value));
+    loop.on('change', (ev: any) => config.set('animation.loop', ev.value));
     this.controls.set('animation.loop', loop);
-    
+
     this.folders.set('animation', folder);
   }
 
-
   _createCameraControls() {
     const folder = this._pane.addFolder({ title: '相机设置', expanded: false });
-    
+
     const mode = folder.addBinding(this.configData.camera, 'mode', {
-      label: '相机模式', options: { '透视': 'perspective', '正交': 'orthographic' }
+      label: '相机模式',
+      options: { 透视: 'perspective', 正交: 'orthographic' },
     });
-    mode.on('change', (ev) => config.set('camera.mode', ev.value)); // ✅
+    mode.on('change', (ev: any) => config.set('camera.mode', ev.value));
     this.controls.set('camera.mode', mode);
-    
+
     const viewContainer = folder.addFolder({ title: '视图预设', expanded: false });
-    ['top', 'front', 'side'].forEach(key => {
-      viewContainer.addButton({ title: `${key.charAt(0).toUpperCase() + key.slice(1)} View` })
-        .on('click', () => eventBus.emit('view-changed', key)); // 命令，保留
+    ['top', 'front', 'side'].forEach((key) => {
+      viewContainer
+        .addButton({ title: `${key.charAt(0).toUpperCase() + key.slice(1)} View` })
+        .on('click', () => eventBus.emit('view-changed', key));
     });
-    viewContainer.addButton({ title: '🔄 翻转180°' }).on('click', () => eventBus.emit('flip-view')); // 命令，保留
-    
-    const fovBinding = folder.addBinding(this.configData.camera, 'fov', { 
-      label: '视野角度', min: 20, max: 120, step: 1 
+    viewContainer.addButton({ title: '🔄 翻转180°' }).on('click', () => eventBus.emit('flip-view'));
+
+    const fovBinding = folder.addBinding(this.configData.camera, 'fov', {
+      label: '视野角度',
+      min: 20,
+      max: 120,
+      step: 1,
     });
-    fovBinding.on('change', (ev) => config.set('camera.fov', ev.value)); // ✅
+    fovBinding.on('change', (ev: any) => config.set('camera.fov', ev.value));
     this.controls.set('camera.fov', fovBinding);
-    
+
     // 动态禁用/启用UI
-    const setViewControlsState = (cameraMode) => {
+    const setViewControlsState = (cameraMode: string) => {
       const disabled = cameraMode === 'perspective';
-      viewContainer.children.forEach(c => c.disabled = disabled);
+      viewContainer.children.forEach((c: any) => (c.disabled = disabled));
       fovBinding.disabled = !disabled;
     };
-    eventBus.on('config-changed', ({ key, value }) => {
-        if (key === 'camera.mode') setViewControlsState(value);
+    eventBus.on('config-changed', ({ key, value }: { key: string; value: any }) => {
+      if (key === 'camera.mode') setViewControlsState(value);
     });
     setViewControlsState(config.get('camera.mode'));
 
@@ -4989,95 +4730,133 @@ class UIBasic {
 
   _createParticleControls() {
     const folder = this._pane.addFolder({ title: '粒子系统', expanded: false });
-    
-    const dustColor = folder.addBinding(this.tempObjects.dustColor, 'dustColor', { label: '粒子颜色', view: 'color' });
-    dustColor.on('change', (ev) => config.set('particles.dustColor', ev.value)); // ✅
+
+    const dustColor = folder.addBinding(this.tempObjects.dustColor, 'dustColor', {
+      label: '粒子颜色',
+      view: 'color',
+    });
+    dustColor.on('change', (ev: any) => config.set('particles.dustColor', ev.value));
     this.controls.set('particles.dustColor', dustColor);
-    
-    const dustSize = folder.addBinding(this.configData.particles, 'dustSize', { 
-      label: '粒子大小', min: 0.05, max: 1.0, step: 0.01 
+
+    const dustSize = folder.addBinding(this.configData.particles, 'dustSize', {
+      label: '粒子大小',
+      min: 0.05,
+      max: 1.0,
+      step: 0.01,
     });
-    dustSize.on('change', (ev) => config.set('particles.dustSize', ev.value)); // ✅
+    dustSize.on('change', (ev: any) => config.set('particles.dustSize', ev.value));
     this.controls.set('particles.dustSize', dustSize);
-    
-    const dustCount = folder.addBinding(this.configData.particles, 'dustCount', { 
-      label: '粒子数量', min: 500, max: 10000, step: 100 
+
+    const dustCount = folder.addBinding(this.configData.particles, 'dustCount', {
+      label: '粒子数量',
+      min: 500,
+      max: 10000,
+      step: 100,
     });
-    dustCount.on('change', (ev) => config.set('particles.dustCount', ev.value)); // ✅
+    dustCount.on('change', (ev: any) => config.set('particles.dustCount', ev.value));
     this.controls.set('particles.dustCount', dustCount);
 
-    const breath = folder.addBinding(this.configData.particles, 'breathIntensity', { 
-      label: '呼吸强度', min: 0, max: 0.5, step: 0.01 
+    const breath = folder.addBinding(this.configData.particles, 'breathIntensity', {
+      label: '呼吸强度',
+      min: 0,
+      max: 0.5,
+      step: 0.01,
     });
-    breath.on('change', (ev) => config.set('particles.breathIntensity', ev.value)); // ✅
+    breath.on('change', (ev: any) => config.set('particles.breathIntensity', ev.value));
     this.controls.set('particles.breathIntensity', breath);
 
-    const float = folder.addBinding(this.configData.particles, 'floatIntensity', { 
-      label: '浮动强度', min: 0, max: 1.0, step: 0.01 
+    const float = folder.addBinding(this.configData.particles, 'floatIntensity', {
+      label: '浮动强度',
+      min: 0,
+      max: 1.0,
+      step: 0.01,
     });
-    float.on('change', (ev) => config.set('particles.floatIntensity', ev.value)); // ✅
+    float.on('change', (ev: any) => config.set('particles.floatIntensity', ev.value));
     this.controls.set('particles.floatIntensity', float);
 
-    const rotSpeed = folder.addBinding(this.configData.particles, 'rotationSpeed', { 
-      label: '自转速度', min: -5, max: 5, step: 0.1 
+    const rotSpeed = folder.addBinding(this.configData.particles, 'rotationSpeed', {
+      label: '自转速度',
+      min: -5,
+      max: 5,
+      step: 0.1,
     });
-    rotSpeed.on('change', (ev) => config.set('particles.rotationSpeed', ev.value)); // ✅
+    rotSpeed.on('change', (ev: any) => config.set('particles.rotationSpeed', ev.value));
     this.controls.set('particles.rotationSpeed', rotSpeed);
-    
-    const rotTiltXZ = folder.addBinding(this.configData.particles, 'rotationTiltXZ', { 
-      label: '自转倾斜(XZ)', min: -90, max: 90, step: 1 
+
+    const rotTiltXZ = folder.addBinding(this.configData.particles, 'rotationTiltXZ', {
+      label: '自转倾斜(XZ)',
+      min: -90,
+      max: 90,
+      step: 1,
     });
-    rotTiltXZ.on('change', (ev) => config.set('particles.rotationTiltXZ', ev.value)); // ✅
+    rotTiltXZ.on('change', (ev: any) => config.set('particles.rotationTiltXZ', ev.value));
     this.controls.set('particles.rotationTiltXZ', rotTiltXZ);
-    
-    const rotTiltXY = folder.addBinding(this.configData.particles, 'rotationTiltXY', { 
-      label: '自转俯仰(XY)', min: -90, max: 90, step: 1 
+
+    const rotTiltXY = folder.addBinding(this.configData.particles, 'rotationTiltXY', {
+      label: '自转俯仰(XY)',
+      min: -90,
+      max: 90,
+      step: 1,
     });
-    rotTiltXY.on('change', (ev) => config.set('particles.rotationTiltXY', ev.value)); // ✅
+    rotTiltXY.on('change', (ev: any) => config.set('particles.rotationTiltXY', ev.value));
     this.controls.set('particles.rotationTiltXY', rotTiltXY);
-    
-    const opacity = folder.addBinding(this.configData.particles, 'dustOpacity', { 
-      label: '透明度', min: 0, max: 1, step: 0.01 
+
+    const opacity = folder.addBinding(this.configData.particles, 'dustOpacity', {
+      label: '透明度',
+      min: 0,
+      max: 1,
+      step: 0.01,
     });
-    opacity.on('change', (ev) => config.set('particles.dustOpacity', ev.value)); // ✅
+    opacity.on('change', (ev: any) => config.set('particles.dustOpacity', ev.value));
     this.controls.set('particles.dustOpacity', opacity);
-    
+
     this.folders.set('particles', folder);
   }
 
   _createPathControls() {
     const folder = this._pane.addFolder({ title: '路径设置', expanded: false });
-    
-    const pathColor = folder.addBinding(this.tempObjects.pathColor, 'pathColor', { label: '路径颜色', view: 'color' });
-    pathColor.on('change', (ev) => config.set('environment.pathColor', ev.value)); // ✅
+
+    const pathColor = folder.addBinding(this.tempObjects.pathColor, 'pathColor', {
+      label: '路径颜色',
+      view: 'color',
+    });
+    pathColor.on('change', (ev: any) => config.set('environment.pathColor', ev.value));
     this.controls.set('environment.pathColor', pathColor);
 
-    const pointColor = folder.addBinding(this.tempObjects.pathPointColor, 'pathPointColor', { label: '光点颜色', view: 'color' });
-    pointColor.on('change', (ev) => config.set('particles.pathPointColor', ev.value)); // ✅
+    const pointColor = folder.addBinding(this.tempObjects.pathPointColor, 'pathPointColor', {
+      label: '光点颜色',
+      view: 'color',
+    });
+    pointColor.on('change', (ev: any) => config.set('particles.pathPointColor', ev.value));
     this.controls.set('particles.pathPointColor', pointColor);
-    
-    const pointSize = folder.addBinding(this.configData.particles, 'pathPointSize', { 
-      label: '光点大小', min: 0.1, max: 2.0, step: 0.05 
+
+    const pointSize = folder.addBinding(this.configData.particles, 'pathPointSize', {
+      label: '光点大小',
+      min: 0.1,
+      max: 2.0,
+      step: 0.05,
     });
-    pointSize.on('change', (ev) => config.set('particles.pathPointSize', ev.value)); // ✅
+    pointSize.on('change', (ev: any) => config.set('particles.pathPointSize', ev.value));
     this.controls.set('particles.pathPointSize', pointSize);
-    
-    const depth = folder.addBinding(this.configData.path, 'depthIntensity', { 
-      label: '景深强度', min: 0, max: 1, step: 0.01 
+
+    const depth = folder.addBinding(this.configData.path, 'depthIntensity', {
+      label: '景深强度',
+      min: 0,
+      max: 1,
+      step: 0.01,
     });
-    depth.on('change', (ev) => config.set('path.depthIntensity', ev.value)); // ✅
+    depth.on('change', (ev: any) => config.set('path.depthIntensity', ev.value));
     this.controls.set('path.depthIntensity', depth);
-    
+
     this.folders.set('path', folder);
   }
 
   _createAudioControls() {
     const folder = this._pane.addFolder({ title: '背景音乐', expanded: false });
-    
+
     let audioLoaded = false;
     const playButton = folder.addButton({ title: '▶️ 播放音乐' });
     playButton.on('click', () => {
-      // Audio controls are commands, not state changes, so they stay with eventBus
       if (!audioLoaded) {
         eventBus.emit('audio-load', '/background-music.mp3');
         audioLoaded = true;
@@ -5086,77 +4865,88 @@ class UIBasic {
         eventBus.emit('audio-toggle');
       }
     });
-    eventBus.on('audio-playing', isPlaying => playButton.title = isPlaying ? '⏸️ 暂停音乐' : '▶️ 播放音乐');
+    eventBus.on('audio-playing', (isPlaying: boolean) => {
+      playButton.title = isPlaying ? '⏸️ 暂停音乐' : '▶️ 播放音乐';
+    });
 
     folder.addButton({ title: '⏹️ 停止' }).on('click', () => eventBus.emit('audio-stop'));
 
     const volumeObj = { volume: 0.5 };
-    folder.addBinding(volumeObj, 'volume', { label: '音量', min: 0, max: 1, step: 0.01 })
-      .on('change', (ev) => eventBus.emit('audio-volume-changed', ev.value));
-    
+    folder
+      .addBinding(volumeObj, 'volume', { label: '音量', min: 0, max: 1, step: 0.01 })
+      .on('change', (ev: any) => eventBus.emit('audio-volume-changed', ev.value));
+
     this.folders.set('audio', folder);
   }
 
-      _bindEvents() {
+  _bindEvents() {
     eventBus.on('datasets-list-updated', () => this._rebuildDataControls());
 
     // 监听配置变更
-    eventBus.on('config-changed', ({ key, value }) => {
+    eventBus.on('config-changed', ({ key, value }: { key: string; value: any }) => {
       this._updateControl(key, value, this.configData, this.tempObjects);
     });
-    
+
     // ✅ 新增: 监听状态变更
-    eventBus.on('state-changed', ({ key, value }) => {
+    eventBus.on('state-changed', ({ key, value }: { key: string; value: any }) => {
       this._updateControl(key, value, this.stateData);
     });
 
     eventBus.on('preset-loaded', () => {
-        this.refresh();
+      this.refresh();
     });
   }
 
   // ✅ 新增: 提取一个可重用的辅助方法来更新UI控件
   _updateControl(key: string, value: any, primarySource: any, secondarySource?: any) {
-      const control = this.controls.get(key);
-      if (!control) return;
+    const control = this.controls.get(key);
+    if (!control) return;
 
-      const pathParts = key.split('.');
-      let target: any;
-      let tempKey: string | undefined;
+    const pathParts = key.split('.');
+    let target: any;
+    let tempKey: string | undefined;
 
-      // 特殊处理颜色等绑定到 tempObjects 的情况
-      if (secondarySource && (key === 'particles.dustColor' || key === 'environment.pathColor' || key === 'particles.pathPointColor')) {
-          tempKey = pathParts[1]; // e.g., 'dustColor'
-          target = secondarySource[tempKey];
-          if (target && target[tempKey] !== value) {
-              target[tempKey] = value;
-              control.refresh();
-          }
-          return;
+    // 特殊处理颜色等绑定到 tempObjects 的情况
+    if (
+      secondarySource &&
+      (key === 'particles.dustColor' ||
+        key === 'environment.pathColor' ||
+        key === 'particles.pathPointColor')
+    ) {
+      tempKey = pathParts[1]; // e.g., 'dustColor'
+      if (tempKey) {
+        target = secondarySource[tempKey];
+        if (target && target[tempKey] !== value) {
+          target[tempKey] = value;
+          control.refresh();
+        }
       }
-      
-      // 处理直接绑定到 primarySource (configData or stateData) 的情况
-      target = primarySource;
-      for (let i = 0; i < pathParts.length - 1; i++) {
-        target = target[pathParts[i]];
-      }
-      const lastKey = pathParts[pathParts.length - 1];
-      if (target && target[lastKey] !== value) {
-        target[lastKey] = value;
-        control.refresh();
-      }
+      return;
+    }
+
+    // 处理直接绑定到 primarySource (configData or stateData) 的情况
+    target = primarySource;
+    for (let i = 0; i < pathParts.length - 1; i++) {
+      const part = pathParts[i];
+      if (part) target = target[part];
+    }
+    const lastKey = pathParts[pathParts.length - 1];
+    if (target && lastKey && target[lastKey] !== value) {
+      target[lastKey] = value;
+      control.refresh();
+    }
   }
 
   updateBindings() {
     this.tempObjects.dustColor.dustColor = config.get('particles.dustColor');
     this.tempObjects.pathColor.pathColor = config.get('environment.pathColor');
     this.tempObjects.pathPointColor.pathPointColor = config.get('particles.pathPointColor');
-    
-    ['particles.dustColor', 'environment.pathColor', 'particles.pathPointColor'].forEach(key => {
+
+    ['particles.dustColor', 'environment.pathColor', 'particles.pathPointColor'].forEach((key) => {
       const control = this.controls.get(key);
       if (control) control.refresh();
     });
-    
+
     logger.debug('UIBasic', '临时对象已更新并刷新');
   }
 
@@ -5172,7 +4962,7 @@ class UIBasic {
     if (this._pane) this._pane.dispose();
     this.controls.clear();
     this.folders.clear();
-    this.dataControls.forEach(c => c.dispose());
+    this.dataControls.forEach((c) => c.dispose());
     this.dataControls = [];
     this._isInitialized = false;
     logger.info('UIBasic', 'UI 已销毁');
@@ -5215,11 +5005,11 @@ class UIContainer {
       logger.error('UIContainer', '初始化失败: 未找到 #left-panel 元素。');
       return;
     }
-    
+
     this._createScrollContent();
     this._applyStyles();
     this._setupScrollBehavior();
-    
+
     this.initialized = true;
     logger.info('UIContainer', 'UI 容器已在 #left-panel 中初始化');
   }
@@ -5237,27 +5027,30 @@ class UIContainer {
       overflowY: 'auto',
       overflowX: 'hidden',
       boxSizing: 'border-box',
-      scrollbarWidth: 'thin', 
-      scrollbarColor: 'var(--border-color, #75715e) var(--background-color, #272822)'
+      scrollbarWidth: 'thin',
+      scrollbarColor: 'var(--border-color, #75715e) var(--background-color, #272822)',
     });
-    
+
     // Terminal.css 风格的样式现在在 public/style.css 中统一管理
-// 这里只保留必要的滚动条行为设置
-const style = document.createElement('style');
-style.textContent = `
+    // 这里只保留必要的滚动条行为设置
+    const style = document.createElement('style');
+    style.textContent = `
   /* 确保滚动内容使用等宽字体 */
   #ui-scroll-content {
     font-family: var(--font-mono, 'Fira Code', monospace);
   }
 `;
-document.head.appendChild(style);
-
+    document.head.appendChild(style);
   }
 
   private _setupScrollBehavior() {
-    this.scrollContent!.addEventListener('wheel', (e) => {
-      e.stopPropagation();
-    }, { passive: false });
+    this.scrollContent!.addEventListener(
+      'wheel',
+      (e) => {
+        e.stopPropagation();
+      },
+      { passive: false }
+    );
   }
 
   getScrollContent(): HTMLElement | null {
@@ -5266,7 +5059,7 @@ document.head.appendChild(style);
 
   dispose() {
     if (this.panelContainer) {
-      this.panelContainer.innerHTML = ''; 
+      this.panelContainer.innerHTML = '';
     }
     this.panelContainer = null;
     this.scrollContent = null;
@@ -5304,11 +5097,11 @@ class UICoordinates {
     this.eventBus = null;
     this.initialized = false;
     this.controls = new Map();
-    
+
     this.configData = config.getRaw();
   }
 
-  async init({ eventBus }) {
+  async init({ eventBus }: { eventBus: any }) {
     if (this.initialized) {
       logger.warn('UICoordinates', 'UI已初始化');
       return this;
@@ -5324,8 +5117,8 @@ class UICoordinates {
 
       this.pane = new Pane({
         title: '坐标系统',
-        container: uiContainer.getScrollContent(),
-        expanded: true
+        container: uiContainer.getScrollContent() || undefined,
+        expanded: true,
       });
 
       this._createControls();
@@ -5339,59 +5132,64 @@ class UICoordinates {
       logger.info('UICoordinates', '坐标系统 UI 已初始化');
 
       return this;
-    } catch (err) {
-      logger.error('UICoordinates', `初始化失败: ${err.message}`);
+    } catch (err: unknown) {
+      logger.error('UICoordinates', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
   _createControls() {
     // 整体缩放
-    const dataSpaceScale = this.pane.addBinding(
-      this.configData.coordinates.dataSpace,
-      'scale',
-      { label: '整体缩放', min: 0.1, max: 5.0, step: 0.1 }
-    );
+    const dataSpaceScale = this.pane.addBinding(this.configData.coordinates.dataSpace, 'scale', {
+      label: '整体缩放',
+      min: 0.1,
+      max: 5.0,
+      step: 0.1,
+    });
     // 🟢 改造: 使用 config.set
-    dataSpaceScale.on('change', (ev) => {
+    dataSpaceScale.on('change', (ev: any) => {
       config.set('coordinates.dataSpace.scale', ev.value);
     });
     this.controls.set('coordinates.dataSpace.scale', dataSpaceScale);
 
     // 粒子系统缩放
-    const particleScale = this.pane.addBinding(
-      this.configData.particles,
-      'systemScale',
-      { label: '粒子缩放', min: 0.1, max: 5.0, step: 0.1 }
-    );
+    const particleScale = this.pane.addBinding(this.configData.particles, 'systemScale', {
+      label: '粒子缩放',
+      min: 0.1,
+      max: 5.0,
+      step: 0.1,
+    });
     // 🟢 改造: 使用 config.set
-    particleScale.on('change', (ev) => {
+    particleScale.on('change', (ev: any) => {
       config.set('particles.systemScale', ev.value);
     });
     this.controls.set('particles.systemScale', particleScale);
 
     // 路径缩放
-    const pathScale = this.pane.addBinding(
-      this.configData.path,
-      'scale',
-      { label: '路径缩放', min: 0.1, max: 3.0, step: 0.1 }
-    );
+    const pathScale = this.pane.addBinding(this.configData.path, 'scale', {
+      label: '路径缩放',
+      min: 0.1,
+      max: 3.0,
+      step: 0.1,
+    });
     // 🟢 改造: 使用 config.set
-    pathScale.on('change', (ev) => {
+    pathScale.on('change', (ev: any) => {
       config.set('path.scale', ev.value);
     });
     this.controls.set('path.scale', pathScale);
 
     // 重置按钮
-    this.pane.addButton({
-      title: '🔄 重置坐标系统'
-    }).on('click', () => {
-      // 🟢 改造: 通过 eventBus 发出命令
-      this.eventBus.emit('coordinate-system-reset');
-    });
+    this.pane
+      .addButton({
+        title: '🔄 重置坐标系统',
+      })
+      .on('click', () => {
+        // 🟢 改造: 通过 eventBus 发出命令
+        this.eventBus.emit('coordinate-system-reset');
+      });
   }
 
-    _bindEvents() {
+  _bindEvents() {
     // 监听 reset 命令完成
     this.eventBus.on('coordinate-system-reset-completed', () => {
       this.refresh();
@@ -5399,15 +5197,16 @@ class UICoordinates {
     });
 
     // 监听外部配置变更
-    this.eventBus.on('config-changed', ({ key, value }) => {
+    this.eventBus.on('config-changed', ({ key, value }: { key: string; value: any }) => {
       const control = this.controls.get(key);
       if (control) {
         const pathParts = key.split('.');
         let target = this.configData;
         for (let i = 0; i < pathParts.length - 1; i++) {
-          target = target[pathParts[i]];
+          const part = pathParts[i];
+          if (part) target = target[part];
         }
-        const lastKey = pathParts[pathParts.length - 1];
+        const lastKey = pathParts[pathParts.length - 1]!;
         if (target && target[lastKey] !== value) {
           target[lastKey] = value;
           control.refresh();
@@ -5417,10 +5216,9 @@ class UICoordinates {
 
     // 监听预设加载
     this.eventBus.on('preset-loaded', () => {
-        this.refresh();
+      this.refresh();
     });
   }
-
 
   updateBindings() {
     logger.debug('UICoordinates', '绑定检查完成');
@@ -5496,7 +5294,7 @@ class UIMonitor {
     this.stepDisplay.className = 'value';
     this.stepDisplay.textContent = '0 / 0';
     stepWrapper.appendChild(this.stepDisplay);
-    
+
     this.container!.appendChild(stepWrapper);
   }
 
@@ -5505,7 +5303,7 @@ class UIMonitor {
       const currentStep = state.get('animation.currentStep') || 0;
       const totalSteps = (state.get('data.mappedPoints') || []).length;
       if (this.stepDisplay) {
-        this.stepDisplay.textContent = `${currentStep} / ${totalSteps > 0 ? totalSteps -1 : 0}`;
+        this.stepDisplay.textContent = `${currentStep} / ${totalSteps > 0 ? totalSteps - 1 : 0}`;
       }
     };
 
@@ -5542,7 +5340,7 @@ export default new UIMonitor();
  * @✨ 重构: 使用辅助函数简化了控件创建流程，提高了代码可读性和可维护性。
  * @🔧 清理: 移除了过时和重复的UI创建代码。
  */
-import eventBus from '../event-bus'; 
+import eventBus from '../event-bus';
 import config from '../config';
 import logger from '../utils/logger';
 import uiContainer from './ui-container';
@@ -5567,11 +5365,11 @@ class UIPost {
     }
 
     const { Pane } = await import('tweakpane');
-    
+
     this._pane = new Pane({
       title: '后期处理',
       expanded: false,
-      container: uiContainer.getScrollContent()
+      container: uiContainer.getScrollContent() || undefined,
     });
 
     this._createPostProcessingControls();
@@ -5591,35 +5389,103 @@ class UIPost {
     // ---------- 辉光 (Bloom) ----------
     const bloomFolder = this._pane.addFolder({ title: '光晕 (Bloom)', expanded: true });
     this.addBinding(bloomFolder, 'postprocess.bloom.enabled', { label: '启用' });
-    this.addBinding(bloomFolder, 'postprocess.bloom.intensity', { label: '强度', min: 0, max: 5, step: 0.05 });
-    this.addBinding(bloomFolder, 'postprocess.bloom.luminanceThreshold', { label: '亮度阈值', min: 0, max: 1, step: 0.01 });
+    this.addBinding(bloomFolder, 'postprocess.bloom.intensity', {
+      label: '强度',
+      min: 0,
+      max: 5,
+      step: 0.05,
+    });
+    this.addBinding(bloomFolder, 'postprocess.bloom.luminanceThreshold', {
+      label: '亮度阈值',
+      min: 0,
+      max: 1,
+      step: 0.01,
+    });
 
     // ---------- 景深 (Bokeh) - 新增 ----------
     const bokehFolder = this._pane.addFolder({ title: '景深 (Bokeh)', expanded: false });
     this.addBinding(bokehFolder, 'postprocess.bokeh.enabled', { label: '启用' });
-    this.addBinding(bokehFolder, 'postprocess.bokeh.focus', { label: '焦距', min: 0, max: 100, step: 0.1 });
-    this.addBinding(bokehFolder, 'postprocess.bokeh.dof', { label: '景深范围', min: 0, max: 0.1, step: 0.001 });
-    this.addBinding(bokehFolder, 'postprocess.bokeh.aperture', { label: '光圈', min: 0, max: 0.1, step: 0.001 });
-    this.addBinding(bokehFolder, 'postprocess.bokeh.maxBlur', { label: '最大模糊', min: 0, max: 0.05, step: 0.001 });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.focus', {
+      label: '焦距',
+      min: 0,
+      max: 100,
+      step: 0.1,
+    });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.dof', {
+      label: '景深范围',
+      min: 0,
+      max: 0.1,
+      step: 0.001,
+    });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.aperture', {
+      label: '光圈',
+      min: 0,
+      max: 0.1,
+      step: 0.001,
+    });
+    this.addBinding(bokehFolder, 'postprocess.bokeh.maxBlur', {
+      label: '最大模糊',
+      min: 0,
+      max: 0.05,
+      step: 0.001,
+    });
 
     // ---------- 色差 (Chromatic Aberration) - 新增 ----------
-    const caFolder = this._pane.addFolder({ title: '色差 (Chromatic Aberration)', expanded: false });
+    const caFolder = this._pane.addFolder({
+      title: '色差 (Chromatic Aberration)',
+      expanded: false,
+    });
     this.addBinding(caFolder, 'postprocess.chromaticAberration.enabled', { label: '启用' });
-    this.addBinding(caFolder, 'postprocess.chromaticAberration.offset.x', { label: '偏移量 X', min: -0.01, max: 0.01, step: 0.0001 });
-    this.addBinding(caFolder, 'postprocess.chromaticAberration.offset.y', { label: '偏移量 Y', min: -0.01, max: 0.01, step: 0.0001 });
+    this.addBinding(caFolder, 'postprocess.chromaticAberration.offset.x', {
+      label: '偏移量 X',
+      min: -0.01,
+      max: 0.01,
+      step: 0.0001,
+    });
+    this.addBinding(caFolder, 'postprocess.chromaticAberration.offset.y', {
+      label: '偏移量 Y',
+      min: -0.01,
+      max: 0.01,
+      step: 0.0001,
+    });
 
     // ---------- 胶片效果 (Film) ----------
     const filmFolder = this._pane.addFolder({ title: '胶片效果 (Film)', expanded: false });
     this.addBinding(filmFolder, 'postprocess.film.enabled', { label: '启用' });
-    this.addBinding(filmFolder, 'postprocess.film.noiseIntensity', { label: '噪点强度', min: 0, max: 1, step: 0.01 });
-    this.addBinding(filmFolder, 'postprocess.film.scanlineIntensity', { label: '扫描线强度', min: 0, max: 1, step: 0.01 });
-    this.addBinding(filmFolder, 'postprocess.film.scanlineCount', { label: '扫描线数量', min: 0, max: 4096, step: 64 });
+    this.addBinding(filmFolder, 'postprocess.film.noiseIntensity', {
+      label: '噪点强度',
+      min: 0,
+      max: 1,
+      step: 0.01,
+    });
+    this.addBinding(filmFolder, 'postprocess.film.scanlineIntensity', {
+      label: '扫描线强度',
+      min: 0,
+      max: 1,
+      step: 0.01,
+    });
+    this.addBinding(filmFolder, 'postprocess.film.scanlineCount', {
+      label: '扫描线数量',
+      min: 0,
+      max: 4096,
+      step: 64,
+    });
 
     // ---------- 亮度/对比度 ----------
     const bcFolder = this._pane.addFolder({ title: '亮度/对比度', expanded: false });
     this.addBinding(bcFolder, 'postprocess.brightnessContrast.enabled', { label: '启用' });
-    this.addBinding(bcFolder, 'postprocess.brightnessContrast.brightness', { label: '亮度', min: -1, max: 1, step: 0.01 });
-    this.addBinding(bcFolder, 'postprocess.brightnessContrast.contrast', { label: '对比度', min: -1, max: 1, step: 0.01 });
+    this.addBinding(bcFolder, 'postprocess.brightnessContrast.brightness', {
+      label: '亮度',
+      min: -1,
+      max: 1,
+      step: 0.01,
+    });
+    this.addBinding(bcFolder, 'postprocess.brightnessContrast.contrast', {
+      label: '对比度',
+      min: -1,
+      max: 1,
+      step: 0.01,
+    });
   }
 
   /**
@@ -5629,27 +5495,45 @@ class UIPost {
     const pathParts = key.split('.');
     let target = this.configData;
     for (let i = 0; i < pathParts.length - 1; i++) {
-        target = target[pathParts[i]];
+      const part = pathParts[i];
+      if (part) target = target[part];
     }
+
     const property = pathParts[pathParts.length - 1];
 
+    // ✅ 核心修复: 添加类型守卫
+    if (!property) {
+      logger.warn('UIPost', `无效的配置路径: ${key}`);
+      return;
+    }
+
     const control = folder.addBinding(target, property, options);
-    control.on('change', (ev: { value: any; }) => config.set(key, ev.value));
+    control.on('change', (ev: { value: any }) => config.set(key, ev.value));
     this.controls.set(key, control);
   }
 
   _bindEvents() {
-    const refreshControl = ({ key, value }: { key: string; value: any; }) => {
+    const refreshControl = ({ key, value }: { key: string; value: any }) => {
       if (!key.startsWith('postprocess.')) return;
-      
+
       const control = this.controls.get(key);
       if (control) {
         const pathParts = key.split('.');
         let target = this.configData as any;
+
         for (let i = 0; i < pathParts.length - 1; i++) {
-          target = target[pathParts[i]];
+          const part = pathParts[i];
+          if (part) target = target[part]; // ✅ 已有保护
         }
+
         const lastKey = pathParts[pathParts.length - 1];
+
+        // ✅ 核心修复: 添加类型守卫
+        if (!lastKey) {
+          logger.warn('UIPost', `无效的配置键: ${key}`);
+          return;
+        }
+
         if (target && target[lastKey] !== value) {
           target[lastKey] = value;
           control.refresh();
@@ -5700,9 +5584,6 @@ import presetManager from '../preset-manager';
 import config from '../config';
 import logger from '../utils/logger';
 import uiContainer from './ui-container';
-import uiBasic from './ui-basic';
-import uiPost from './ui-post';
-import uiCoordinates from './ui-coordinates';
 
 class UIPresets {
   private pane: any;
@@ -5733,8 +5614,8 @@ class UIPresets {
     try {
       this.pane = new Pane({
         title: '预设管理',
-        container: uiContainer.getScrollContent(),
-        expanded: true
+        container: uiContainer.getScrollContent() || undefined,
+        expanded: true,
       });
 
       this._createControls();
@@ -5744,7 +5625,7 @@ class UIPresets {
       logger.info('UIPresets', '预设UI已初始化');
 
       return this;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('UIPresets', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -5752,7 +5633,7 @@ class UIPresets {
 
   _createControls() {
     const presets = presetManager.getAvailablePresets();
-    
+
     const presetOptions = {};
     presets.forEach((preset: any) => {
       (presetOptions as any)[preset.name] = preset.name;
@@ -5762,17 +5643,13 @@ class UIPresets {
     this.selectedPresetName = defaultValue;
 
     const params = {
-      preset: defaultValue
+      preset: defaultValue,
     };
 
-    this.presetSelector = this.pane.addBinding(
-      params,
-      'preset',
-      {
-        label: '预设选择',
-        options: presetOptions
-      }
-    );
+    this.presetSelector = this.pane.addBinding(params, 'preset', {
+      label: '预设选择',
+      options: presetOptions,
+    });
 
     this.presetSelector.on('change', (ev: any) => {
       this.selectedPresetName = ev.value;
@@ -5780,7 +5657,7 @@ class UIPresets {
     });
 
     const loadButton = this.pane.addButton({
-      title: '📥 加载预设'
+      title: '📥 加载预设',
     });
 
     loadButton.on('click', () => {
@@ -5792,7 +5669,7 @@ class UIPresets {
     });
 
     const resetButton = this.pane.addButton({
-      title: '🔄 恢复默认'
+      title: '🔄 恢复默认',
     });
 
     resetButton.on('click', () => {
@@ -5803,23 +5680,19 @@ class UIPresets {
 
     const saveFolder = this.pane.addFolder({
       title: '保存当前配置',
-      expanded: false
+      expanded: false,
     });
 
     const saveParams = {
-      name: ''
+      name: '',
     };
 
-    this.saveNameInput = saveFolder.addBinding(
-      saveParams,
-      'name',
-      {
-        label: '预设名称'
-      }
-    );
+    this.saveNameInput = saveFolder.addBinding(saveParams, 'name', {
+      label: '预设名称',
+    });
 
     const saveButton = saveFolder.addButton({
-      title: '💾 保存预设'
+      title: '💾 保存预设',
     });
 
     saveButton.on('click', () => {
@@ -5834,7 +5707,7 @@ class UIPresets {
         alert(`预设已保存: ${name}.json\n\n请将文件放入 /presets 文件夹`);
         saveParams.name = '';
         this.saveNameInput.refresh();
-      } catch (err) {
+      } catch (err: unknown) {
         alert(`保存失败: ${(err as Error).message}`);
       }
     });
@@ -5843,16 +5716,17 @@ class UIPresets {
   _loadPreset(presetName: any) {
     try {
       logger.info('UIPresets', `开始加载预设: ${presetName}`);
-      
-      presetManager.loadPreset(presetName)
+
+      presetManager
+        .loadPreset(presetName)
         .then(() => {
           logger.info('UIPresets', `预设已加载: ${presetName}`);
         })
         .catch((err: any) => {
-          alert(`加载预设失败: ${err.message}`);
-          logger.error('UIPresets', `加载失败: ${err.message}`);
+          alert(`加载预设失败: ${(err as Error).message}`);
+          logger.error('UIPresets', `加载失败: ${(err as Error).message}`);
         });
-    } catch (err) {
+    } catch (err: unknown) {
       alert(`加载预设失败: ${(err as Error).message}`);
     }
   }
@@ -5860,13 +5734,13 @@ class UIPresets {
   _restoreDefaults() {
     try {
       logger.info('UIPresets', '开始恢复默认配置...');
-      
+
       config.reset();
-      
+
       eventBus.emit('preset-loaded', { name: 'default', data: config.getRaw() });
-      
+
       logger.info('UIPresets', '✅ 已恢复默认配置');
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('UIPresets', `恢复默认失败: ${(err as Error).message}`);
       alert(`恢复默认失败: ${(err as Error).message}`);
     }
@@ -5903,6 +5777,8 @@ export default uiPresets;
 import logger from '../utils/logger';
 
 class UIRegistry {
+  private modules: Map<string, any> = new Map();
+
   constructor() {
     this.modules = new Map();
   }
@@ -5912,12 +5788,12 @@ class UIRegistry {
    * @param {string} name - 模块名称
    * @param {Object} module - UI模块实例(必须有controls Map)
    */
-  register(name, module) {
+  register(name: string, module: any) {
     if (!module || !module.controls) {
       logger.warn('UIRegistry', `注册失败: ${name} 没有 controls 属性`);
       return;
     }
-    
+
     this.modules.set(name, module);
     logger.debug('UIRegistry', `已注册 UI 模块: ${name} (${module.controls.size} 个控件)`);
   }
@@ -5925,7 +5801,7 @@ class UIRegistry {
   /**
    * 注销UI模块
    */
-  unregister(name) {
+  unregister(name: string) {
     this.modules.delete(name);
     logger.debug('UIRegistry', `已注销 UI 模块: ${name}`);
   }
@@ -5936,28 +5812,28 @@ class UIRegistry {
    */
   getAllControls() {
     const allPaths = new Set();
-    
+
     // ✅ 精确匹配排除列表
-  const EXCLUDED_PREFIXES = [
-    'data.csvUrl',
-    'data.antData', 
-    'data.mappedPoints',
-    'animation.currentStep',
-    'animation.lerpT',
-    'animation.animating',
-    'audio.'
-  ];
-  
-  this.modules.forEach((module, moduleName) => {
-    if (!module.controls) return;
-    
-    module.controls.forEach((control, path) => {
-      // ✅ 使用精确前缀匹配
-      if (EXCLUDED_PREFIXES.some(prefix => path.startsWith(prefix))) {
-        logger.debug('UIRegistry', `跳过运行时数据: ${path}`);
-        return;
-      }
-        
+    const EXCLUDED_PREFIXES = [
+      'data.csvUrl',
+      'data.antData',
+      'data.mappedPoints',
+      'animation.currentStep',
+      'animation.lerpT',
+      'animation.animating',
+      'audio.',
+    ];
+
+    this.modules.forEach((module) => {
+      if (!module.controls) return;
+
+      module.controls.forEach((_control: any, path: string) => {
+        // ✅ 使用精确前缀匹配
+        if (EXCLUDED_PREFIXES.some((prefix) => path.startsWith(prefix))) {
+          logger.debug('UIRegistry', `跳过运行时数据: ${path}`);
+          return;
+        }
+
         allPaths.add(path);
       });
     });
@@ -6000,16 +5876,17 @@ const LOG_LEVELS = {
   DEBUG: 0,
   INFO: 1,
   WARN: 2,
-  ERROR: 3
+  ERROR: 3,
 };
 
 class Logger {
-  private level: number;
+  // ✅ 公共属性
+  public level: number = 1; // LOG_LEVELS.INFO
+
   private enableTimestamp: boolean;
   private throttledLogs: Map<string, number>; // ✅ 新增: 用于存储节流日志的最后时间戳
 
   constructor() {
-    this.level = LOG_LEVELS.INFO;
     this.enableTimestamp = true;
     this.throttledLogs = new Map();
   }
@@ -6021,14 +5898,12 @@ class Logger {
     }
   }
 
-  private _format(level: string, module: string, message: string): string {
-    const timestamp = this.enableTimestamp 
-      ? `[${new Date().toISOString().slice(11, 23)}]` 
-      : '';
+  private _format(_level: string, module: string, message: string): string {
+    const timestamp = this.enableTimestamp ? `[${new Date().toISOString().slice(11, 23)}]` : '';
     const moduleStr = module ? `[${module}]` : '';
     return `${timestamp}${moduleStr} ${message}`;
   }
-  
+
   /**
    * ✨ 新增: 节流调试日志
    * 对同一个 key，在指定的 interval 毫秒内只打印一次。
@@ -6051,37 +5926,25 @@ class Logger {
 
   debug(module: string, message: string) {
     if (this.level <= LOG_LEVELS.DEBUG) {
-      console.log(
-        `%c${this._format('DEBUG', module, message)}`,
-        'color: #888'
-      );
+      console.log(`%c${this._format('DEBUG', module, message)}`, 'color: #888');
     }
   }
 
   info(module: string, message: string) {
     if (this.level <= LOG_LEVELS.INFO) {
-      console.log(
-        `%c${this._format('INFO', module, message)}`,
-        'color: #4a9eff'
-      );
+      console.log(`%c${this._format('INFO', module, message)}`, 'color: #4a9eff');
     }
   }
 
   warn(module: string, message: string) {
     if (this.level <= LOG_LEVELS.WARN) {
-      console.warn(
-        `%c${this._format('WARN', module, message)}`,
-        'color: #ff9800'
-      );
+      console.warn(`%c${this._format('WARN', module, message)}`, 'color: #ff9800');
     }
   }
 
   error(module: string, message: string) {
     if (this.level <= LOG_LEVELS.ERROR) {
-      console.error(
-        `%c${this._format('ERROR', module, message)}`,
-        'color: #f44336'
-      );
+      console.error(`%c${this._format('ERROR', module, message)}`, 'color: #f44336');
     }
   }
 }
@@ -6113,7 +5976,7 @@ export default logger;
  * @param {string} path - 相对于 public 目录的资源路径，例如 'data/data.csv' 或 '/presets/01.json'
  * @returns {string} - 解析后的完整 URL 路径
  */
-export function resolveAssetUrl(path) {
+export function resolveAssetUrl(path: string) {
   // import.meta.env.BASE_URL 在 vite.config.js 中配置，末尾自带'/'
   // 确保传入的路径没有开头的'/'，避免出现'//'
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
@@ -6127,7 +5990,29 @@ export function resolveAssetUrl(path) {
 ```
 /// <reference types="vite/client" />
 
+// ✅ 新增: Vite 环境变量类型
+interface ImportMetaEnv {
+  readonly VITE_APP_TITLE: string;
+  // 添加其他环境变量...
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
+
+// ✅ 保留原有的原生资源导入
 declare module '*?raw' {
+  const content: string;
+  export default content;
+}
+
+// ✅ 新增: GLSL 着色器导入支持
+declare module '*.vert?raw' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.frag?raw' {
   const content: string;
   export default content;
 }
@@ -6347,6 +6232,8 @@ function fenceLang(p) {
     "noUnusedLocals": true,        // 报告未使用的局部变量
     "noUnusedParameters": true,    // 报告未使用的参数
     "noFallthroughCasesInSwitch": true, // 报告switch语句中的fallthrough情况
+    "noUncheckedIndexedAccess": true, // 新增：对索引访问的严格检查
+    "forceConsistentCasingInFileNames": true, // 新增：文件名大小写一致
 
     /* 路径别名 */
     "baseUrl": ".",                // 解析非相对模块名的基准目录
@@ -6354,7 +6241,7 @@ function fenceLang(p) {
       "@/*": ["src/*"]            // 设置别名，例如 import ... from '@/utils/logger'
     }
   },
-  "include": ["src", "vite.config.ts"], // 告诉TS编译器需要检查哪些文件
+  "include": ["src"], // 告诉TS编译器需要检查哪些文件
   "references": [{ "path": "./tsconfig.node.json" }] // 引用Node环境的配置
 }
 

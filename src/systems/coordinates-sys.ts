@@ -1,15 +1,24 @@
 /**
  * @file coordinates-sys.js
  * @description 统一坐标系统 - 管理所有3D对象的坐标空间
- * ✅ 核心改造: 
+ * ✅ 核心改造:
  *   1. 监听统一的 'config-changed' 事件。
  *   2. 移除了方法内的 config.set() 调用，确保单向数据流。
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import config from '../config';
 
 class CoordinateSystem {
+  private eventBus: any = null;
+  private scene: THREE.Scene | null = null;
+  private initialized = false;
+  private worldRoot: THREE.Group | null = null;
+  private dataSpace: THREE.Group | null = null;
+  private particleAnchor: THREE.Group | null = null;
+  private pathAnchor: THREE.Group | null = null;
+  private lightAnchor: THREE.Group | null = null;
+
   constructor() {
     this.eventBus = null;
     this.scene = null;
@@ -22,7 +31,7 @@ class CoordinateSystem {
     this.lightAnchor = null;
   }
 
-  init({ eventBus, scene }) {
+  init({ eventBus, scene }: any) {
     if (this.initialized) {
       logger.warn('CoordinateSystem', '坐标系统已经初始化过了');
       return this;
@@ -40,8 +49,8 @@ class CoordinateSystem {
       logger.info('CoordinateSystem', '坐标系统初始化完成');
 
       return this;
-    } catch (err) {
-      logger.error('CoordinateSystem', `初始化失败: ${err.message}`);
+    } catch (err: unknown) {
+      logger.error('CoordinateSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
@@ -49,7 +58,7 @@ class CoordinateSystem {
   _createHierarchy() {
     this.worldRoot = new THREE.Group();
     this.worldRoot.name = 'WorldRoot';
-    this.scene.add(this.worldRoot);
+    if (this.scene && this.worldRoot) this.scene.add(this.worldRoot);
 
     this.dataSpace = new THREE.Group();
     this.dataSpace.name = 'DataSpace';
@@ -73,7 +82,7 @@ class CoordinateSystem {
   _bindEvents() {
     // ✅ 核心改造：监听通用配置变更事件
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
-    
+
     // ✅ 保留命令式事件
     this.eventBus.on('coordinate-system-reset', () => this.reset());
   }
@@ -81,40 +90,44 @@ class CoordinateSystem {
   _loadInitialConfig() {
     const scale = config.get('coordinates.dataSpace.scale');
     this.setDataSpaceScale(scale);
-    
+
     const rotation = config.get('coordinates.dataSpace.rotation');
-    this.dataSpace.rotation.set(rotation.x || 0, rotation.y || 0, rotation.z || 0);
+    if (this.dataSpace)
+      this.dataSpace.rotation.set(rotation.x || 0, rotation.y || 0, rotation.z || 0);
 
     const position = config.get('coordinates.dataSpace.position');
-    this.dataSpace.position.set(position.x || 0, position.y || 0, position.z || 0);
+    if (this.dataSpace)
+      this.dataSpace.position.set(position.x || 0, position.y || 0, position.z || 0);
 
     logger.info('CoordinateSystem', `✅ 配置已加载 | 缩放: ${scale}x`);
   }
-  
+
   /**
    * ✅ 新增: 统一处理配置变更
    */
-  _handleConfigChange({ key, value }) {
+  _handleConfigChange({ key, value }: { key: string; value: any }) {
     // 使用 startsWith 来捕获对对象内部属性（如 rotation.x）的更改
     if (key.startsWith('coordinates.dataSpace')) {
       switch (key) {
         case 'coordinates.dataSpace.scale':
           this.setDataSpaceScale(value);
           break;
-        
+
         // 当 rotation 或 position 的任何子属性变化时，都完整更新
         case 'coordinates.dataSpace.rotation.x':
         case 'coordinates.dataSpace.rotation.y':
         case 'coordinates.dataSpace.rotation.z':
           const rot = config.get('coordinates.dataSpace.rotation');
-          this.dataSpace.rotation.set(rot.x, rot.y, rot.z);
+          if (this.dataSpace && rot) {
+            this.dataSpace.rotation.set(rot.x ?? 0, rot.y ?? 0, rot.z ?? 0);
+          }
           break;
-          
+
         case 'coordinates.dataSpace.position.x':
         case 'coordinates.dataSpace.position.y':
         case 'coordinates.dataSpace.position.z':
           const pos = config.get('coordinates.dataSpace.position');
-          this.dataSpace.position.set(pos.x, pos.y, pos.z);
+          if (this.dataSpace) this.dataSpace.position.set(pos.x, pos.y, pos.z);
           break;
       }
     }
@@ -123,10 +136,12 @@ class CoordinateSystem {
   /**
    * 设置DataSpace整体缩放
    */
-  setDataSpaceScale(scale) {
+  setDataSpaceScale(scale: number) {
     if (scale <= 0) return;
-    this.dataSpace.scale.setScalar(scale);
-    // ❌ 移除 config.set 以避免循环
+    // ✅ 添加空值检查
+    if (this.dataSpace) {
+      this.dataSpace.scale.setScalar(scale);
+    }
     this.eventBus.emit('coordinate-system-updated', { type: 'scale', value: scale });
   }
 
@@ -143,12 +158,21 @@ class CoordinateSystem {
     this.eventBus.emit('coordinate-system-reset-completed');
   }
 
-  getParticleAnchor() { return this.particleAnchor; }
-  getPathAnchor() { return this.pathAnchor; }
-  getLightAnchor() { return this.lightAnchor; }
+  getParticleAnchor() {
+    return this.particleAnchor;
+  }
+  getPathAnchor() {
+    return this.pathAnchor;
+  }
+  getLightAnchor() {
+    return this.lightAnchor;
+  }
 
   dispose() {
-    if (this.worldRoot) this.scene.remove(this.worldRoot);
+    // ✅ 添加空值检查
+    if (this.worldRoot && this.scene) {
+      this.scene.remove(this.worldRoot);
+    }
     this.initialized = false;
     logger.info('CoordinateSystem', '坐标系统已销毁');
   }

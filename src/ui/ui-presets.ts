@@ -9,9 +9,6 @@ import presetManager from '../preset-manager';
 import config from '../config';
 import logger from '../utils/logger';
 import uiContainer from './ui-container';
-import uiBasic from './ui-basic';
-import uiPost from './ui-post';
-import uiCoordinates from './ui-coordinates';
 
 class UIPresets {
   private pane: any;
@@ -42,8 +39,8 @@ class UIPresets {
     try {
       this.pane = new Pane({
         title: '预设管理',
-        container: uiContainer.getScrollContent(),
-        expanded: true
+        container: uiContainer.getScrollContent() || undefined,
+        expanded: true,
       });
 
       this._createControls();
@@ -53,7 +50,7 @@ class UIPresets {
       logger.info('UIPresets', '预设UI已初始化');
 
       return this;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('UIPresets', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -61,7 +58,7 @@ class UIPresets {
 
   _createControls() {
     const presets = presetManager.getAvailablePresets();
-    
+
     const presetOptions = {};
     presets.forEach((preset: any) => {
       (presetOptions as any)[preset.name] = preset.name;
@@ -71,17 +68,13 @@ class UIPresets {
     this.selectedPresetName = defaultValue;
 
     const params = {
-      preset: defaultValue
+      preset: defaultValue,
     };
 
-    this.presetSelector = this.pane.addBinding(
-      params,
-      'preset',
-      {
-        label: '预设选择',
-        options: presetOptions
-      }
-    );
+    this.presetSelector = this.pane.addBinding(params, 'preset', {
+      label: '预设选择',
+      options: presetOptions,
+    });
 
     this.presetSelector.on('change', (ev: any) => {
       this.selectedPresetName = ev.value;
@@ -89,7 +82,7 @@ class UIPresets {
     });
 
     const loadButton = this.pane.addButton({
-      title: '📥 加载预设'
+      title: '📥 加载预设',
     });
 
     loadButton.on('click', () => {
@@ -101,7 +94,7 @@ class UIPresets {
     });
 
     const resetButton = this.pane.addButton({
-      title: '🔄 恢复默认'
+      title: '🔄 恢复默认',
     });
 
     resetButton.on('click', () => {
@@ -112,23 +105,19 @@ class UIPresets {
 
     const saveFolder = this.pane.addFolder({
       title: '保存当前配置',
-      expanded: false
+      expanded: false,
     });
 
     const saveParams = {
-      name: ''
+      name: '',
     };
 
-    this.saveNameInput = saveFolder.addBinding(
-      saveParams,
-      'name',
-      {
-        label: '预设名称'
-      }
-    );
+    this.saveNameInput = saveFolder.addBinding(saveParams, 'name', {
+      label: '预设名称',
+    });
 
     const saveButton = saveFolder.addButton({
-      title: '💾 保存预设'
+      title: '💾 保存预设',
     });
 
     saveButton.on('click', () => {
@@ -143,7 +132,7 @@ class UIPresets {
         alert(`预设已保存: ${name}.json\n\n请将文件放入 /presets 文件夹`);
         saveParams.name = '';
         this.saveNameInput.refresh();
-      } catch (err) {
+      } catch (err: unknown) {
         alert(`保存失败: ${(err as Error).message}`);
       }
     });
@@ -152,16 +141,17 @@ class UIPresets {
   _loadPreset(presetName: any) {
     try {
       logger.info('UIPresets', `开始加载预设: ${presetName}`);
-      
-      presetManager.loadPreset(presetName)
+
+      presetManager
+        .loadPreset(presetName)
         .then(() => {
           logger.info('UIPresets', `预设已加载: ${presetName}`);
         })
         .catch((err: any) => {
-          alert(`加载预设失败: ${err.message}`);
-          logger.error('UIPresets', `加载失败: ${err.message}`);
+          alert(`加载预设失败: ${(err as Error).message}`);
+          logger.error('UIPresets', `加载失败: ${(err as Error).message}`);
         });
-    } catch (err) {
+    } catch (err: unknown) {
       alert(`加载预设失败: ${(err as Error).message}`);
     }
   }
@@ -169,13 +159,13 @@ class UIPresets {
   _restoreDefaults() {
     try {
       logger.info('UIPresets', '开始恢复默认配置...');
-      
+
       config.reset();
-      
+
       eventBus.emit('preset-loaded', { name: 'default', data: config.getRaw() });
-      
+
       logger.info('UIPresets', '✅ 已恢复默认配置');
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('UIPresets', `恢复默认失败: ${(err as Error).message}`);
       alert(`恢复默认失败: ${(err as Error).message}`);
     }

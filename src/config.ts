@@ -7,66 +7,66 @@
  */
 import logger from './utils/logger';
 import eventBus from './event-bus';
-import { fa } from 'zod/locales';
 
 const DEFAULT_CONFIG = {
   // 🟢 新增：场景构成定义
   sceneComposition: {
     active: 'defaultMath', // 当前激活的构成方案
     compositions: {
-      defaultMath: [ // 默认的数学可视化场景
+      defaultMath: [
+        // 默认的数学可视化场景
         { type: 'math-path', enabled: true },
         { type: 'math-light', enabled: true },
-        { type: 'particle-dust', enabled: true }
+        { type: 'particle-dust', enabled: true },
       ],
       // 预留一个模型场景的例子，未来使用
       modelAnt: [
         { type: 'model', name: 'ant', path: '/models/ant.glb', enabled: true },
-        { type: 'particle-dust', enabled: false }
-      ]
-    }
+        { type: 'particle-dust', enabled: false },
+      ],
+    },
   },
 
   data: {
     csvUrl: '../data/data.csv',
-    availableDatasets: []
+    availableDatasets: [],
   },
-  
+
   animation: {
     speedFactor: 1.65,
-    loop: true
+    loop: true,
   },
 
   coordinates: {
     dataSpace: {
       scale: 1.4,
       rotation: { x: 0, y: 0, z: 0 },
-      position: { x: 0, y: 0, z: 0 }
-    }
+      position: { x: 0, y: 0, z: 0 },
+    },
   },
-  
+
   material: {
     path: {
-      emissiveColor: '#F0B7B7'
+      emissiveColor: '#F0B7B7',
     },
     particles: {
-      emissiveColor: '#AF85B7'
+      emissiveColor: '#AF85B7',
     },
     movingLight: {
-      emissiveColor: '#FFFFFF'
-    }
+      emissiveColor: '#FFFFFF',
+    },
   },
 
   lighting: {
     ambient: {
       color: '#ffffff',
-      intensity: 0.2
+      intensity: 0.2,
     },
     directional: {
       color: '#ffffff',
       intensity: 1.0,
-      position: { x: 5, y: 10, z: 7.5 }
-    }
+      position: { x: 5, y: 10, z: 7.5 },
+    },
   },
 
   particles: {
@@ -83,19 +83,19 @@ const DEFAULT_CONFIG = {
     systemScale: 1.0,
     rotationSpeed: 0,
     rotationTiltXZ: 0,
-    rotationTiltXY: 0
+    rotationTiltXY: 0,
   },
-  
+
   path: {
     depthIntensity: 0.5,
     depthEnhanced: true,
-    scale: 1.0
+    scale: 1.0,
   },
-  
+
   environment: {
     skybox: {
       enabled: true,
-      path: '/skybox/Medium_Monochrome_Nebulae/'
+      path: '/skybox/Medium_Monochrome_Nebulae/',
     },
     fogDensity: 0.015,
     fogVolumeScale: 1.0,
@@ -106,49 +106,49 @@ const DEFAULT_CONFIG = {
     yScale: 1.0,
     cameraDistFactor: 2.5,
     ambientLightIntensity: 0.5,
-    directionalLightIntensity: 0.8
+    directionalLightIntensity: 0.8,
   },
-  
+
   postprocess: {
     enabled: true,
-  
+
     // 光晕效果 (Bloom)
     bloom: {
       enabled: false,
-      intensity: 1.0,         // 效果强度
+      intensity: 1.0, // 效果强度
       luminanceThreshold: 0.1, // 亮度阈值
       luminanceSmoothing: 0.2, // 阈值平滑度
-      mipmapBlur: true,         // 是否使用 Mipmap 模糊
+      mipmapBlur: true, // 是否使用 Mipmap 模糊
     },
 
     // 景深效果 (Bokeh)
     bokeh: {
       enabled: false,
-      focus: 40.0,              // 焦距
-      dof: 0.02,                // 景深范围
-      aperture: 0.025,          // 光圈大小
-      maxBlur: 0.01,            // 最大模糊
+      focus: 40.0, // 焦距
+      dof: 0.02, // 景深范围
+      aperture: 0.025, // 光圈大小
+      maxBlur: 0.01, // 最大模糊
     },
 
     // 色差效果 (Chromatic Aberration)
     chromaticAberration: {
       enabled: false,
-      offset: { x: 0.001, y: 0.001 } // 颜色偏移量
+      offset: { x: 0.001, y: 0.001 }, // 颜色偏移量
     },
 
     // 胶片效果 (Film) - 替代旧的 Noise 和 Scanline
     film: {
       enabled: false,
-      scanlineIntensity: 0.3,   // 扫描线强度
-      noiseIntensity: 0.3,      // 噪点强度
-      scanlineCount: 2048,      // 扫描线数量
-      grayscale: false          // 是否灰度
+      scanlineIntensity: 0.3, // 扫描线强度
+      noiseIntensity: 0.3, // 噪点强度
+      scanlineCount: 2048, // 扫描线数量
+      grayscale: false, // 是否灰度
     },
-  
+
     // 色彩调整效果
     brightnessContrast: { enabled: false, brightness: 0.0, contrast: 0.0 },
   },
-  
+
   camera: {
     mode: 'perspective',
     view: 'free',
@@ -163,14 +163,14 @@ const DEFAULT_CONFIG = {
       smoothTime: 0.05,
       draggingSmoothTime: 0.25,
       minDistance: 1,
-      maxDistance: 100
-    }
-  }
+      maxDistance: 100,
+    },
+  },
 };
 
 function deepClone(obj: any): any {
   if (obj === null || typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) return obj.map(item => deepClone(item));
+  if (Array.isArray(obj)) return obj.map((item) => deepClone(item));
   const cloned: any = {};
   for (const key in obj) {
     if ((obj as Object).hasOwnProperty.call(obj, key)) {
@@ -194,12 +194,12 @@ class ConfigManager {
       logger.warn('Config', '配置已经初始化过了');
       return;
     }
-    
+
     try {
       this._config = deepClone(DEFAULT_CONFIG);
       this.initialized = true;
       logger.info('Config', '配置初始化完成');
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('Config', `配置初始化失败: ${(err as Error).message}`);
       throw err as Error;
     }
@@ -215,11 +215,12 @@ class ConfigManager {
       const keys = key.split('.');
       let value: any = this._config as any;
       for (const k of keys) {
+        if (!k) continue; // ✅ 跳过空字符串
         if (value === null || value === undefined) return null;
-        value = value[k];
+        if (value) value = value[k];
       }
       return value;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('Config', `获取配置异常 [${key}]: ${(err as Error).message}`);
       return null;
     }
@@ -235,16 +236,17 @@ class ConfigManager {
       let target: any = this._config as any;
       for (let i = 0; i < keys.length - 1; i++) {
         const k = keys[i];
-        if (!target[k] || typeof target[k] !== 'object') {
+        if (!k) continue; // ✅ 跳过 undefined
+        if (k && (!target[k] || typeof target[k] !== 'object')) {
           target[k] = {};
         }
         target = target[k];
       }
-      const lastKey = keys[keys.length - 1];
-      if (target[lastKey] !== value) {
-        target[lastKey] = value;
+      const lastKey = keys[keys.length - 1]!; // ✅ 非空断言
+      if (target[lastKey!] !== value) {
+        target[lastKey!] = value;
         eventBus.emit('config-changed', { key, value });
-        
+
         // ✅ 核心修正: 使用节流日志替换普通日志，防止刷屏
         const valueStr = typeof value === 'object' ? JSON.stringify(value) : String(value);
         logger.debugThrottled(
@@ -255,13 +257,13 @@ class ConfigManager {
         );
       }
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('Config', `设置配置异常 [${key}]: ${(err as Error).message}`);
       return false;
     }
   }
 
-  applyPresetData(presetData: any) {
+  applyPresetData(_presetData: any) {
     logger.warn('Config', 'applyPresetData 已被弃用，请使用 PresetManager 的新加载逻辑');
     return true;
   }
@@ -270,13 +272,16 @@ class ConfigManager {
     const oldConfig = this._config;
     this._config = deepClone(DEFAULT_CONFIG);
     logger.info('Config', '配置已重置为默认值');
-    
+
     // 触发所有顶级key的更新通知
     Object.keys(DEFAULT_CONFIG as any).forEach((topKey: string) => {
-        // 比较新旧值，只有变化时才发出事件，避免不必要的刷新
-        if (JSON.stringify((oldConfig as any)[topKey]) !== JSON.stringify((DEFAULT_CONFIG as any)[topKey])) {
-            eventBus.emit('config-changed', { key: topKey, value: (DEFAULT_CONFIG as any)[topKey] });
-        }
+      // 比较新旧值，只有变化时才发出事件，避免不必要的刷新
+      if (
+        JSON.stringify((oldConfig as any)[topKey]) !==
+        JSON.stringify((DEFAULT_CONFIG as any)[topKey])
+      ) {
+        eventBus.emit('config-changed', { key: topKey, value: (DEFAULT_CONFIG as any)[topKey] });
+      }
     });
   }
 }

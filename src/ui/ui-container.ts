@@ -26,11 +26,11 @@ class UIContainer {
       logger.error('UIContainer', '初始化失败: 未找到 #left-panel 元素。');
       return;
     }
-    
+
     this._createScrollContent();
     this._applyStyles();
     this._setupScrollBehavior();
-    
+
     this.initialized = true;
     logger.info('UIContainer', 'UI 容器已在 #left-panel 中初始化');
   }
@@ -48,27 +48,30 @@ class UIContainer {
       overflowY: 'auto',
       overflowX: 'hidden',
       boxSizing: 'border-box',
-      scrollbarWidth: 'thin', 
-      scrollbarColor: 'var(--border-color, #75715e) var(--background-color, #272822)'
+      scrollbarWidth: 'thin',
+      scrollbarColor: 'var(--border-color, #75715e) var(--background-color, #272822)',
     });
-    
+
     // Terminal.css 风格的样式现在在 public/style.css 中统一管理
-// 这里只保留必要的滚动条行为设置
-const style = document.createElement('style');
-style.textContent = `
+    // 这里只保留必要的滚动条行为设置
+    const style = document.createElement('style');
+    style.textContent = `
   /* 确保滚动内容使用等宽字体 */
   #ui-scroll-content {
     font-family: var(--font-mono, 'Fira Code', monospace);
   }
 `;
-document.head.appendChild(style);
-
+    document.head.appendChild(style);
   }
 
   private _setupScrollBehavior() {
-    this.scrollContent!.addEventListener('wheel', (e) => {
-      e.stopPropagation();
-    }, { passive: false });
+    this.scrollContent!.addEventListener(
+      'wheel',
+      (e) => {
+        e.stopPropagation();
+      },
+      { passive: false }
+    );
   }
 
   getScrollContent(): HTMLElement | null {
@@ -77,7 +80,7 @@ document.head.appendChild(style);
 
   dispose() {
     if (this.panelContainer) {
-      this.panelContainer.innerHTML = ''; 
+      this.panelContainer.innerHTML = '';
     }
     this.panelContainer = null;
     this.scrollContent = null;

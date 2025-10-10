@@ -5,6 +5,8 @@
 import logger from '../utils/logger';
 
 class UIRegistry {
+  private modules: Map<string, any> = new Map();
+
   constructor() {
     this.modules = new Map();
   }
@@ -14,12 +16,12 @@ class UIRegistry {
    * @param {string} name - 模块名称
    * @param {Object} module - UI模块实例(必须有controls Map)
    */
-  register(name, module) {
+  register(name: string, module: any) {
     if (!module || !module.controls) {
       logger.warn('UIRegistry', `注册失败: ${name} 没有 controls 属性`);
       return;
     }
-    
+
     this.modules.set(name, module);
     logger.debug('UIRegistry', `已注册 UI 模块: ${name} (${module.controls.size} 个控件)`);
   }
@@ -27,7 +29,7 @@ class UIRegistry {
   /**
    * 注销UI模块
    */
-  unregister(name) {
+  unregister(name: string) {
     this.modules.delete(name);
     logger.debug('UIRegistry', `已注销 UI 模块: ${name}`);
   }
@@ -38,28 +40,28 @@ class UIRegistry {
    */
   getAllControls() {
     const allPaths = new Set();
-    
+
     // ✅ 精确匹配排除列表
-  const EXCLUDED_PREFIXES = [
-    'data.csvUrl',
-    'data.antData', 
-    'data.mappedPoints',
-    'animation.currentStep',
-    'animation.lerpT',
-    'animation.animating',
-    'audio.'
-  ];
-  
-  this.modules.forEach((module, moduleName) => {
-    if (!module.controls) return;
-    
-    module.controls.forEach((control, path) => {
-      // ✅ 使用精确前缀匹配
-      if (EXCLUDED_PREFIXES.some(prefix => path.startsWith(prefix))) {
-        logger.debug('UIRegistry', `跳过运行时数据: ${path}`);
-        return;
-      }
-        
+    const EXCLUDED_PREFIXES = [
+      'data.csvUrl',
+      'data.antData',
+      'data.mappedPoints',
+      'animation.currentStep',
+      'animation.lerpT',
+      'animation.animating',
+      'audio.',
+    ];
+
+    this.modules.forEach((module) => {
+      if (!module.controls) return;
+
+      module.controls.forEach((_control: any, path: string) => {
+        // ✅ 使用精确前缀匹配
+        if (EXCLUDED_PREFIXES.some((prefix) => path.startsWith(prefix))) {
+          logger.debug('UIRegistry', `跳过运行时数据: ${path}`);
+          return;
+        }
+
         allPaths.add(path);
       });
     });

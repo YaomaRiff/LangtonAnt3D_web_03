@@ -13,30 +13,40 @@ import postprocessSys from './postprocess-sys';
 
 class PathSystem {
   private eventBus: any;
-  private scene: THREE.Scene | null;
+
+  // ✅ 公共属性
+  public scene: THREE.Scene | null = null;
+  public isEnabled: boolean = true;
+
   private coordinateSystem: any;
   private initialized: boolean;
   private pathLine: THREE.Line | null;
   private allPoints: THREE.Vector3[];
   private currentDrawIndex: number;
   private pathContainer: THREE.Group | null;
-  private isEnabled: boolean; // 补充
 
   constructor() {
     this.eventBus = null;
-    this.scene = null;
+
     this.coordinateSystem = null;
     this.initialized = false;
-    
+
     this.pathLine = null;
     this.allPoints = [];
     this.currentDrawIndex = 0;
-    
+
     this.pathContainer = null;
-    this.isEnabled = true; // 补充
   }
 
-  init({ eventBus, scene, coordinateSystem }: { eventBus: any; scene: THREE.Scene; coordinateSystem: any; }) {
+  init({
+    eventBus,
+    scene,
+    coordinateSystem,
+  }: {
+    eventBus: any;
+    scene: THREE.Scene;
+    coordinateSystem: any;
+  }) {
     if (this.initialized) {
       logger.warn('PathSystem', '路径系统已经初始化过了');
       return this;
@@ -49,10 +59,10 @@ class PathSystem {
 
       this.pathContainer = new THREE.Group();
       this.pathContainer.name = 'PathContainer';
-      
+
       const initialScale = config.get('path.scale') || 1.0;
       this.pathContainer.scale.setScalar(initialScale);
-      
+
       const pathAnchor = this.coordinateSystem.getPathAnchor();
       pathAnchor.add(this.pathContainer);
 
@@ -62,7 +72,7 @@ class PathSystem {
       logger.info('PathSystem', '路径系统初始化完成');
 
       return this;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('PathSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -93,7 +103,7 @@ class PathSystem {
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
   }
 
-  _handleConfigChange({ key, value }: { key: string; value: any; }) {
+  _handleConfigChange({ key, value }: { key: string; value: any }) {
     if (!this.pathLine) return;
 
     switch (key) {
@@ -117,20 +127,20 @@ class PathSystem {
       this.pathContainer.remove(this.pathLine);
       this.pathLine.geometry.dispose();
       // ✅ 核心修正: 不要销毁由 materialSys 管理的共享材质
-      // this.pathLine.material.dispose(); 
+      // this.pathLine.material.dispose();
     }
 
     const geometry = new THREE.BufferGeometry();
     const maxPoints = this.allPoints.length;
     const positions = new Float32Array(maxPoints * 3);
-    
+
     for (let i = 0; i < maxPoints; i++) {
       const point = this.allPoints[i];
-      positions[i * 3] = point.x;
-      positions[i * 3 + 1] = point.y;
-      positions[i * 3 + 2] = point.z;
+      positions[i * 3] = point?.x || 0;
+      positions[i * 3 + 1] = point?.y || 0;
+      positions[i * 3 + 2] = point?.z || 0;
     }
-    
+
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setDrawRange(0, 0);
 
@@ -144,10 +154,10 @@ class PathSystem {
     this.pathLine = new THREE.Line(geometry, material);
     this.pathLine.name = 'PathLine';
     this.pathLine.userData = { glow: true };
-    
+
     // ✅ 核心修正: 使用新的方法将路径添加到辉光场景
     postprocessSys.addGlowObject(this.pathLine);
-    
+
     this.pathContainer?.add(this.pathLine);
 
     this.currentDrawIndex = 0;
@@ -161,7 +171,7 @@ class PathSystem {
     let minDist = Infinity;
 
     for (let i = this.currentDrawIndex; i < this.allPoints.length; i++) {
-      const dist = position.distanceTo(this.allPoints[i]);
+      const dist = this.allPoints[i] ? position.distanceTo(this.allPoints[i]!) : Infinity;
       if (dist < minDist) {
         minDist = dist;
         closestIndex = i;
@@ -194,10 +204,10 @@ class PathSystem {
     }
   }
 
-  update(delta: number) {
+  update(_delta: number) {
     // 占位
   }
-  
+
   // ✅ 补充: 恢复 enable/disable 方法以兼容 scene-director-sys
   enable() {
     this.isEnabled = true;

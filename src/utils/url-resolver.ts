@@ -11,7 +11,7 @@
  * @param {string} path - 相对于 public 目录的资源路径，例如 'data/data.csv' 或 '/presets/01.json'
  * @returns {string} - 解析后的完整 URL 路径
  */
-export function resolveAssetUrl(path) {
+export function resolveAssetUrl(path: string) {
   // import.meta.env.BASE_URL 在 vite.config.js 中配置，末尾自带'/'
   // 确保传入的路径没有开头的'/'，避免出现'//'
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;

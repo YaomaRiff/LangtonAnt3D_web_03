@@ -8,19 +8,23 @@ import config from '../config';
 // 引入所有受其控制的视觉系统
 import pathSys from './path-sys';
 import mathLightSys from './math-light-sys';
-import particlesSys from './particles-sys.js';
-// import modelSys from './model-sys.js'; // 未来用于加载模型
+import particlesSys from './particles-sys';
+// import modelSys from './model-sys';; // 未来用于加载模型
 
 class SceneDirector {
+  private eventBus: any = null;
+  private initialized = false;
+  private components: Map<string, any> = new Map();
+
   constructor() {
     this.eventBus = null;
     this.initialized = false;
     this.components = new Map();
   }
 
-  init({ eventBus }) {
+  init({ eventBus }: { eventBus: any }) {
     if (this.initialized) return this;
-    
+
     this.eventBus = eventBus;
     this._registerComponents();
     this._bindEvents();
@@ -46,7 +50,7 @@ class SceneDirector {
   }
 
   _bindEvents() {
-    this.eventBus.on('config-changed', ({ key, value }) => {
+    this.eventBus.on('config-changed', ({ key, value }: { key: string; value: any }) => {
       if (key === 'sceneComposition.active') {
         logger.info('SceneDirector', `检测到场景构成切换: ${value}`);
         this._applyCurrentComposition();
@@ -69,14 +73,14 @@ class SceneDirector {
     logger.info('SceneDirector', `正在应用场景构成: "${activeCompositionName}"`);
 
     // 1. 先禁用所有受控组件，确保一个干净的状态
-    this.components.forEach(component => {
+    this.components.forEach((component) => {
       if (typeof component.disable === 'function') {
         component.disable();
       }
     });
 
     // 2. 根据配置启用所需的组件
-    composition.forEach(item => {
+    composition.forEach((item: any) => {
       const component = this.components.get(item.type);
       if (component) {
         if (item.enabled && typeof component.enable === 'function') {

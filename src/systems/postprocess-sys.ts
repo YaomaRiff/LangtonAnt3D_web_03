@@ -13,7 +13,6 @@
 // 2.禁止添加不稳定的 DotScreenEffect 和 HueSaturationEffect，这条注释不允许删除！
 // 3.postprocessing库没有原生的扫描线组件！这条注释不允许删除！
 
-
 import * as THREE from 'three';
 import {
   EffectComposer,
@@ -26,7 +25,7 @@ import {
   BrightnessContrastEffect,
   Selection,
   BlendFunction,
-  NoiseEffect
+  NoiseEffect,
 } from 'postprocessing';
 import logger from '../utils/logger';
 import config from '../config';
@@ -53,7 +52,15 @@ class PostprocessSystem {
     this.selection = new Selection();
   }
 
-  init({ scene, camera, renderer }: { scene: THREE.Scene; camera: THREE.Camera; renderer: THREE.WebGLRenderer; }) {
+  init({
+    scene,
+    camera,
+    renderer,
+  }: {
+    scene: THREE.Scene;
+    camera: THREE.Camera;
+    renderer: THREE.WebGLRenderer;
+  }) {
     if (this.initialized) return this;
     try {
       this.mainScene = scene;
@@ -63,7 +70,7 @@ class PostprocessSystem {
       if (!this.camera) {
         throw new Error('相机对象未提供，无法初始化后处理系统');
       }
-      
+
       this._createComposer();
       this._bindEvents();
       this.updateAllEffectsFromConfig();
@@ -71,7 +78,7 @@ class PostprocessSystem {
       this.initialized = true;
       logger.info('PostprocessSystem', '✅ 后处理系统初始化完成 (v8.2)');
       return this;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('PostprocessSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -89,9 +96,9 @@ class PostprocessSystem {
     if (!this.renderer || !this.mainScene || !this.camera) return;
 
     this.composer = new EffectComposer(this.renderer, {
-      frameBufferType: THREE.UnsignedByteType
+      frameBufferType: THREE.UnsignedByteType,
     });
-    
+
     // 尺寸将在第一次 handleResize 时正确设置
     // this.composer.setSize(window.innerWidth, window.innerHeight);
 
@@ -101,51 +108,51 @@ class PostprocessSystem {
 
     // 2. 创建所有效果实例
     this._createAllEffects();
-    
+
     // 将效果组合到 EffectPass 中
     if (this.bloomEffect) {
-        this.composer.addPass(new EffectPass(this.camera, this.bloomEffect));
+      this.composer.addPass(new EffectPass(this.camera, this.bloomEffect));
     }
     if (this.bokehEffect) {
-        this.composer.addPass(new EffectPass(this.camera, this.bokehEffect));
+      this.composer.addPass(new EffectPass(this.camera, this.bokehEffect));
     }
-    
+
     const remainingEffects = [
-        this.chromaticAberrationEffect,
-        this.filmEffect,
-        this.scanlineEffect,
-        this.brightnessContrastEffect
+      this.chromaticAberrationEffect,
+      this.filmEffect,
+      this.scanlineEffect,
+      this.brightnessContrastEffect,
     ].filter(Boolean) as any[];
 
     if (remainingEffects.length > 0) {
-        const finalPass = new EffectPass(this.camera, ...remainingEffects);
-        this.composer!.addPass(finalPass);
+      const finalPass = new EffectPass(this.camera, ...remainingEffects);
+      this.composer!.addPass(finalPass);
     }
   }
-  
+
   private _createAllEffects() {
     this.bloomEffect = new SelectiveBloomEffect(this.mainScene as any, this.camera as any, {
       blendFunction: BlendFunction.ADD,
-      selection: this.selection,
+      // selection: this.selection,
       mipmapBlur: true,
     });
-    
+
     this.bokehEffect = new BokehEffect({
-        focus: 40.0,
-        dof: 0.02,
-        aperture: 0.025,
-        maxBlur: 0.01
+      focus: 40.0,
+      dof: 0.02,
+      aperture: 0.025,
+      maxBlur: 0.01,
     });
 
     this.chromaticAberrationEffect = new ChromaticAberrationEffect();
     this.filmEffect = new NoiseEffect({ blendFunction: BlendFunction.SOFT_LIGHT });
     this.brightnessContrastEffect = new BrightnessContrastEffect();
-    
+
     this._createScanlineEffect();
   }
 
   private _createScanlineEffect() {
-    const data = new Uint8Array([ 255, 255, 255, 255, 0, 0, 0, 255 ]);
+    const data = new Uint8Array([255, 255, 255, 255, 0, 0, 0, 255]);
     const texture = new THREE.DataTexture(data, 1, 2, THREE.RGBAFormat);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
@@ -154,7 +161,7 @@ class PostprocessSystem {
 
     this.scanlineEffect = new TextureEffect({
       blendFunction: BlendFunction.OVERLAY,
-      texture
+      texture,
     });
   }
 
@@ -170,17 +177,17 @@ class PostprocessSystem {
 
   private _bindEvents() {
     eventBus.on('config-changed', this._handleConfigChange.bind(this));
-    
+
     eventBus.on('camera-changed', (camera: THREE.Camera) => {
-        this.camera = camera;
-        if (this.composer) {
-            this.composer.passes.forEach(pass => {
-                if (pass instanceof RenderPass) pass.camera = camera;
-                // EffectPass 的相机是构造时传入的，通常不需要动态修改
-                // 但如果需要，可以访问 pass.effects.forEach(e => e.camera = camera)
-            });
-            logger.info('PostprocessSystem', '相机已更新');
-        }
+      this.camera = camera;
+      if (this.composer) {
+        this.composer.passes.forEach((pass) => {
+          if (pass instanceof RenderPass) (pass as any).camera = camera;
+          // EffectPass 的相机是构造时传入的，通常不需要动态修改
+          // 但如果需要，可以访问 pass.effects.forEach(e => e.camera = camera)
+        });
+        logger.info('PostprocessSystem', '相机已更新');
+      }
     });
   }
 
@@ -212,50 +219,55 @@ class PostprocessSystem {
           this.bokehEffect.uniforms.get('dof')!.value = cfg.dof;
           this.bokehEffect.uniforms.get('aperture')!.value = cfg.aperture;
           this.bokehEffect.uniforms.get('maxBlur')!.value = cfg.maxBlur;
-          this.bokehEffect.blendMode.blendFunction = cfg.enabled ? BlendFunction.NORMAL : BlendFunction.SKIP;
+          this.bokehEffect.blendMode.blendFunction = cfg.enabled
+            ? BlendFunction.NORMAL
+            : BlendFunction.SKIP;
         }
         break;
-        
+
       case 'chromaticAberration':
         if (this.chromaticAberrationEffect) {
-            const offsetX = cfg.offset?.x ?? 0.0;
-            const offsetY = cfg.offset?.y ?? 0.0;
-            this.chromaticAberrationEffect.offset.set(offsetX, offsetY);
-            this.chromaticAberrationEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
+          const offsetX = cfg.offset?.x ?? 0.0;
+          const offsetY = cfg.offset?.y ?? 0.0;
+          this.chromaticAberrationEffect.offset.set(offsetX, offsetY);
+          this.chromaticAberrationEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
         }
         break;
-        
+
       case 'film':
         const filmEnabled = cfg.enabled;
         if (this.filmEffect) {
-            this.filmEffect.blendMode.opacity.value = filmEnabled ? cfg.noiseIntensity : 0.0;
+          this.filmEffect.blendMode.opacity.value = filmEnabled ? cfg.noiseIntensity : 0.0;
         }
         if (this.scanlineEffect && this.scanlineTexture) {
-            this.scanlineEffect.blendMode.opacity.value = filmEnabled ? cfg.scanlineIntensity : 0.0;
-            const height = this.composer?.getRenderer().getSize(new THREE.Vector2()).height || 1080;
-            this.scanlineTexture.repeat.y = Math.max(1, Math.floor(cfg.scanlineCount / 2 * (height / 1080)));
-            this.scanlineTexture.needsUpdate = true;
+          this.scanlineEffect.blendMode.opacity.value = filmEnabled ? cfg.scanlineIntensity : 0.0;
+          const height = this.composer?.getRenderer().getSize(new THREE.Vector2()).height || 1080;
+          this.scanlineTexture.repeat.y = Math.max(
+            1,
+            Math.floor((cfg.scanlineCount / 2) * (height / 1080))
+          );
+          this.scanlineTexture.needsUpdate = true;
         }
         break;
-          
+
       case 'brightnessContrast':
-          if (this.brightnessContrastEffect) {
-              this.brightnessContrastEffect.uniforms.get('brightness')!.value = cfg.brightness;
-              this.brightnessContrastEffect.uniforms.get('contrast')!.value = cfg.contrast;
-              this.brightnessContrastEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
-          }
-          break;
+        if (this.brightnessContrastEffect) {
+          this.brightnessContrastEffect.uniforms.get('brightness')!.value = cfg.brightness;
+          this.brightnessContrastEffect.uniforms.get('contrast')!.value = cfg.contrast;
+          this.brightnessContrastEffect.blendMode.opacity.value = cfg.enabled ? 1.0 : 0.0;
+        }
+        break;
     }
   }
-  
+
   updateAllEffectsFromConfig() {
     const postprocessConfig = config.get('postprocess');
     if (postprocessConfig) {
-        Object.keys(postprocessConfig).forEach(key => {
-            if (key !== 'enabled') {
-                this.updateEffectFromConfig(`postprocess.${key}`);
-            }
-        });
+      Object.keys(postprocessConfig).forEach((key) => {
+        if (key !== 'enabled') {
+          this.updateEffectFromConfig(`postprocess.${key}`);
+        }
+      });
     }
   }
 

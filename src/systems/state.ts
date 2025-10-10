@@ -15,13 +15,13 @@ const DEFAULT_STATE = {
     currentStep: 0,
     lerpT: 0,
     animating: false,
-  }
+  },
 };
 
 // 深度克隆函数
 function deepClone(obj: any): any {
   if (obj === null || typeof obj !== 'object') return obj;
-  if (Array.isArray(obj)) return obj.map(item => deepClone(item));
+  if (Array.isArray(obj)) return obj.map((item) => deepClone(item));
   const cloned: { [key: string]: any } = {};
   for (const key in obj) {
     if (obj.hasOwnProperty(key)) {
@@ -40,11 +40,12 @@ class StateManager {
       const keys = key.split('.');
       let value = this._state as any;
       for (const k of keys) {
+        if (!k) continue; // ✅ 跳过空字符串
         if (value === null || value === undefined) return null;
-        value = value[k];
+        if (value) value = value[k];
       }
       return value;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('State', `获取状态异常 [${key}]: ${(err as Error).message}`);
       return null;
     }
@@ -56,19 +57,20 @@ class StateManager {
       let target = this._state as any;
       for (let i = 0; i < keys.length - 1; i++) {
         const k = keys[i];
-        if (!target[k] || typeof target[k] !== 'object') {
+        if (!k) continue; // ✅ 跳过 undefined
+        if (k && (!target[k] || typeof target[k] !== 'object')) {
           target[k] = {};
         }
         target = target[k];
       }
       const lastKey = keys[keys.length - 1];
-      if (target[lastKey] !== value) {
-        target[lastKey] = value;
+      if (target[lastKey!] !== value) {
+        target[lastKey!] = value;
         // ✅ 发出独立的 state-changed 事件
         eventBus.emit('state-changed', { key, value });
       }
       return true;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('State', `设置状态异常 [${key}]: ${(err as Error).message}`);
       return false;
     }
@@ -77,11 +79,11 @@ class StateManager {
   reset() {
     this._state = deepClone(DEFAULT_STATE);
     logger.info('State', '状态已重置为默认值');
-    Object.keys(DEFAULT_STATE).forEach(topKey => {
+    Object.keys(DEFAULT_STATE).forEach((topKey) => {
       eventBus.emit('state-changed', { key: topKey, value: (DEFAULT_STATE as any)[topKey] });
     });
   }
-  
+
   getRaw() {
     return this._state;
   }

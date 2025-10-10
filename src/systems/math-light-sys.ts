@@ -5,14 +5,16 @@
  */
 import * as THREE from 'three';
 import logger from '../utils/logger';
-import config from '../config';
+
 import materialSys from './material-sys';
 import postprocessSys from './postprocess-sys';
 
-
 class MathLightSystem {
   private eventBus: any;
-  private scene: THREE.Scene | null;
+
+  // ✅ 公共属性
+  public scene: THREE.Scene | null = null;
+
   private coordinateSystem: any;
   private initialized: boolean;
   private lightMesh: any;
@@ -20,15 +22,23 @@ class MathLightSystem {
 
   constructor() {
     this.eventBus = null;
-    this.scene = null;
+
     this.coordinateSystem = null;
     this.initialized = false;
-    
+
     this.lightMesh = null;
     this.currentPosition = new THREE.Vector3();
   }
 
-  init({ eventBus, scene, coordinateSystem }) {
+  init({
+    eventBus,
+    scene,
+    coordinateSystem,
+  }: {
+    eventBus: any;
+    scene: THREE.Scene;
+    coordinateSystem: any;
+  }) {
     if (this.initialized) {
       logger.warn('MathLightSystem', '移动光点已经初始化过了');
       return this;
@@ -46,40 +56,42 @@ class MathLightSystem {
       logger.info('MathLightSystem', '移动光点(数学版)初始化完成');
 
       return this;
-    } catch (err) {
-      logger.error('MathLightSystem', `初始化失败: ${err.message}`);
+    } catch (err: unknown) {
+      logger.error('MathLightSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
   }
 
   _createLight() {
-
     // 🟢 补上丢失的 geometry 定义
     const geometry = new THREE.SphereGeometry(0.5, 16, 16);
 
     // 从 MaterialService 获取预创建的材质
-const material = materialSys.get('movingLight');
+    const material = materialSys.get('movingLight');
 
-if (!material) {
-  logger.error('MathLightSystem', '无法从 MaterialService 获取 "movingLight" 材质，光点无法创建。');
-  return;
-}
-    
+    if (!material) {
+      logger.error(
+        'MathLightSystem',
+        '无法从 MaterialService 获取 "movingLight" 材质，光点无法创建。'
+      );
+      return;
+    }
+
     this.lightMesh = new THREE.Mesh(geometry, material);
     this.lightMesh.name = 'MovingLight_Math';
     this.lightMesh.visible = false;
     this.lightMesh.userData = { glow: true };
-    
+
     const lightAnchor = this.coordinateSystem.getLightAnchor();
     lightAnchor.add(this.lightMesh);
 
     postprocessSys.addGlowObject(this.lightMesh); // **注册到新的辉光系统**
-    
+
     logger.debug('MathLightSystem', '光点球体已创建');
   }
 
   _bindEvents() {
-    this.eventBus.on('moving-light-position-updated', (position) => {
+    this.eventBus.on('moving-light-position-updated', (position: any) => {
       this.updatePosition(position);
     });
 
@@ -90,14 +102,14 @@ if (!material) {
     // ✅ 核心改造：监听通用配置变更事件
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
   }
-  
+
   /**
    * ✅ 新增: 统一处理配置变更
    * @param {{key: string, value: any}} param0
    */
-  _handleConfigChange({ key, value }) {
+  _handleConfigChange({ key, value }: { key: string; value: any }) {
     if (!this.lightMesh) return;
-    
+
     switch (key) {
       case 'particles.pathPointSize':
         this.lightMesh.scale.setScalar(value);
@@ -105,7 +117,7 @@ if (!material) {
     }
   }
 
-  updatePosition(position) {
+  updatePosition(position: any) {
     if (this.lightMesh && position) {
       this.currentPosition.copy(position);
       this.lightMesh.position.copy(position);

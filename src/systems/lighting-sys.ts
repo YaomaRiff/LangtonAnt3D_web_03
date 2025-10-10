@@ -3,8 +3,8 @@
  * @description 光照系统 - 管理场景中的环境光与直接光
  */
 import * as THREE from 'three';
-import logger from '../utils/logger.js';
-import config from '../config.js';
+import logger from '../utils/logger';
+import config from '../config';
 
 class LightingSystem {
   private scene: THREE.Scene | null;
@@ -19,7 +19,7 @@ class LightingSystem {
     this.directionalLight = null;
   }
 
-  init({ scene }) {
+  init({ scene }: any) {
     if (this.initialized) return this;
     this.scene = scene;
 
@@ -35,40 +35,38 @@ class LightingSystem {
     // 1. 环境光 (AmbientLight)
     // 为整个场景提供基础光照，防止模型暗部全黑
     const ambientConfig = config.get('lighting.ambient');
-    this.ambientLight = new THREE.AmbientLight(
-      ambientConfig.color,
-      ambientConfig.intensity
-    );
+    this.ambientLight = new THREE.AmbientLight(ambientConfig.color, ambientConfig.intensity);
     this.ambientLight.name = 'AmbientLight';
-    this.scene.add(this.ambientLight);
+    if (this.scene) {
+      this.scene.add(this.ambientLight);
+    }
 
     // 2. 平行光 (DirectionalLight)
     // 模拟一个无限远的光源（如太阳），产生高光和阴影
     const dirConfig = config.get('lighting.directional');
-    this.directionalLight = new THREE.DirectionalLight(
-      dirConfig.color,
-      dirConfig.intensity
-    );
+    this.directionalLight = new THREE.DirectionalLight(dirConfig.color, dirConfig.intensity);
     this.directionalLight.name = 'DirectionalLight';
     this.directionalLight.position.set(
       dirConfig.position.x,
       dirConfig.position.y,
       dirConfig.position.z
     );
-    this.scene.add(this.directionalLight);
+    if (this.scene) {
+      this.scene.add(this.directionalLight);
+    }
 
     logger.debug('LightingSystem', '环境光和平行光已创建');
   }
 
   // 未来可以添加更新光照参数的方法，例如通过UI
-  updateAmbient(color, intensity) {
+  updateAmbient(color: any, intensity: number) {
     if (this.ambientLight) {
       this.ambientLight.color.set(color);
       this.ambientLight.intensity = intensity;
     }
   }
-  
-  updateDirectional(color, intensity) {
+
+  updateDirectional(color: any, intensity: number) {
     if (this.directionalLight) {
       this.directionalLight.color.set(color);
       this.directionalLight.intensity = intensity;
@@ -76,8 +74,13 @@ class LightingSystem {
   }
 
   dispose() {
-    if (this.ambientLight) this.scene.remove(this.ambientLight);
-    if (this.directionalLight) this.scene.remove(this.directionalLight);
+    // ✅ 添加空值检查
+    if (this.ambientLight && this.scene) {
+      this.scene.remove(this.ambientLight);
+    }
+    if (this.directionalLight && this.scene) {
+      this.scene.remove(this.directionalLight);
+    }
     this.ambientLight = null;
     this.directionalLight = null;
     this.initialized = false;

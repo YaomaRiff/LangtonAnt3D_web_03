@@ -58,7 +58,7 @@ class Application {
 
     try {
       logger.info('App', '🚀 应用启动中...');
-      
+
       this.monitorContainer = document.getElementById('monitor-container');
       if (!this.monitorContainer) {
         throw new Error('启动失败: 未在DOM中找到 #monitor-container。');
@@ -74,21 +74,25 @@ class Application {
       // 3. 初始化坐标系统（必须在相机之前）
       coordinateSystem.init({
         eventBus,
-        scene: this.scene
+        scene: this.scene,
       });
 
       if (this.scene) {
         this.scene.userData.coordinateSystem = coordinateSystem;
       }
-      
+
       // 4. 初始化UI容器 (现在它会找到自己的位置)
       uiContainer.init();
 
       // 5. 初始化相机系统
+      if (!this.scene || !this.renderer) {
+        throw new Error('场景或渲染器未初始化');
+      }
+
       cameraSys.init({
         eventBus,
         scene: this.scene,
-        renderer: this.renderer
+        renderer: this.renderer!,
       });
 
       lightingSys.init({ scene: this.scene });
@@ -99,19 +103,19 @@ class Application {
       postprocessSys.init({
         scene: this.scene as THREE.Scene,
         camera: mainCamera as THREE.Camera,
-        renderer: this.renderer as THREE.WebGLRenderer
+        renderer: this.renderer as THREE.WebGLRenderer,
       });
 
       audioSys.init({
         eventBus,
-        camera: cameraSys.getActiveCamera()
+        camera: cameraSys.getActiveCamera(),
       });
 
       await dataSys.init({
         eventBus,
         scene: this.scene,
         camera: cameraSys.getActiveCamera(),
-        controls: cameraSys.getControls()
+        controls: cameraSys.getControls(),
       });
 
       // 7. 初始化基础 UI
@@ -133,22 +137,22 @@ class Application {
       materialSys.init();
       modelSys.init();
 
-      pathSys.init({ 
-        eventBus, 
+      pathSys.init({
+        eventBus,
         scene: this.scene as THREE.Scene,
-        coordinateSystem 
-      });
-      
-      mathLightSys.init({ 
-        eventBus, 
-        scene: this.scene as THREE.Scene,
-        coordinateSystem 
+        coordinateSystem,
       });
 
-      particlesSys.init({ 
-        eventBus, 
+      mathLightSys.init({
+        eventBus,
         scene: this.scene as THREE.Scene,
-        coordinateSystem 
+        coordinateSystem,
+      });
+
+      particlesSys.init({
+        eventBus,
+        scene: this.scene as THREE.Scene,
+        coordinateSystem,
       });
 
       animationSys.init({
@@ -156,7 +160,7 @@ class Application {
         scene: this.scene as THREE.Scene,
         renderer: this.renderer as THREE.WebGLRenderer,
         controls: cameraSys.getControls(),
-        particlesSys
+        particlesSys,
       });
 
       sceneDirector.init({ eventBus });
@@ -172,8 +176,7 @@ class Application {
 
       this.initialized = true;
       logger.info('App', '✅ 应用初始化完成');
-
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('App', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -188,7 +191,7 @@ class Application {
     this.renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: false,
-      powerPreference: 'high-performance'
+      powerPreference: 'high-performance',
     });
 
     // 尺寸将在 _handleResize 中设置
@@ -198,16 +201,16 @@ class Application {
 
     const canvas = this.renderer.domElement;
     // 移除所有内联定位样式，交给 CSS 处理
-    canvas.style.display = 'block'; 
-    
+    canvas.style.display = 'block';
+
     // ✅ 关键修改: 将 Canvas 添加到右侧监视器容器
     this.monitorContainer!.appendChild(canvas);
-    
+
     logger.info('App', `✅ Canvas 已添加到 #monitor-container`);
     logger.debug('App', '渲染器已创建');
   }
 
-    _bindEvents() {
+  _bindEvents() {
     // 监听全局窗口大小变化事件，以便调整渲染器和相机
     window.addEventListener('resize', this._handleResize.bind(this));
 
@@ -220,8 +223,6 @@ class Application {
     logger.debug('App', '事件已绑定');
   }
 
-
-
   _handleResize() {
     if (!this.renderer || !this.monitorContainer) return;
 
@@ -231,17 +232,12 @@ class Application {
 
     // 更新渲染器
     this.renderer.setSize(width, height);
-    
+
     // ✅ 关键修改: 将新尺寸传递给下游系统
     cameraSys.handleResize(width, height);
     postprocessSys.handleResize(width, height);
-    
-    logger.debugThrottled(
-      'App',
-      'window-resize',
-      `窗口大小已调整: ${width}x${height}`,
-      1000
-    );
+
+    logger.debugThrottled('App', 'window-resize', `窗口大小已调整: ${width}x${height}`, 1000);
   }
 
   _startRenderLoop() {
@@ -256,7 +252,7 @@ class Application {
       pathSys.update(delta);
       animationSys.update(delta, elapsed);
       particlesSys.update(elapsed);
-      
+
       if (config.get('postprocess.enabled')) {
         postprocessSys.render(delta);
       } else if (this.renderer && this.scene) {
@@ -270,7 +266,7 @@ class Application {
 
   dispose() {
     logger.info('App', '应用正在销毁...');
-    
+
     window.removeEventListener('resize', this._handleResize.bind(this));
 
     sceneDirector.dispose();
@@ -306,7 +302,7 @@ class Application {
 }
 
 const app = new Application();
-app.init().catch(err => {
+app.init().catch((err) => {
   logger.error('App', `启动失败: ${(err as Error).message}`);
   console.error(err);
 });

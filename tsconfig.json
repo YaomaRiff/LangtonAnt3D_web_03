@@ -26,6 +26,8 @@
     "noUnusedLocals": true,        // 报告未使用的局部变量
     "noUnusedParameters": true,    // 报告未使用的参数
     "noFallthroughCasesInSwitch": true, // 报告switch语句中的fallthrough情况
+    "noUncheckedIndexedAccess": true, // 新增：对索引访问的严格检查
+    "forceConsistentCasingInFileNames": true, // 新增：文件名大小写一致
 
     /* 路径别名 */
     "baseUrl": ".",                // 解析非相对模块名的基准目录
@@ -33,6 +35,6 @@
       "@/*": ["src/*"]            // 设置别名，例如 import ... from '@/utils/logger'
     }
   },
-  "include": ["src", "vite.config.ts"], // 告诉TS编译器需要检查哪些文件
+  "include": ["src"], // 告诉TS编译器需要检查哪些文件
   "references": [{ "path": "./tsconfig.node.json" }] // 引用Node环境的配置
 }

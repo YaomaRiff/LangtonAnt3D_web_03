@@ -47,16 +47,16 @@ class MaterialService {
       uniforms: {
         uEmissive: { value: new THREE.Color(envCfg.pathColor) },
         uDepthIntensity: { value: pathCfg.depthIntensity },
-        uCameraPosition: { value: new THREE.Vector3() }
+        uCameraPosition: { value: new THREE.Vector3() },
       },
       vertexShader: pathVertexShader,
       fragmentShader: pathFragmentShader,
       transparent: true,
       blending: THREE.AdditiveBlending,
-      depthWrite: false
+      depthWrite: false,
     });
     this.materials.set('pathLine', pathMaterial);
-    
+
     // ✅ 修正：为尘埃粒子材质提供完整的配置
     const dustParticlesMaterial = new THREE.PointsMaterial({
       color: new THREE.Color(particlesCfg.dustColor),
@@ -66,7 +66,7 @@ class MaterialService {
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       sizeAttenuation: true, // 粒子大小随距离衰减
-      vertexColors: false
+      vertexColors: false,
     });
     this.materials.set('dustParticles', dustParticlesMaterial);
 
@@ -75,13 +75,13 @@ class MaterialService {
       color: new THREE.Color(materialCfg.movingLight.emissiveColor),
       transparent: true,
       blending: THREE.AdditiveBlending,
-      depthWrite: false
+      depthWrite: false,
     });
     this.materials.set('movingLight', movingLightMaterial);
   }
 
   _bindEvents() {
-    eventBus.on('config-changed', ({ key, value }: { key: string, value: any }) => {
+    eventBus.on('config-changed', ({ key, value }: { key: string; value: any }) => {
       this._updateMaterialProperty(key, value);
     });
   }
@@ -97,12 +97,13 @@ class MaterialService {
       // PathLine Material updates
       case 'environment.pathColor':
         if (pathLineMat instanceof THREE.ShaderMaterial) {
-          pathLineMat.uniforms.uEmissive.value.set(value);
+          pathLineMat.uniforms?.uEmissive?.value.set(value);
         }
         break;
       case 'path.depthIntensity':
         if (pathLineMat instanceof THREE.ShaderMaterial) {
-          pathLineMat.uniforms.uDepthIntensity.value = value;
+          pathLineMat.uniforms?.uDepthIntensity &&
+            (pathLineMat.uniforms.uDepthIntensity.value = value);
         }
         break;
 
@@ -125,7 +126,7 @@ class MaterialService {
 
       // Moving Light Material updates
       case 'material.movingLight.emissiveColor':
-         if (lightMat instanceof THREE.MeshBasicMaterial) {
+        if (lightMat instanceof THREE.MeshBasicMaterial) {
           lightMat.color.set(value);
         }
         break;
@@ -142,7 +143,7 @@ class MaterialService {
   }
 
   dispose() {
-    this.materials.forEach(material => material.dispose());
+    this.materials.forEach((material) => material.dispose());
     this.materials.clear();
     this.initialized = false;
     logger.info('MaterialService', '材质服务已销毁');

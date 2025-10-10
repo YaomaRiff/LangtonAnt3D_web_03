@@ -7,7 +7,7 @@
  */
 import * as THREE from 'three';
 import logger from '../utils/logger';
-import config from '../config';
+
 import { resolveAssetUrl } from '../utils/url-resolver'; // ✅ 核心修正：导入URL解析工具
 
 class AudioSystem {
@@ -17,12 +17,11 @@ class AudioSystem {
   private sound: THREE.Audio | null;
   private audioLoader: THREE.AudioLoader;
   private initialized: boolean;
-  
+
   private isPlaying: boolean;
   private volume: number;
-  private currentUrl: string | null;
   private audioContext: AudioContext | null;
-  
+
   private listenerCreated: boolean;
 
   constructor() {
@@ -32,16 +31,16 @@ class AudioSystem {
     this.sound = null;
     this.audioLoader = new THREE.AudioLoader();
     this.initialized = false;
-    
+
     this.isPlaying = false;
     this.volume = 0.5;
-    this.currentUrl = null;
+
     this.audioContext = null;
-    
+
     this.listenerCreated = false;
   }
 
-  async init({ eventBus, camera }: { eventBus: any, camera: THREE.Camera }) {
+  async init({ eventBus, camera }: { eventBus: any; camera: THREE.Camera }) {
     if (this.initialized) {
       logger.warn('AudioSystem', '音频系统已经初始化过了');
       return this;
@@ -50,14 +49,14 @@ class AudioSystem {
     try {
       this.eventBus = eventBus;
       this.camera = camera;
-      
+
       this._bindEvents();
-      
+
       this.initialized = true;
       logger.info('AudioSystem', '音频系统初始化完成(延迟创建 AudioContext)');
-      
+
       return this;
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('AudioSystem', `初始化失败: ${(err as Error).message}`);
       throw err;
     }
@@ -65,17 +64,17 @@ class AudioSystem {
 
   _ensureListenerCreated() {
     if (this.listenerCreated || !this.camera) return;
-    
+
     try {
       this.listener = new THREE.AudioListener();
       this.camera.add(this.listener);
-      
+
       this.audioContext = this.listener.context;
       this.sound = new THREE.Audio(this.listener);
-      
+
       this.listenerCreated = true;
       logger.info('AudioSystem', 'AudioListener 已创建');
-    } catch (err) {
+    } catch (err: unknown) {
       logger.error('AudioSystem', `创建 AudioListener 失败: ${(err as Error).message}`);
       throw err;
     }
@@ -113,7 +112,7 @@ class AudioSystem {
     this._ensureListenerCreated();
     if (!this.sound) return;
 
-    // ✅ 核心修正: 使用 resolveAssetUrl 包装路径
+    // 核心修正: 使用 resolveAssetUrl 包装路径
     const fetchUrl = resolveAssetUrl(url);
 
     logger.info('AudioSystem', `开始加载音频: ${fetchUrl}`);
@@ -125,18 +124,17 @@ class AudioSystem {
         if (this.sound.isPlaying) {
           this.sound.stop();
         }
-        
+
         this.sound.setBuffer(buffer);
         this.sound.setLoop(true);
         this.sound.setVolume(this.volume);
-        this.currentUrl = url;
-        
-        logger.info('AudioSystem', '✅ 音频加载成功');
+
+        logger.info('AudioSystem', '音频加载成功');
         this.eventBus.emit('audio-loaded', url);
       },
       undefined,
-      (error) => {
-        logger.error('AudioSystem', `加载失败: ${error.message || '未知错误'}`);
+      (error: unknown) => {
+        logger.error('AudioSystem', `加载失败: ${(error as Error).message || '未知错误'}`);
         this.eventBus.emit('audio-load-error', error);
       }
     );
@@ -152,7 +150,7 @@ class AudioSystem {
       try {
         await this.audioContext.resume();
         logger.info('AudioSystem', 'AudioContext 已恢复');
-      } catch (err) {
+      } catch (err: unknown) {
         logger.error('AudioSystem', `恢复 AudioContext 失败: ${(err as Error).message}`);
         return;
       }

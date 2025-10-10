@@ -39,7 +39,7 @@ class UIMonitor {
     this.stepDisplay.className = 'value';
     this.stepDisplay.textContent = '0 / 0';
     stepWrapper.appendChild(this.stepDisplay);
-    
+
     this.container!.appendChild(stepWrapper);
   }
 
@@ -48,7 +48,7 @@ class UIMonitor {
       const currentStep = state.get('animation.currentStep') || 0;
       const totalSteps = (state.get('data.mappedPoints') || []).length;
       if (this.stepDisplay) {
-        this.stepDisplay.textContent = `${currentStep} / ${totalSteps > 0 ? totalSteps -1 : 0}`;
+        this.stepDisplay.textContent = `${currentStep} / ${totalSteps > 0 ? totalSteps - 1 : 0}`;
       }
     };
 

@@ -2,7 +2,7 @@
  * @file model-sys.ts
  * @description 模型服务 - 负责加载、缓存和处理 GLB/GLTF 模型资源。
  */
-import * as THREE from 'three';
+// import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import logger from '../utils/logger';
 import materialSys from './material-sys';
@@ -34,9 +34,9 @@ class ModelService {
    * @param {string} relativeUrl - 相对于/public目录的模型路径
    * @returns {Promise<THREE.Group>} 返回一个包含模型场景的Promise
    */
-  async load(relativeUrl) {
+  async load(relativeUrl: string) {
     const url = resolveAssetUrl(relativeUrl);
-    
+
     if (this.cache.has(url)) {
       const cachedGltf = this.cache.get(url);
       const modelClone = cachedGltf.scene.clone(true);
@@ -47,17 +47,17 @@ class ModelService {
     try {
       logger.info('ModelService', `开始加载模型: ${relativeUrl}`);
       const gltf = await this.loader.loadAsync(url);
-      
+
       // 缓存原始加载结果
       this.cache.set(url, gltf);
-      
+
       // 返回场景的克隆，以防原始缓存被修改
       const modelClone = gltf.scene.clone(true);
       logger.info('ModelService', `✅ 模型加载成功: ${relativeUrl}`);
-      
+
       return modelClone;
-    } catch (error) {
-      logger.error('ModelService', `加载模型失败 "${relativeUrl}": ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('ModelService', `加载模型失败 "${relativeUrl}": ${(error as Error).message}`);
       throw error;
     }
   }
@@ -67,14 +67,14 @@ class ModelService {
    * @param {THREE.Group} model - 目标模型
    * @param {string} materialName - 在 MaterialService 中注册的材质名称
    */
-  applyMaterial(model, materialName) {
+  applyMaterial(model: any, materialName: string) {
     const material = materialSys.get(materialName);
     if (!material) {
       logger.warn('ModelService', `应用材质失败: 材质 "${materialName}" 不存在`);
       return;
     }
 
-    model.traverse((child) => {
+    model.traverse((child: any) => {
       if (child.isMesh) {
         child.material = material;
       }

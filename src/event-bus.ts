@@ -36,10 +36,10 @@ class EventBus {
 
   off(event: string, callback: Function) {
     if (!this.events.has(event)) return;
-    
+
     const callbacks = this.events.get(event)!;
     const index = callbacks.indexOf(callback);
-    
+
     if (index !== -1) {
       callbacks.splice(index, 1);
       logger.debug('EventBus', `移除事件: ${event}`);
@@ -48,13 +48,13 @@ class EventBus {
 
   emit(event: string, ...args: any[]) {
     if (!this.events.has(event)) return;
-    
+
     // 创建回调数组的副本，以防回调函数内部修改原始数组（如在 once 中调用 off）
     const callbacks = [...this.events.get(event)!];
-    callbacks.forEach(callback => {
+    callbacks.forEach((callback) => {
       try {
         callback(...args);
-      } catch (err) {
+      } catch (err: unknown) {
         logger.error('EventBus', `事件回调异常 [${event}]: ${(err as Error).message}`);
       }
     });
@@ -76,4 +76,3 @@ class EventBus {
 
 const eventBus = new EventBus();
 export default eventBus;
-

@@ -8,16 +8,17 @@ const LOG_LEVELS = {
   DEBUG: 0,
   INFO: 1,
   WARN: 2,
-  ERROR: 3
+  ERROR: 3,
 };
 
 class Logger {
-  private level: number;
+  // ✅ 公共属性
+  public level: number = 1; // LOG_LEVELS.INFO
+
   private enableTimestamp: boolean;
   private throttledLogs: Map<string, number>; // ✅ 新增: 用于存储节流日志的最后时间戳
 
   constructor() {
-    this.level = LOG_LEVELS.INFO;
     this.enableTimestamp = true;
     this.throttledLogs = new Map();
   }
@@ -29,14 +30,12 @@ class Logger {
     }
   }
 
-  private _format(level: string, module: string, message: string): string {
-    const timestamp = this.enableTimestamp 
-      ? `[${new Date().toISOString().slice(11, 23)}]` 
-      : '';
+  private _format(_level: string, module: string, message: string): string {
+    const timestamp = this.enableTimestamp ? `[${new Date().toISOString().slice(11, 23)}]` : '';
     const moduleStr = module ? `[${module}]` : '';
     return `${timestamp}${moduleStr} ${message}`;
   }
-  
+
   /**
    * ✨ 新增: 节流调试日志
    * 对同一个 key，在指定的 interval 毫秒内只打印一次。
@@ -59,37 +58,25 @@ class Logger {
 
   debug(module: string, message: string) {
     if (this.level <= LOG_LEVELS.DEBUG) {
-      console.log(
-        `%c${this._format('DEBUG', module, message)}`,
-        'color: #888'
-      );
+      console.log(`%c${this._format('DEBUG', module, message)}`, 'color: #888');
     }
   }
 
   info(module: string, message: string) {
     if (this.level <= LOG_LEVELS.INFO) {
-      console.log(
-        `%c${this._format('INFO', module, message)}`,
-        'color: #4a9eff'
-      );
+      console.log(`%c${this._format('INFO', module, message)}`, 'color: #4a9eff');
     }
   }
 
   warn(module: string, message: string) {
     if (this.level <= LOG_LEVELS.WARN) {
-      console.warn(
-        `%c${this._format('WARN', module, message)}`,
-        'color: #ff9800'
-      );
+      console.warn(`%c${this._format('WARN', module, message)}`, 'color: #ff9800');
     }
   }
 
   error(module: string, message: string) {
     if (this.level <= LOG_LEVELS.ERROR) {
-      console.error(
-        `%c${this._format('ERROR', module, message)}`,
-        'color: #f44336'
-      );
+      console.error(`%c${this._format('ERROR', module, message)}`, 'color: #f44336');
     }
   }
 }
