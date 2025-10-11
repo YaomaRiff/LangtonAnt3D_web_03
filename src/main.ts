@@ -4,6 +4,9 @@
  * @✨ 重构: 彻底移除了旧的 ui-material 系统。
  * @✨ 重构: 适配了新的监视器布局，修改了渲染器挂载和尺寸调整逻辑。
  */
+
+import './style.css';
+
 import * as THREE from 'three';
 import logger from './utils/logger';
 import config, { initConfig } from './config';

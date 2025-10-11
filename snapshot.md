@@ -1,6 +1,6 @@
 # Project Snapshot
 - Root: `.`
-- Created: 2025-10-10 23:04:17
+- Created: 2025-10-11 23:30:29
 - Files: 45 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
 - Force-Excluded: package-lock.json
 
@@ -14,7 +14,6 @@ LangtonAnt3D_web_03/
 │  ├─ presets/
 │  │  └─ 01.json
 │  ├─ manifest.json
-│  ├─ style.css
 ├─ src/
 │  ├─ systems/
 │  │  ├─ shaders/
@@ -53,6 +52,7 @@ LangtonAnt3D_web_03/
 │  ├─ event-bus.ts
 │  ├─ main.ts
 │  ├─ preset-manager.ts
+│  ├─ style.css
 │  └─ vite-env.d.ts
 ├─ tools/
 │  └─ snapshot.mjs
@@ -174,8 +174,6 @@ export default [
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>(OUwNO)Ant</title>
-  
-  <link rel="stylesheet" href="./style.css">
 
   <!-- Favicon and Theme Color -->
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -232,7 +230,6 @@ export default [
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "snapshot": "node tools/snapshot.mjs --root . --out snapshot.md",
-    "publish": "npm run build && rimraf ../LangtonAnt3D_dist && copyfiles -u 1 \"dist/**/*\" ../LangtonAnt3D_dist",
     "lint": "eslint src --ext .ts,.js",
     "lint:fix": "eslint src --ext .ts,.js --fix",
     "format": "prettier --write src/**/*.{ts,js}"
@@ -250,9 +247,7 @@ export default [
     "eslint": "^9.37.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
-    "ncp": "^2.0.0",
     "prettier": "^3.6.2",
-    "rimraf": "^6.0.1",
     "typescript": "^5.9.3",
     "vite": "^5.4.10"
   },
@@ -270,7 +265,6 @@ export default [
     "three": "^0.180.0",
     "three-mesh-bvh": "^0.9.1",
     "three-nebula": "^10.0.3",
-    "three-noise": "^1.1.2",
     "three-stdlib": "^2.36.0",
     "troika-three-text": "^0.52.4",
     "tweakpane": "^4.0.5",
@@ -393,200 +387,6 @@ export default [
     }
   }
 }
-```
-
-### public/style.css
-
-```css
-/**
- * @file style.css
- * @description 全局样式表 - 简洁版
- * @version 5.0 (Default Tweakpane)
- * @✅ 修正: 完全移除 Tweakpane 样式覆盖，使用原生默认样式
- */
-
-/* ==================== CSS 变量 ==================== */
-:root {
-  /* 终端配色 */
-  --terminal-bg: #273030;
-  --terminal-fg: #eceae5;
-  --terminal-accent: #32858b;
-  --terminal-border: #24222a;
-  --terminal-hover: #252321;
-  
-  /* 字体 */
-  --font-mono: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-  
-  /* 间距 */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-}
-
-/* ==================== 全局重置 ==================== */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html,
-body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
-
-body {
-  font-family: var(--font-mono);
-  background: var(--terminal-bg);
-  color: var(--terminal-fg);
-  line-height: 1.6;
-  font-size: 14px;
-}
-
-/* ==================== 主布局 ==================== */
-#app-wrapper {
-  width: 100%;
-  height: 100%;
-  padding: 10px;
-  display: flex;
-}
-
-#main-layout {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  gap: 10px;
-}
-
-/* ==================== 左侧面板 ==================== */
-#left-panel {
-  width: 320px;
-  flex-shrink: 0;
-  background-color: var(--terminal-bg);
-  border: 2px solid var(--terminal-border);
-  border-radius: 0;
-  overflow: hidden;
-  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
-}
-
-/* ==================== 右侧监视器 ==================== */
-#monitor-container {
-  flex: 1;
-  position: relative;
-  border: 2px solid var(--terminal-border);
-  background-color: #000;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* 监视器覆盖层UI */
-#monitor-overlay-ui {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: flex-end;
-}
-
-/* ==================== HUD 监视器样式 ==================== */
-.monitor-info-item {
-  display: flex;
-  align-items: baseline;
-  gap: 3px;  /* 🔧 从 6px 缩小到 3px */
-  background: rgba(0, 20, 40, 0.5);  /* 🔧 从 0.9 降低到 0.5，更透明 */
-  padding: 2px 5px;  /* 🔧 从 3px 10px 缩小到 2px 5px */
-  border: 1px solid rgba(0, 255, 98, 0.3);  /* 🔧 从 0.6 降低到 0.3，边框更暗 */
-  border-radius: 0;
-  text-transform: uppercase;
-  box-shadow: 
-    0 0 8px rgba(0, 255, 145, 0.15),  /* 🔧 发光效果减半 */
-    inset 0 0 8px rgba(0, 255, 89, 0.05);  /* 🔧 内发光减弱 */
-}
-
-.monitor-info-item .label {
-  color: rgba(0, 255, 98, 0.5);  /* 🔧 从 0.8 降低到 0.5，更暗 */
-  opacity: 0.7;  /* 🔧 从 0.9 降低到 0.7 */
-  font-size: 8px;  /* 🔧 从 16px 缩小到 8px */
-  letter-spacing: 0.75px;  /* 🔧 从 1.5px 缩小到 0.75px */
-  text-shadow: 0 0 2px rgba(0, 255, 68, 0.25);  /* 🔧 文字阴影减弱 */
-}
-
-.monitor-info-item .value {
-  color: #00ff62;
-  font-size: 8px;  /* 🔧 从 16px 缩小到 8px */
-  font-weight: bold;
-  min-width: 40px;  /* 🔧 从 80px 缩小到 40px */
-  text-align: right;
-  text-shadow: 
-    0 0 4px rgba(0, 255, 102, 0.4),  /* 🔧 发光减半 */
-    0 0 8px rgba(0, 255, 55, 0.2);  /* 🔧 发光减半 */
-  opacity: 0.8;  /* 🔧 新增：整体降低亮度 */
-}
-
-
-/* ==================== 滚动条样式 ==================== */
-#left-panel::-webkit-scrollbar,
-#ui-scroll-content::-webkit-scrollbar {
-  width: 10px;
-}
-
-#left-panel::-webkit-scrollbar-track,
-#ui-scroll-content::-webkit-scrollbar-track {
-  background: var(--terminal-bg);
-  border-left: 1px solid var(--terminal-border);
-}
-
-#left-panel::-webkit-scrollbar-thumb,
-#ui-scroll-content::-webkit-scrollbar-thumb {
-  background: var(--terminal-accent);
-  border: 2px solid var(--terminal-bg);
-}
-
-#left-panel::-webkit-scrollbar-thumb:hover,
-#ui-scroll-content::-webkit-scrollbar-thumb:hover {
-  background: var(--terminal-fg);
-  box-shadow: 0 0 8px rgba(50, 133, 139, 0.5);
-}
-
-/* ==================== 响应式适配 ==================== */
-@media (max-width: 768px) {
-  #left-panel {
-    width: 100%;
-    height: auto;
-    max-height: 40vh;
-    border-right: none;
-    border-bottom: 2px solid var(--terminal-border);
-  }
-  
-  #monitor-container {
-    height: 60vh;
-  }
-  
-  #monitor-overlay-ui {
-    padding: 10px;
-  }
-  
-  .monitor-info-item .value {
-    font-size: 14px;
-    min-width: 70px;
-  }
-}
-
 ```
 
 ### src/config.ts
@@ -986,6 +786,9 @@ export default eventBus;
  * @✨ 重构: 彻底移除了旧的 ui-material 系统。
  * @✨ 重构: 适配了新的监视器布局，修改了渲染器挂载和尺寸调整逻辑。
  */
+
+import './style.css';
+
 import * as THREE from 'three';
 import logger from './utils/logger';
 import config, { initConfig } from './config';
@@ -1506,6 +1309,214 @@ class PresetManager {
 
 const presetManager = new PresetManager();
 export default presetManager;
+
+```
+
+### src/style.css
+
+```css
+/**
+ * @file style.css
+ * @description 全局样式表 - 仅布局 + Terminal 变量
+ * @version 6.0 (Clean Tweakpane)
+ */
+
+/* ==================== CSS 变量（为未来准备）==================== */
+:root {
+  /* Terminal 配色（监视器 HUD 使用） */
+  --terminal-bg: #273030;
+  --terminal-fg: #eceae5;
+  --terminal-accent: #32858b;
+  --terminal-border: #24222a;
+  --terminal-hover: #252321;
+  
+  /* 字体 */
+  --font-mono: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+  
+  /* 间距 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+}
+
+/* ==================== 全局重置 ==================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: var(--font-mono);
+  background: var(--terminal-bg);
+  color: var(--terminal-fg);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+/* ==================== 主布局 ==================== */
+#app-wrapper {
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  display: flex;
+}
+
+#main-layout {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  gap: 10px;
+}
+
+/* ==================== 左侧面板（Tweakpane 容器）==================== */
+#left-panel {
+  width: 320px;
+  flex-shrink: 0;
+  background-color: #273030;
+  border: 1px solid #292c2c;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 滚动内容容器 */
+#ui-scroll-content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+/* ==================== 右侧监视器 ==================== */
+#monitor-container {
+  flex: 1;
+  position: relative;
+  border: 2px solid var(--terminal-border);
+  background-color: #000;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 3D Canvas */
+#monitor-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 监视器覆盖层UI（使用 Terminal 风格）*/
+#monitor-overlay-ui {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+/* ==================== HUD 监视器样式（Terminal 风格）==================== */
+.monitor-info-item {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  background: rgba(0, 20, 40, 0.5);
+  padding: 2px 5px;
+  border: 1px solid rgba(0, 255, 98, 0.3);
+  border-radius: 0;
+  text-transform: uppercase;
+  box-shadow: 
+    0 0 8px rgba(0, 255, 145, 0.15),
+    inset 0 0 8px rgba(0, 255, 89, 0.05);
+}
+
+.monitor-info-item .label {
+  color: rgba(0, 255, 98, 0.5);
+  opacity: 0.7;
+  font-size: 8px;
+  letter-spacing: 0.75px;
+  text-shadow: 0 0 2px rgba(0, 255, 68, 0.25);
+}
+
+.monitor-info-item .value {
+  color: #00ff62;
+  font-size: 8px;
+  font-weight: bold;
+  min-width: 40px;
+  text-align: right;
+  text-shadow: 
+    0 0 4px rgba(0, 255, 102, 0.4),
+    0 0 8px rgba(0, 255, 55, 0.2);
+  opacity: 0.8;
+}
+
+/* ==================== 滚动条样式（左侧面板）==================== */
+#left-panel::-webkit-scrollbar,
+#ui-scroll-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+#left-panel::-webkit-scrollbar-track,
+#ui-scroll-content::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-left: 1px solid #ddd;
+}
+
+#left-panel::-webkit-scrollbar-thumb,
+#ui-scroll-content::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border: 2px solid #f0f0f0;
+  border-radius: 4px;
+}
+
+#left-panel::-webkit-scrollbar-thumb:hover,
+#ui-scroll-content::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* ==================== 响应式适配 ==================== */
+@media (max-width: 768px) {
+  #left-panel {
+    width: 100%;
+    height: auto;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 2px solid #ddd;
+  }
+  
+  #monitor-container {
+    height: 60vh;
+  }
+  
+  #monitor-overlay-ui {
+    padding: 10px;
+  }
+  
+  .monitor-info-item .value {
+    font-size: 14px;
+    min-width: 70px;
+  }
+}
 
 ```
 
@@ -4979,12 +4990,8 @@ export default uiBasic;
 ```
 /**
  * @file ui-container.ts
- * @description 统一 UI 容器系统 - 管理左侧面板，提供滚动区域和深度美化的主题。
- * @version 3.0 (Pistachio Theme)
- * @✨ 主题: 注入了全新的“开心果(Pistachio)”配色方案，增强了UI层级感。
- * @🔧 修正: 调整了文件夹标题样式，解决了背景过窄和文字居中的问题。
- * @✨ 优化: 更新了滚动条样式，使其与新主题匹配。
- * @🔧 简化: 移除了内联的 Tweakpane 主题代码，改为在全局样式中统一管理
+ * @description UI 容器系统 - 仅负责创建滚动区域
+ * @version 4.0 (Pure Container)
  */
 import logger from '../utils/logger';
 
@@ -5007,11 +5014,10 @@ class UIContainer {
     }
 
     this._createScrollContent();
-    this._applyStyles();
     this._setupScrollBehavior();
 
     this.initialized = true;
-    logger.info('UIContainer', 'UI 容器已在 #left-panel 中初始化');
+    logger.info('UIContainer', 'UI 容器已初始化（不干预 Tweakpane 样式）');
   }
 
   private _createScrollContent() {
@@ -5021,29 +5027,8 @@ class UIContainer {
     this.panelContainer!.appendChild(this.scrollContent);
   }
 
-  private _applyStyles() {
-    Object.assign(this.scrollContent!.style, {
-      height: '100%',
-      overflowY: 'auto',
-      overflowX: 'hidden',
-      boxSizing: 'border-box',
-      scrollbarWidth: 'thin',
-      scrollbarColor: 'var(--border-color, #75715e) var(--background-color, #272822)',
-    });
-
-    // Terminal.css 风格的样式现在在 public/style.css 中统一管理
-    // 这里只保留必要的滚动条行为设置
-    const style = document.createElement('style');
-    style.textContent = `
-  /* 确保滚动内容使用等宽字体 */
-  #ui-scroll-content {
-    font-family: var(--font-mono, 'Fira Code', monospace);
-  }
-`;
-    document.head.appendChild(style);
-  }
-
   private _setupScrollBehavior() {
+    // 阻止滚轮事件冒泡到外层
     this.scrollContent!.addEventListener(
       'wheel',
       (e) => {
@@ -5064,7 +5049,7 @@ class UIContainer {
     this.panelContainer = null;
     this.scrollContent = null;
     this.initialized = false;
-    logger.info('UIContainer', 'UI 容器内容已清理');
+    logger.info('UIContainer', 'UI 容器已销毁');
   }
 }
 
@@ -6266,30 +6251,16 @@ function fenceLang(p) {
 ### vite.config.ts
 
 ```
-// import { defineConfig } from 'vite'
-
-// // https://vitejs.dev/config/
-// export default defineConfig(({ command }) => {
-//   if (command === 'build') {
-//     // build a project for production
-//     return {
-//       base: '/LangtonAnt3D_dist/', // 你的部署仓库名
-//     }
-//   } else {
-//     // serve a project for development
-//     return {
-//       // 在开发模式下，base 路径默认为 '/'，所以这里可以留空或者显式设置为 '/'
-//       base: '/',
-//     }
-//   }
-// })
+//这个项目的dist分支网页托管方案失败了
+//所以生成dist文件之后，要手动复制内容粘贴到LangtonAnt3D_dist文件夹下
+//LangtonAnt3D_dist文件新建了一个仓库用于github网页托管
 
 /**
  * @file vite.config.ts
  * @description Vite 配置文件 (TypeScript版本)
  */
-import { defineConfig } from 'vite'
-import path from 'path'
+import { defineConfig } from 'vite';
+import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
@@ -6303,7 +6274,7 @@ export default defineConfig(({ command }) => {
       },
     },
     // 可以添加更多配置...
-  }
-})
+  };
+});
 
 ```

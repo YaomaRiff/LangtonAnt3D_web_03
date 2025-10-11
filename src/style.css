@@ -1,13 +1,12 @@
 /**
  * @file style.css
- * @description 全局样式表 - 简洁版
- * @version 5.0 (Default Tweakpane)
- * @✅ 修正: 完全移除 Tweakpane 样式覆盖，使用原生默认样式
+ * @description 全局样式表 - 仅布局 + Terminal 变量
+ * @version 6.0 (Clean Tweakpane)
  */
 
-/* ==================== CSS 变量 ==================== */
+/* ==================== CSS 变量（为未来准备）==================== */
 :root {
-  /* 终端配色 */
+  /* Terminal 配色（监视器 HUD 使用） */
   --terminal-bg: #273030;
   --terminal-fg: #eceae5;
   --terminal-accent: #32858b;
@@ -65,15 +64,24 @@ body {
   gap: 10px;
 }
 
-/* ==================== 左侧面板 ==================== */
+/* ==================== 左侧面板（Tweakpane 容器）==================== */
 #left-panel {
   width: 320px;
   flex-shrink: 0;
-  background-color: var(--terminal-bg);
-  border: 2px solid var(--terminal-border);
-  border-radius: 0;
+  background-color: #273030;
+  border: 1px solid #292c2c;
+  border-radius: 4px;
   overflow: hidden;
-  box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 滚动内容容器 */
+#ui-scroll-content {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 /* ==================== 右侧监视器 ==================== */
@@ -88,7 +96,14 @@ body {
   align-items: center;
 }
 
-/* 监视器覆盖层UI */
+/* 3D Canvas */
+#monitor-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 监视器覆盖层UI（使用 Terminal 风格）*/
 #monitor-overlay-ui {
   position: absolute;
   top: 0;
@@ -103,43 +118,42 @@ body {
   align-items: flex-end;
 }
 
-/* ==================== HUD 监视器样式 ==================== */
+/* ==================== HUD 监视器样式（Terminal 风格）==================== */
 .monitor-info-item {
   display: flex;
   align-items: baseline;
-  gap: 3px;  /* 🔧 从 6px 缩小到 3px */
-  background: rgba(0, 20, 40, 0.5);  /* 🔧 从 0.9 降低到 0.5，更透明 */
-  padding: 2px 5px;  /* 🔧 从 3px 10px 缩小到 2px 5px */
-  border: 1px solid rgba(0, 255, 98, 0.3);  /* 🔧 从 0.6 降低到 0.3，边框更暗 */
+  gap: 3px;
+  background: rgba(0, 20, 40, 0.5);
+  padding: 2px 5px;
+  border: 1px solid rgba(0, 255, 98, 0.3);
   border-radius: 0;
   text-transform: uppercase;
   box-shadow: 
-    0 0 8px rgba(0, 255, 145, 0.15),  /* 🔧 发光效果减半 */
-    inset 0 0 8px rgba(0, 255, 89, 0.05);  /* 🔧 内发光减弱 */
+    0 0 8px rgba(0, 255, 145, 0.15),
+    inset 0 0 8px rgba(0, 255, 89, 0.05);
 }
 
 .monitor-info-item .label {
-  color: rgba(0, 255, 98, 0.5);  /* 🔧 从 0.8 降低到 0.5，更暗 */
-  opacity: 0.7;  /* 🔧 从 0.9 降低到 0.7 */
-  font-size: 8px;  /* 🔧 从 16px 缩小到 8px */
-  letter-spacing: 0.75px;  /* 🔧 从 1.5px 缩小到 0.75px */
-  text-shadow: 0 0 2px rgba(0, 255, 68, 0.25);  /* 🔧 文字阴影减弱 */
+  color: rgba(0, 255, 98, 0.5);
+  opacity: 0.7;
+  font-size: 8px;
+  letter-spacing: 0.75px;
+  text-shadow: 0 0 2px rgba(0, 255, 68, 0.25);
 }
 
 .monitor-info-item .value {
   color: #00ff62;
-  font-size: 8px;  /* 🔧 从 16px 缩小到 8px */
+  font-size: 8px;
   font-weight: bold;
-  min-width: 40px;  /* 🔧 从 80px 缩小到 40px */
+  min-width: 40px;
   text-align: right;
   text-shadow: 
-    0 0 4px rgba(0, 255, 102, 0.4),  /* 🔧 发光减半 */
-    0 0 8px rgba(0, 255, 55, 0.2);  /* 🔧 发光减半 */
-  opacity: 0.8;  /* 🔧 新增：整体降低亮度 */
+    0 0 4px rgba(0, 255, 102, 0.4),
+    0 0 8px rgba(0, 255, 55, 0.2);
+  opacity: 0.8;
 }
 
-
-/* ==================== 滚动条样式 ==================== */
+/* ==================== 滚动条样式（左侧面板）==================== */
 #left-panel::-webkit-scrollbar,
 #ui-scroll-content::-webkit-scrollbar {
   width: 10px;
@@ -147,20 +161,20 @@ body {
 
 #left-panel::-webkit-scrollbar-track,
 #ui-scroll-content::-webkit-scrollbar-track {
-  background: var(--terminal-bg);
-  border-left: 1px solid var(--terminal-border);
+  background: #f0f0f0;
+  border-left: 1px solid #ddd;
 }
 
 #left-panel::-webkit-scrollbar-thumb,
 #ui-scroll-content::-webkit-scrollbar-thumb {
-  background: var(--terminal-accent);
-  border: 2px solid var(--terminal-bg);
+  background: #ccc;
+  border: 2px solid #f0f0f0;
+  border-radius: 4px;
 }
 
 #left-panel::-webkit-scrollbar-thumb:hover,
 #ui-scroll-content::-webkit-scrollbar-thumb:hover {
-  background: var(--terminal-fg);
-  box-shadow: 0 0 8px rgba(50, 133, 139, 0.5);
+  background: #999;
 }
 
 /* ==================== 响应式适配 ==================== */
@@ -170,7 +184,7 @@ body {
     height: auto;
     max-height: 40vh;
     border-right: none;
-    border-bottom: 2px solid var(--terminal-border);
+    border-bottom: 2px solid #ddd;
   }
   
   #monitor-container {

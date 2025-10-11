@@ -1,27 +1,13 @@
-// import { defineConfig } from 'vite'
-
-// // https://vitejs.dev/config/
-// export default defineConfig(({ command }) => {
-//   if (command === 'build') {
-//     // build a project for production
-//     return {
-//       base: '/LangtonAnt3D_dist/', // 你的部署仓库名
-//     }
-//   } else {
-//     // serve a project for development
-//     return {
-//       // 在开发模式下，base 路径默认为 '/'，所以这里可以留空或者显式设置为 '/'
-//       base: '/',
-//     }
-//   }
-// })
+//这个项目的dist分支网页托管方案失败了
+//所以生成dist文件之后，要手动复制内容粘贴到LangtonAnt3D_dist文件夹下
+//LangtonAnt3D_dist文件新建了一个仓库用于github网页托管
 
 /**
  * @file vite.config.ts
  * @description Vite 配置文件 (TypeScript版本)
  */
-import { defineConfig } from 'vite'
-import path from 'path'
+import { defineConfig } from 'vite';
+import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
@@ -35,5 +21,5 @@ export default defineConfig(({ command }) => {
       },
     },
     // 可以添加更多配置...
-  }
-})
+  };
+});
