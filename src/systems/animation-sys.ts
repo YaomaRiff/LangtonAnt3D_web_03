@@ -1,41 +1,39 @@
 /**
- * @file animation-sys.js
- * @description 动画系统 - 路径插值与步进控制
- * 核心改造: 监听统一的 'config-changed' 事件来控制动画启停。
+ * @file animation-sys.ts
+ * @description 极简动画系统 - 基于 requestAnimationFrame 的线性插值
+ * @version 5.2 (Type Safety Fix)
+ *
+ * 核心修复：
+ *   1. 增加基础时长到 60 秒
+ *   2. 循环时自动重置路径绘制
+ *   3. 同步更新步数状态
+ *   4. ✅ 添加完整的类型守卫，修复所有 undefined 错误
  */
-import * as THREE from 'three';
 import logger from '../utils/logger';
 import config from '../config';
 import state from './state';
+import * as THREE from 'three';
 
 class AnimationSystem {
   private eventBus: any;
-
-  // 公共属性
-  public scene: THREE.Scene | null = null;
-  public renderer: THREE.WebGLRenderer | null = null;
-  public controls: any = null;
-  public particlesSys: any = null;
-
   private initialized: boolean;
-  private currentStep: number;
-  private lerpT: number;
-  private animating: boolean;
-  private mappedPoints: any[];
+
+  // 动画状态
+  private isPlaying: boolean = false;
+  private progress: number = 0; // 归一化进度 [0, 1]
+  private speed: number = 1; // 速度倍率
+  private lastTime: number = 0;
+
+  // 数据
+  private mappedPoints: THREE.Vector3[] = [];
+  private baseDuration: number = 60000; // ✅ 60 秒
 
   constructor() {
     this.eventBus = null;
-
     this.initialized = false;
-
-    // 动画状态
-    this.currentStep = 0;
-    this.lerpT = 0;
-    this.animating = false;
-    this.mappedPoints = [];
   }
 
-  init({ eventBus, scene, renderer, controls, particlesSys }: any) {
+  init({ eventBus }: any) {
     if (this.initialized) {
       logger.warn('AnimationSystem', '动画系统已经初始化过了');
       return this;
@@ -43,16 +41,14 @@ class AnimationSystem {
 
     try {
       this.eventBus = eventBus;
-      this.scene = scene;
-      this.renderer = renderer;
-      this.controls = controls;
-      this.particlesSys = particlesSys;
 
-      this._loadInitialConfig();
+      // 从配置中读取初始速度
+      this.speed = config.get('animation.speedFactor') || 1;
+
       this._bindEvents();
 
       this.initialized = true;
-      logger.info('AnimationSystem', '动画系统初始化完成');
+      logger.info('AnimationSystem', `✅ 极简动画系统初始化完成 | 初始速度: ${this.speed}x`);
 
       return this;
     } catch (err: unknown) {
@@ -61,142 +57,162 @@ class AnimationSystem {
     }
   }
 
-  _loadInitialConfig() {
-    this.animating = state.get('animation.animating') || false; //从 state 读取
-  }
-
   _bindEvents() {
-    // ✅ 核心改造：监听通用配置变更事件
-    this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
-    this.eventBus.on('state-changed', this._handleStateChange.bind(this));
-
-    // ✅ 保留数据信号和命令式事件
+    // 数据加载
     this.eventBus.on('data-loaded', (data: { points: THREE.Vector3[] }) => {
       this.mappedPoints = data.points;
-      this.currentStep = 0;
-      this.lerpT = 0;
-      logger.info('AnimationSystem', `数据已加载: ${this.mappedPoints.length} 个点`);
+      logger.info('AnimationSystem', `数据已加载 | 节点数: ${this.mappedPoints.length}`);
     });
 
+    // 状态变更
+    this.eventBus.on('state-changed', ({ key, value }: { key: string; value: any }) => {
+      if (key === 'animation.animating') {
+        if (value) this.play();
+        else this.pause();
+      }
+    });
+
+    // 配置变更
+    this.eventBus.on('config-changed', ({ key, value }: { key: string; value: any }) => {
+      if (key === 'animation.speedFactor') {
+        this.speed = value;
+      }
+    });
+
+    // 重置
     this.eventBus.on('reset-animation', () => {
       this.reset();
     });
 
+    // 跳转到指定步数
     this.eventBus.on('step-to', (step: number) => {
       this.stepTo(step);
     });
   }
 
-  //统一处理配置变更
-  _handleConfigChange(_params: { key: string; value: any }): void {
-    // speedFactor 和 loop 在 update 循环中直接从 config 读取，无需处理
-    // animating 的处理已移至 _handleStateChange
-  }
+  /**
+   * 🔥 核心方法：每帧更新
+   */
+  update(_delta: number, _elapsed: number) {
+    if (!this.isPlaying || this.mappedPoints.length < 2) return;
 
-  //统一处理 *状态* 变更
-  _handleStateChange({ key, value }: { key: string; value: any }) {
-    if (key === 'animation.animating') {
-      this.animating = value;
-      logger.info('AnimationSystem', `动画状态变更为: ${value ? '播放' : '暂停'}`);
-    }
-  }
+    const now = performance.now();
+    const dt = now - this.lastTime;
+    this.lastTime = now;
 
-  update(delta: number, _elapsed: number) {
-    if (!this.animating || this.mappedPoints.length === 0) return;
+    // 更新进度
+    const increment = (dt / this.baseDuration) * this.speed;
+    this.progress += increment;
 
-    const speedFactor = config.get('animation.speedFactor') || 0.1;
-    this.lerpT += speedFactor * delta;
+    // ✅ 循环处理（增强版）
+    if (this.progress >= 1) {
+      if (config.get('animation.loop')) {
+        this.progress = 0;
 
-    if (this.lerpT >= 1.0) {
-      this.lerpT = 0;
-      this.currentStep++;
+        // 🔥 核心修复：循环时重置路径
+        this.eventBus.emit('animation-reset');
 
-      if (this.currentStep >= this.mappedPoints.length - 1) {
-        const loop = config.get('animation.loop');
-        if (loop) {
-          this.currentStep = 0;
-          logger.debug('AnimationSystem', '动画循环重新开始');
-        } else {
-          state.set('animation.animating', false);
-          this.eventBus.emit('animation-completed');
-          logger.info('AnimationSystem', '动画播放完成');
-          return;
-        }
+        logger.info('AnimationSystem', '🔁 循环重置');
+      } else {
+        this.progress = 1;
+        this.pause();
       }
     }
 
     this._updatePosition();
-
-    // 更新配置状态(触发UI刷新)
-    state.set('animation.currentStep', this.currentStep);
-    state.set('animation.lerpT', this.lerpT);
-
-    this.eventBus.emit('animation-step-updated', this.currentStep);
   }
 
+  /**
+   * 🔥 核心方法：根据进度计算火箭位置
+   * ✅ 修复：添加完整的类型守卫
+   */
   _updatePosition() {
-    if (this.currentStep >= this.mappedPoints.length - 1) return;
+    if (this.mappedPoints.length < 2) return;
 
-    const current = this.mappedPoints[this.currentStep];
-    const next = this.mappedPoints[this.currentStep + 1];
+    const totalSegments = this.mappedPoints.length - 1;
+    const segmentFloat = this.progress * totalSegments;
+    const segmentIndex = Math.floor(segmentFloat);
+    const segmentT = segmentFloat - segmentIndex;
 
-    const interpolated = new THREE.Vector3().lerpVectors(current, next, this.lerpT);
+    // ✅ 修复：添加边界检查
+    if (segmentIndex >= totalSegments) {
+      const lastPoint = this.mappedPoints[this.mappedPoints.length - 1];
 
-    this.eventBus.emit('moving-light-position-updated', interpolated);
-  }
+      // ✅ 核心修复：添加类型守卫
+      if (!lastPoint) {
+        logger.warn('AnimationSystem', '最后一个点不存在');
+        return;
+      }
 
-  reset() {
-    // 通过 config.set 驱动状态变更
-    state.set('animation.currentStep', 0);
-    state.set('animation.lerpT', 0);
-    state.set('animation.animating', false);
-
-    // 手动同步内部状态
-    this.currentStep = 0;
-    this.lerpT = 0;
-
-    logger.info('AnimationSystem', '动画已重置');
-    this.eventBus.emit('animation-reset');
-  }
-
-  stepTo(step: number): void {
-    if (step < 0 || step >= this.mappedPoints.length) {
-      logger.warn('AnimationSystem', `无效的步骤: ${step}`);
+      this._emitPosition(lastPoint, 1.0);
+      state.set('animation.currentStep', totalSegments);
       return;
     }
 
-    // 通过 config.set 驱动状态变更
-    state.set('animation.currentStep', step);
-    state.set('animation.lerpT', 0);
+    // ✅ 核心修复：线性插值前添加类型守卫
+    const p0 = this.mappedPoints[segmentIndex];
+    const p1 = this.mappedPoints[segmentIndex + 1];
 
-    // 手动同步内部状态
-    this.currentStep = step;
-    this.lerpT = 0;
+    // ✅ 确保两个点都存在
+    if (!p0 || !p1) {
+      logger.warn('AnimationSystem', `插值点不存在: index=${segmentIndex}`);
+      return;
+    }
+
+    const position = new THREE.Vector3(
+      THREE.MathUtils.lerp(p0.x, p1.x, segmentT),
+      THREE.MathUtils.lerp(p0.y, p1.y, segmentT),
+      THREE.MathUtils.lerp(p0.z, p1.z, segmentT)
+    );
+
+    this._emitPosition(position, this.progress);
+    state.set('animation.currentStep', segmentIndex);
+  }
+
+  /**
+   * 🔥 核心方法：发出位置更新事件（统一格式）
+   */
+  _emitPosition(position: THREE.Vector3, progress: number) {
+    this.eventBus.emit('moving-light-position-updated', {
+      position: position.clone(),
+      progress: progress,
+    });
+  }
+
+  play() {
+    if (this.isPlaying) return;
+    this.isPlaying = true;
+    this.lastTime = performance.now();
+    logger.info('AnimationSystem', '▶️ 开始播放');
+  }
+
+  pause() {
+    this.isPlaying = false;
+    logger.info('AnimationSystem', '⏸️ 暂停');
+  }
+
+  reset() {
+    this.progress = 0;
+    this.isPlaying = false;
+    this._updatePosition();
+    logger.info('AnimationSystem', '🔄 重置');
+  }
+
+  stepTo(step: number) {
+    if (step < 0 || step >= this.mappedPoints.length) {
+      logger.warn('AnimationSystem', `⚠️ 无效步数: ${step}`);
+      return;
+    }
+
+    const totalSegments = Math.max(1, this.mappedPoints.length - 1);
+    this.progress = step / totalSegments;
 
     this._updatePosition();
-    // ✅ 使用节流日志，避免拖动进度条时刷屏
-    logger.debugThrottled(
-      'AnimationSystem',
-      'animation-step-to', // 节流的唯一Key
-      `跳转到步骤: ${this.currentStep}`,
-      500 // 500毫秒的间隔对进度条拖动更友好
-    );
-  }
-
-  getCurrentStep() {
-    return this.currentStep;
-  }
-  getTotalSteps() {
-    return this.mappedPoints.length;
-  }
-
-  getProgress() {
-    if (this.mappedPoints.length === 0) return 0;
-    return (this.currentStep + this.lerpT) / this.mappedPoints.length;
+    logger.debug('AnimationSystem', `⏭️ 跳转到步数 ${step}`);
   }
 
   dispose() {
-    this.animating = false;
+    this.isPlaying = false;
     this.initialized = false;
     logger.info('AnimationSystem', '动画系统已销毁');
   }

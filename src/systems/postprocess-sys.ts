@@ -95,6 +95,13 @@ class PostprocessSystem {
   private _createComposer() {
     if (!this.renderer || !this.mainScene || !this.camera) return;
 
+    // 确保渲染器有有效尺寸
+    const size = this.renderer.getSize(new THREE.Vector2());
+    if (size.width === 0 || size.height === 0) {
+      logger.warn('PostprocessSystem', 'Renderer 尺寸无效，延迟创建 Composer');
+      return;
+    }
+
     this.composer = new EffectComposer(this.renderer, {
       frameBufferType: THREE.UnsignedByteType,
     });

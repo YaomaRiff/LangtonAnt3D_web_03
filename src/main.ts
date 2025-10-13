@@ -20,6 +20,7 @@ import uiPost from './ui/ui-post';
 import uiPresets from './ui/ui-presets';
 import uiCoordinates from './ui/ui-coordinates';
 import uiMonitor from './ui/ui-monitor';
+import uiScene from './ui/ui-scene';
 
 // 核心系统
 import coordinateSystem from './systems/coordinates-sys';
@@ -37,7 +38,7 @@ import sceneDirector from './systems/scene-director-sys';
 
 // 实体
 import pathSys from './systems/path-sys';
-import mathLightSys from './systems/math-light-sys';
+import lightSys from './systems/light-sys';
 
 class Application {
   private scene: THREE.Scene | null;
@@ -103,6 +104,8 @@ class Application {
 
       const mainCamera = cameraSys.getActiveCamera();
 
+      this._handleResize();
+
       postprocessSys.init({
         scene: this.scene as THREE.Scene,
         camera: mainCamera as THREE.Camera,
@@ -123,16 +126,14 @@ class Application {
 
       // 7. 初始化基础 UI
       await uiBasic.init();
+      await uiScene.init();
       // 8. 初始化后处理 UI
       await uiPost.init();
-
       await presetManager.init();
-
       // 9. 初始化预设系统
       await uiPresets.init();
       // 10. 初始化坐标系统UI
       await uiCoordinates.init({ eventBus });
-
       //10.5. 初始化监视器UI
       uiMonitor.init();
 
@@ -146,9 +147,8 @@ class Application {
         coordinateSystem,
       });
 
-      mathLightSys.init({
+      await lightSys.init({
         eventBus,
-        scene: this.scene as THREE.Scene,
         coordinateSystem,
       });
 
@@ -160,10 +160,6 @@ class Application {
 
       animationSys.init({
         eventBus,
-        scene: this.scene as THREE.Scene,
-        renderer: this.renderer as THREE.WebGLRenderer,
-        controls: cameraSys.getControls(),
-        particlesSys,
       });
 
       sceneDirector.init({ eventBus });
@@ -206,10 +202,15 @@ class Application {
     // 移除所有内联定位样式，交给 CSS 处理
     canvas.style.display = 'block';
 
-    // ✅ 关键修改: 将 Canvas 添加到右侧监视器容器
+    //将 Canvas 添加到右侧监视器容器
     this.monitorContainer!.appendChild(canvas);
 
-    logger.info('App', `✅ Canvas 已添加到 #monitor-container`);
+    // 立即设置初始尺寸，防止 Framebuffer 错误
+    const initialWidth = this.monitorContainer!.clientWidth || window.innerWidth;
+    const initialHeight = this.monitorContainer!.clientHeight || window.innerHeight;
+    this.renderer.setSize(initialWidth, initialHeight);
+
+    logger.info('App', `Canvas 已添加到 #monitor-container`);
     logger.debug('App', '渲染器已创建');
   }
 
@@ -219,7 +220,7 @@ class Application {
 
     eventBus.on('show-coordinate-debug', () => {
       const debugInfo = (coordinateSystem as any).debugInfo?.() || 'N/A';
-      console.log('📊 坐标系统调试信息:', debugInfo);
+      console.log('坐标系统调试信息:', debugInfo);
       logger.info('App', '坐标系统调试信息已输出到控制台');
     });
 
@@ -229,14 +230,14 @@ class Application {
   _handleResize() {
     if (!this.renderer || !this.monitorContainer) return;
 
-    // ✅ 关键修改: 从监视器容器获取尺寸
+    //监视器容器获取尺寸
     const width = this.monitorContainer.clientWidth;
     const height = this.monitorContainer.clientHeight;
 
     // 更新渲染器
     this.renderer.setSize(width, height);
 
-    // ✅ 关键修改: 将新尺寸传递给下游系统
+    //将新尺寸传递给下游系统
     cameraSys.handleResize(width, height);
     postprocessSys.handleResize(width, height);
 
@@ -284,8 +285,9 @@ class Application {
     lightingSys.dispose();
     environmentSys.dispose();
     pathSys.dispose();
-    mathLightSys.dispose();
+    lightSys.dispose();
     uiBasic.dispose();
+    uiScene.dispose();
     uiPost.dispose();
     uiPresets.dispose();
     uiCoordinates.dispose();

@@ -29,21 +29,28 @@ export default [
         requestAnimationFrame: 'readonly',
         cancelAnimationFrame: 'readonly',
 
-        // 新增：DOM API
+        // ✅ 核心修复：添加 performance
+        performance: 'readonly',
+
+        // DOM API
         HTMLElement: 'readonly',
         Blob: 'readonly',
         URL: 'readonly',
 
-        // 新增：浏览器弹窗
+        // 浏览器弹窗
         alert: 'readonly',
         confirm: 'readonly',
         prompt: 'readonly',
 
-        // 新增：网络请求
+        // 网络请求
         fetch: 'readonly',
         XMLHttpRequest: 'readonly',
 
-        // 新增：音频 API
+        // 异步控制
+        AbortController: 'readonly',
+        AbortSignal: 'readonly',
+
+        // 音频 API
         AudioContext: 'readonly',
         webkitAudioContext: 'readonly',
       },

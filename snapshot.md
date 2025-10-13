@@ -1,7 +1,7 @@
 # Project Snapshot
 - Root: `.`
-- Created: 2025-10-11 23:30:29
-- Files: 45 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
+- Created: 2025-10-13 02:54:03
+- Files: 49 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
 - Force-Excluded: package-lock.json
 
 ---
@@ -16,6 +16,10 @@ LangtonAnt3D_web_03/
 │  ├─ manifest.json
 ├─ src/
 │  ├─ systems/
+│  │  ├─ renderers/
+│  │  │  ├─ light-renderer.ts
+│  │  │  ├─ math-light-renderer.ts
+│  │  │  └─ model-light-renderer.ts
 │  │  ├─ shaders/
 │  │  │  ├─ path.frag
 │  │  │  └─ path.vert
@@ -26,9 +30,9 @@ LangtonAnt3D_web_03/
 │  │  ├─ coordinates-sys.ts
 │  │  ├─ data-sys.ts
 │  │  ├─ environment-sys.ts
+│  │  ├─ light-sys.ts
 │  │  ├─ lighting-sys.ts
 │  │  ├─ material-sys.ts
-│  │  ├─ math-light-sys.ts
 │  │  ├─ model-sys.ts
 │  │  ├─ particles-sys.ts
 │  │  ├─ path-sys.ts
@@ -44,7 +48,8 @@ LangtonAnt3D_web_03/
 │  │  ├─ ui-monitor.ts
 │  │  ├─ ui-post.ts
 │  │  ├─ ui-presets.ts
-│  │  └─ ui-registry.ts
+│  │  ├─ ui-registry.ts
+│  │  └─ ui-scene.ts
 │  ├─ utils/
 │  │  ├─ logger.ts
 │  │  └─ url-resolver.ts
@@ -117,21 +122,28 @@ export default [
         requestAnimationFrame: 'readonly',
         cancelAnimationFrame: 'readonly',
 
-        // 新增：DOM API
+        // ✅ 核心修复：添加 performance
+        performance: 'readonly',
+
+        // DOM API
         HTMLElement: 'readonly',
         Blob: 'readonly',
         URL: 'readonly',
 
-        // 新增：浏览器弹窗
+        // 浏览器弹窗
         alert: 'readonly',
         confirm: 'readonly',
         prompt: 'readonly',
 
-        // 新增：网络请求
+        // 网络请求
         fetch: 'readonly',
         XMLHttpRequest: 'readonly',
 
-        // 新增：音频 API
+        // 异步控制
+        AbortController: 'readonly',
+        AbortSignal: 'readonly',
+
+        // 音频 API
         AudioContext: 'readonly',
         webkitAudioContext: 'readonly',
       },
@@ -222,7 +234,7 @@ export default [
 {
   "name": "langtonant3d-web-03",
   "private": true,
-  "version": "0.2.4",
+  "version": "0.2.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -242,6 +254,7 @@ export default [
     "@types/node": "^24.7.0",
     "@types/papaparse": "^5.3.16",
     "@types/three": "^0.180.0",
+    "@types/tween.js": "^18.5.1",
     "@typescript-eslint/eslint-plugin": "^8.46.0",
     "@typescript-eslint/parser": "^8.46.0",
     "eslint": "^9.37.0",
@@ -252,6 +265,7 @@ export default [
     "vite": "^5.4.10"
   },
   "dependencies": {
+    "@tweenjs/tween.js": "^25.0.0",
     "camera-controls": "^3.1.0",
     "file-saver": "^2.0.5",
     "glsl-noise": "^0.0.0",
@@ -403,9 +417,9 @@ import logger from './utils/logger';
 import eventBus from './event-bus';
 
 const DEFAULT_CONFIG = {
-  // 🟢 新增：场景构成定义
+  // 场景构成定义
   sceneComposition: {
-    active: 'defaultMath', // 当前激活的构成方案
+    active: 'modelAnt', // 当前激活的构成方案
     compositions: {
       defaultMath: [
         // 默认的数学可视化场景
@@ -415,8 +429,9 @@ const DEFAULT_CONFIG = {
       ],
       // 预留一个模型场景的例子，未来使用
       modelAnt: [
-        { type: 'model', name: 'ant', path: '/models/ant.glb', enabled: true },
-        { type: 'particle-dust', enabled: false },
+        { type: 'math-path', enabled: true }, // 保留路径
+        { type: 'model-light', enabled: true }, // 使用模型光点
+        { type: 'particle-dust', enabled: true },
       ],
     },
   },
@@ -427,7 +442,7 @@ const DEFAULT_CONFIG = {
   },
 
   animation: {
-    speedFactor: 1.65,
+    speedFactor: 0.05,
     loop: true,
   },
 
@@ -802,6 +817,7 @@ import uiPost from './ui/ui-post';
 import uiPresets from './ui/ui-presets';
 import uiCoordinates from './ui/ui-coordinates';
 import uiMonitor from './ui/ui-monitor';
+import uiScene from './ui/ui-scene';
 
 // 核心系统
 import coordinateSystem from './systems/coordinates-sys';
@@ -819,7 +835,7 @@ import sceneDirector from './systems/scene-director-sys';
 
 // 实体
 import pathSys from './systems/path-sys';
-import mathLightSys from './systems/math-light-sys';
+import lightSys from './systems/light-sys';
 
 class Application {
   private scene: THREE.Scene | null;
@@ -885,6 +901,8 @@ class Application {
 
       const mainCamera = cameraSys.getActiveCamera();
 
+      this._handleResize();
+
       postprocessSys.init({
         scene: this.scene as THREE.Scene,
         camera: mainCamera as THREE.Camera,
@@ -905,16 +923,14 @@ class Application {
 
       // 7. 初始化基础 UI
       await uiBasic.init();
+      await uiScene.init();
       // 8. 初始化后处理 UI
       await uiPost.init();
-
       await presetManager.init();
-
       // 9. 初始化预设系统
       await uiPresets.init();
       // 10. 初始化坐标系统UI
       await uiCoordinates.init({ eventBus });
-
       //10.5. 初始化监视器UI
       uiMonitor.init();
 
@@ -928,9 +944,8 @@ class Application {
         coordinateSystem,
       });
 
-      mathLightSys.init({
+      await lightSys.init({
         eventBus,
-        scene: this.scene as THREE.Scene,
         coordinateSystem,
       });
 
@@ -942,10 +957,6 @@ class Application {
 
       animationSys.init({
         eventBus,
-        scene: this.scene as THREE.Scene,
-        renderer: this.renderer as THREE.WebGLRenderer,
-        controls: cameraSys.getControls(),
-        particlesSys,
       });
 
       sceneDirector.init({ eventBus });
@@ -988,10 +999,15 @@ class Application {
     // 移除所有内联定位样式，交给 CSS 处理
     canvas.style.display = 'block';
 
-    // ✅ 关键修改: 将 Canvas 添加到右侧监视器容器
+    //将 Canvas 添加到右侧监视器容器
     this.monitorContainer!.appendChild(canvas);
 
-    logger.info('App', `✅ Canvas 已添加到 #monitor-container`);
+    // 立即设置初始尺寸，防止 Framebuffer 错误
+    const initialWidth = this.monitorContainer!.clientWidth || window.innerWidth;
+    const initialHeight = this.monitorContainer!.clientHeight || window.innerHeight;
+    this.renderer.setSize(initialWidth, initialHeight);
+
+    logger.info('App', `Canvas 已添加到 #monitor-container`);
     logger.debug('App', '渲染器已创建');
   }
 
@@ -1001,7 +1017,7 @@ class Application {
 
     eventBus.on('show-coordinate-debug', () => {
       const debugInfo = (coordinateSystem as any).debugInfo?.() || 'N/A';
-      console.log('📊 坐标系统调试信息:', debugInfo);
+      console.log('坐标系统调试信息:', debugInfo);
       logger.info('App', '坐标系统调试信息已输出到控制台');
     });
 
@@ -1011,14 +1027,14 @@ class Application {
   _handleResize() {
     if (!this.renderer || !this.monitorContainer) return;
 
-    // ✅ 关键修改: 从监视器容器获取尺寸
+    //监视器容器获取尺寸
     const width = this.monitorContainer.clientWidth;
     const height = this.monitorContainer.clientHeight;
 
     // 更新渲染器
     this.renderer.setSize(width, height);
 
-    // ✅ 关键修改: 将新尺寸传递给下游系统
+    //将新尺寸传递给下游系统
     cameraSys.handleResize(width, height);
     postprocessSys.handleResize(width, height);
 
@@ -1066,8 +1082,9 @@ class Application {
     lightingSys.dispose();
     environmentSys.dispose();
     pathSys.dispose();
-    mathLightSys.dispose();
+    lightSys.dispose();
     uiBasic.dispose();
+    uiScene.dispose();
     uiPost.dispose();
     uiPresets.dispose();
     uiCoordinates.dispose();
@@ -1524,43 +1541,41 @@ body {
 
 ```
 /**
- * @file animation-sys.js
- * @description 动画系统 - 路径插值与步进控制
- * 核心改造: 监听统一的 'config-changed' 事件来控制动画启停。
+ * @file animation-sys.ts
+ * @description 极简动画系统 - 基于 requestAnimationFrame 的线性插值
+ * @version 5.2 (Type Safety Fix)
+ *
+ * 核心修复：
+ *   1. 增加基础时长到 60 秒
+ *   2. 循环时自动重置路径绘制
+ *   3. 同步更新步数状态
+ *   4. ✅ 添加完整的类型守卫，修复所有 undefined 错误
  */
-import * as THREE from 'three';
 import logger from '../utils/logger';
 import config from '../config';
 import state from './state';
+import * as THREE from 'three';
 
 class AnimationSystem {
   private eventBus: any;
-
-  // 公共属性
-  public scene: THREE.Scene | null = null;
-  public renderer: THREE.WebGLRenderer | null = null;
-  public controls: any = null;
-  public particlesSys: any = null;
-
   private initialized: boolean;
-  private currentStep: number;
-  private lerpT: number;
-  private animating: boolean;
-  private mappedPoints: any[];
+
+  // 动画状态
+  private isPlaying: boolean = false;
+  private progress: number = 0; // 归一化进度 [0, 1]
+  private speed: number = 1; // 速度倍率
+  private lastTime: number = 0;
+
+  // 数据
+  private mappedPoints: THREE.Vector3[] = [];
+  private baseDuration: number = 60000; // ✅ 60 秒
 
   constructor() {
     this.eventBus = null;
-
     this.initialized = false;
-
-    // 动画状态
-    this.currentStep = 0;
-    this.lerpT = 0;
-    this.animating = false;
-    this.mappedPoints = [];
   }
 
-  init({ eventBus, scene, renderer, controls, particlesSys }: any) {
+  init({ eventBus }: any) {
     if (this.initialized) {
       logger.warn('AnimationSystem', '动画系统已经初始化过了');
       return this;
@@ -1568,16 +1583,14 @@ class AnimationSystem {
 
     try {
       this.eventBus = eventBus;
-      this.scene = scene;
-      this.renderer = renderer;
-      this.controls = controls;
-      this.particlesSys = particlesSys;
 
-      this._loadInitialConfig();
+      // 从配置中读取初始速度
+      this.speed = config.get('animation.speedFactor') || 1;
+
       this._bindEvents();
 
       this.initialized = true;
-      logger.info('AnimationSystem', '动画系统初始化完成');
+      logger.info('AnimationSystem', `✅ 极简动画系统初始化完成 | 初始速度: ${this.speed}x`);
 
       return this;
     } catch (err: unknown) {
@@ -1586,142 +1599,162 @@ class AnimationSystem {
     }
   }
 
-  _loadInitialConfig() {
-    this.animating = state.get('animation.animating') || false; //从 state 读取
-  }
-
   _bindEvents() {
-    // ✅ 核心改造：监听通用配置变更事件
-    this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
-    this.eventBus.on('state-changed', this._handleStateChange.bind(this));
-
-    // ✅ 保留数据信号和命令式事件
+    // 数据加载
     this.eventBus.on('data-loaded', (data: { points: THREE.Vector3[] }) => {
       this.mappedPoints = data.points;
-      this.currentStep = 0;
-      this.lerpT = 0;
-      logger.info('AnimationSystem', `数据已加载: ${this.mappedPoints.length} 个点`);
+      logger.info('AnimationSystem', `数据已加载 | 节点数: ${this.mappedPoints.length}`);
     });
 
+    // 状态变更
+    this.eventBus.on('state-changed', ({ key, value }: { key: string; value: any }) => {
+      if (key === 'animation.animating') {
+        if (value) this.play();
+        else this.pause();
+      }
+    });
+
+    // 配置变更
+    this.eventBus.on('config-changed', ({ key, value }: { key: string; value: any }) => {
+      if (key === 'animation.speedFactor') {
+        this.speed = value;
+      }
+    });
+
+    // 重置
     this.eventBus.on('reset-animation', () => {
       this.reset();
     });
 
+    // 跳转到指定步数
     this.eventBus.on('step-to', (step: number) => {
       this.stepTo(step);
     });
   }
 
-  //统一处理配置变更
-  _handleConfigChange(_params: { key: string; value: any }): void {
-    // speedFactor 和 loop 在 update 循环中直接从 config 读取，无需处理
-    // animating 的处理已移至 _handleStateChange
-  }
+  /**
+   * 🔥 核心方法：每帧更新
+   */
+  update(_delta: number, _elapsed: number) {
+    if (!this.isPlaying || this.mappedPoints.length < 2) return;
 
-  //统一处理 *状态* 变更
-  _handleStateChange({ key, value }: { key: string; value: any }) {
-    if (key === 'animation.animating') {
-      this.animating = value;
-      logger.info('AnimationSystem', `动画状态变更为: ${value ? '播放' : '暂停'}`);
-    }
-  }
+    const now = performance.now();
+    const dt = now - this.lastTime;
+    this.lastTime = now;
 
-  update(delta: number, _elapsed: number) {
-    if (!this.animating || this.mappedPoints.length === 0) return;
+    // 更新进度
+    const increment = (dt / this.baseDuration) * this.speed;
+    this.progress += increment;
 
-    const speedFactor = config.get('animation.speedFactor') || 0.1;
-    this.lerpT += speedFactor * delta;
+    // ✅ 循环处理（增强版）
+    if (this.progress >= 1) {
+      if (config.get('animation.loop')) {
+        this.progress = 0;
 
-    if (this.lerpT >= 1.0) {
-      this.lerpT = 0;
-      this.currentStep++;
+        // 🔥 核心修复：循环时重置路径
+        this.eventBus.emit('animation-reset');
 
-      if (this.currentStep >= this.mappedPoints.length - 1) {
-        const loop = config.get('animation.loop');
-        if (loop) {
-          this.currentStep = 0;
-          logger.debug('AnimationSystem', '动画循环重新开始');
-        } else {
-          state.set('animation.animating', false);
-          this.eventBus.emit('animation-completed');
-          logger.info('AnimationSystem', '动画播放完成');
-          return;
-        }
+        logger.info('AnimationSystem', '🔁 循环重置');
+      } else {
+        this.progress = 1;
+        this.pause();
       }
     }
 
     this._updatePosition();
-
-    // 更新配置状态(触发UI刷新)
-    state.set('animation.currentStep', this.currentStep);
-    state.set('animation.lerpT', this.lerpT);
-
-    this.eventBus.emit('animation-step-updated', this.currentStep);
   }
 
+  /**
+   * 🔥 核心方法：根据进度计算火箭位置
+   * ✅ 修复：添加完整的类型守卫
+   */
   _updatePosition() {
-    if (this.currentStep >= this.mappedPoints.length - 1) return;
+    if (this.mappedPoints.length < 2) return;
 
-    const current = this.mappedPoints[this.currentStep];
-    const next = this.mappedPoints[this.currentStep + 1];
+    const totalSegments = this.mappedPoints.length - 1;
+    const segmentFloat = this.progress * totalSegments;
+    const segmentIndex = Math.floor(segmentFloat);
+    const segmentT = segmentFloat - segmentIndex;
 
-    const interpolated = new THREE.Vector3().lerpVectors(current, next, this.lerpT);
+    // ✅ 修复：添加边界检查
+    if (segmentIndex >= totalSegments) {
+      const lastPoint = this.mappedPoints[this.mappedPoints.length - 1];
 
-    this.eventBus.emit('moving-light-position-updated', interpolated);
-  }
+      // ✅ 核心修复：添加类型守卫
+      if (!lastPoint) {
+        logger.warn('AnimationSystem', '最后一个点不存在');
+        return;
+      }
 
-  reset() {
-    // 通过 config.set 驱动状态变更
-    state.set('animation.currentStep', 0);
-    state.set('animation.lerpT', 0);
-    state.set('animation.animating', false);
-
-    // 手动同步内部状态
-    this.currentStep = 0;
-    this.lerpT = 0;
-
-    logger.info('AnimationSystem', '动画已重置');
-    this.eventBus.emit('animation-reset');
-  }
-
-  stepTo(step: number): void {
-    if (step < 0 || step >= this.mappedPoints.length) {
-      logger.warn('AnimationSystem', `无效的步骤: ${step}`);
+      this._emitPosition(lastPoint, 1.0);
+      state.set('animation.currentStep', totalSegments);
       return;
     }
 
-    // 通过 config.set 驱动状态变更
-    state.set('animation.currentStep', step);
-    state.set('animation.lerpT', 0);
+    // ✅ 核心修复：线性插值前添加类型守卫
+    const p0 = this.mappedPoints[segmentIndex];
+    const p1 = this.mappedPoints[segmentIndex + 1];
 
-    // 手动同步内部状态
-    this.currentStep = step;
-    this.lerpT = 0;
+    // ✅ 确保两个点都存在
+    if (!p0 || !p1) {
+      logger.warn('AnimationSystem', `插值点不存在: index=${segmentIndex}`);
+      return;
+    }
+
+    const position = new THREE.Vector3(
+      THREE.MathUtils.lerp(p0.x, p1.x, segmentT),
+      THREE.MathUtils.lerp(p0.y, p1.y, segmentT),
+      THREE.MathUtils.lerp(p0.z, p1.z, segmentT)
+    );
+
+    this._emitPosition(position, this.progress);
+    state.set('animation.currentStep', segmentIndex);
+  }
+
+  /**
+   * 🔥 核心方法：发出位置更新事件（统一格式）
+   */
+  _emitPosition(position: THREE.Vector3, progress: number) {
+    this.eventBus.emit('moving-light-position-updated', {
+      position: position.clone(),
+      progress: progress,
+    });
+  }
+
+  play() {
+    if (this.isPlaying) return;
+    this.isPlaying = true;
+    this.lastTime = performance.now();
+    logger.info('AnimationSystem', '▶️ 开始播放');
+  }
+
+  pause() {
+    this.isPlaying = false;
+    logger.info('AnimationSystem', '⏸️ 暂停');
+  }
+
+  reset() {
+    this.progress = 0;
+    this.isPlaying = false;
+    this._updatePosition();
+    logger.info('AnimationSystem', '🔄 重置');
+  }
+
+  stepTo(step: number) {
+    if (step < 0 || step >= this.mappedPoints.length) {
+      logger.warn('AnimationSystem', `⚠️ 无效步数: ${step}`);
+      return;
+    }
+
+    const totalSegments = Math.max(1, this.mappedPoints.length - 1);
+    this.progress = step / totalSegments;
 
     this._updatePosition();
-    // ✅ 使用节流日志，避免拖动进度条时刷屏
-    logger.debugThrottled(
-      'AnimationSystem',
-      'animation-step-to', // 节流的唯一Key
-      `跳转到步骤: ${this.currentStep}`,
-      500 // 500毫秒的间隔对进度条拖动更友好
-    );
-  }
-
-  getCurrentStep() {
-    return this.currentStep;
-  }
-  getTotalSteps() {
-    return this.mappedPoints.length;
-  }
-
-  getProgress() {
-    if (this.mappedPoints.length === 0) return 0;
-    return (this.currentStep + this.lerpT) / this.mappedPoints.length;
+    logger.debug('AnimationSystem', `⏭️ 跳转到步数 ${step}`);
   }
 
   dispose() {
-    this.animating = false;
+    this.isPlaying = false;
     this.initialized = false;
     logger.info('AnimationSystem', '动画系统已销毁');
   }
@@ -2802,6 +2835,178 @@ export default environmentSys;
 
 ```
 
+### src/systems/light-sys.ts
+
+```
+/**
+ * @file light-sys.ts
+ * @description 统一光点管理器 - 只负责接收位置更新
+ * @version 2.0 (Simplified)
+ */
+import * as THREE from 'three';
+import logger from '../utils/logger';
+import config from '../config';
+import { ILightRenderer } from './renderers/light-renderer';
+import { MathLightRenderer } from './renderers/math-light-renderer';
+import { ModelLightRenderer } from './renderers/model-light-renderer';
+
+type RendererType = 'math' | 'model';
+
+class LightSystem {
+  private eventBus: any = null;
+  private initialized = false;
+
+  // 渲染器管理
+  private renderers: Map<RendererType, ILightRenderer> = new Map();
+  private activeRenderer: ILightRenderer | null = null;
+  private currentType: RendererType = 'math';
+
+  // 状态缓存
+  private currentPosition: THREE.Vector3 = new THREE.Vector3();
+  private isEnabled = true;
+
+  constructor() {}
+
+  async init({ eventBus, coordinateSystem }: { eventBus: any; coordinateSystem: any }) {
+    if (this.initialized) {
+      logger.warn('LightSystem', '光点系统已初始化');
+      return this;
+    }
+
+    try {
+      this.eventBus = eventBus;
+
+      // 创建所有渲染器实例
+      this.renderers.set('math', new MathLightRenderer(coordinateSystem));
+      this.renderers.set('model', new ModelLightRenderer(coordinateSystem));
+
+      // 根据配置决定默认激活哪个渲染器
+      const activeComposition = config.get('sceneComposition.active');
+      const defaultType = activeComposition === 'modelAnt' ? 'model' : 'math';
+
+      await this._switchRenderer(defaultType);
+
+      this._bindEvents();
+
+      this.initialized = true;
+      logger.info('LightSystem', '统一光点系统初始化完成');
+
+      return this;
+    } catch (err: unknown) {
+      logger.error('LightSystem', `初始化失败: ${(err as Error).message}`);
+      throw err;
+    }
+  }
+
+  /**
+   * 🔥 核心方法：切换渲染器
+   */
+  private async _switchRenderer(type: RendererType) {
+    if (this.currentType === type && this.activeRenderer?.isReady) {
+      return;
+    }
+
+    // 销毁旧渲染器
+    if (this.activeRenderer) {
+      this.activeRenderer.dispose();
+    }
+
+    // 激活新渲染器
+    const newRenderer = this.renderers.get(type);
+    if (!newRenderer) {
+      logger.error('LightSystem', `未知的渲染器类型: ${type}`);
+      return;
+    }
+
+    if (!newRenderer.isReady) {
+      await newRenderer.create();
+    }
+
+    this.activeRenderer = newRenderer;
+    this.currentType = type;
+
+    // 恢复到当前位置
+    if (this.isEnabled && this.currentPosition.lengthSq() > 0) {
+      this.activeRenderer.updatePosition(this.currentPosition);
+    }
+
+    logger.info('LightSystem', `✅ 已切换到 ${type} 渲染器`);
+  }
+
+  /**
+   * 🔥 核心方法：绑定事件
+   */
+  private _bindEvents() {
+    // 监听位置更新（新格式）
+    this.eventBus.on('moving-light-position-updated', (data: any) => {
+      const position = data.position || data;
+      this.updatePosition(position);
+    });
+
+    // 监听场景切换
+    this.eventBus.on('config-changed', async ({ key }: { key: string }) => {
+      if (key === 'sceneComposition.active') {
+        const compositionName = config.get('sceneComposition.active');
+        const targetType = compositionName === 'modelAnt' ? 'model' : 'math';
+        await this._switchRenderer(targetType);
+      }
+    });
+
+    // 监听动画重置
+    this.eventBus.on('animation-reset', () => {
+      this.hide();
+    });
+  }
+
+  /**
+   * 更新光点位置
+   */
+  updatePosition(position: THREE.Vector3) {
+    if (!this.isEnabled || !this.activeRenderer) return;
+
+    this.currentPosition.copy(position);
+
+    if (this.activeRenderer.isReady) {
+      this.activeRenderer.updatePosition(position);
+    }
+  }
+
+  show() {
+    if (this.activeRenderer) {
+      this.activeRenderer.show();
+    }
+  }
+
+  hide() {
+    if (this.activeRenderer) {
+      this.activeRenderer.hide();
+    }
+  }
+
+  enable() {
+    this.isEnabled = true;
+    this.show();
+  }
+
+  disable() {
+    this.isEnabled = false;
+    this.hide();
+  }
+
+  dispose() {
+    this.renderers.forEach((renderer) => renderer.dispose());
+    this.renderers.clear();
+    this.activeRenderer = null;
+    this.initialized = false;
+    logger.info('LightSystem', '统一光点系统已销毁');
+  }
+}
+
+const lightSys = new LightSystem();
+export default lightSys;
+
+```
+
 ### src/systems/lighting-sys.ts
 
 ```
@@ -3057,172 +3262,6 @@ class MaterialService {
 
 const materialSys = new MaterialService();
 export default materialSys;
-
-```
-
-### src/systems/math-light-sys.ts
-
-```
-/**
- * @file math-light-sys.ts
- * @description 移动光点系统 (数学球体版)
- * ✅ 重构: 监听统一的 'config-changed' 事件
- */
-import * as THREE from 'three';
-import logger from '../utils/logger';
-
-import materialSys from './material-sys';
-import postprocessSys from './postprocess-sys';
-
-class MathLightSystem {
-  private eventBus: any;
-
-  // ✅ 公共属性
-  public scene: THREE.Scene | null = null;
-
-  private coordinateSystem: any;
-  private initialized: boolean;
-  private lightMesh: any;
-  private currentPosition: THREE.Vector3;
-
-  constructor() {
-    this.eventBus = null;
-
-    this.coordinateSystem = null;
-    this.initialized = false;
-
-    this.lightMesh = null;
-    this.currentPosition = new THREE.Vector3();
-  }
-
-  init({
-    eventBus,
-    scene,
-    coordinateSystem,
-  }: {
-    eventBus: any;
-    scene: THREE.Scene;
-    coordinateSystem: any;
-  }) {
-    if (this.initialized) {
-      logger.warn('MathLightSystem', '移动光点已经初始化过了');
-      return this;
-    }
-
-    try {
-      this.eventBus = eventBus;
-      this.scene = scene;
-      this.coordinateSystem = coordinateSystem;
-
-      this._createLight();
-      this._bindEvents();
-
-      this.initialized = true;
-      logger.info('MathLightSystem', '移动光点(数学版)初始化完成');
-
-      return this;
-    } catch (err: unknown) {
-      logger.error('MathLightSystem', `初始化失败: ${(err as Error).message}`);
-      throw err;
-    }
-  }
-
-  _createLight() {
-    // 🟢 补上丢失的 geometry 定义
-    const geometry = new THREE.SphereGeometry(0.5, 16, 16);
-
-    // 从 MaterialService 获取预创建的材质
-    const material = materialSys.get('movingLight');
-
-    if (!material) {
-      logger.error(
-        'MathLightSystem',
-        '无法从 MaterialService 获取 "movingLight" 材质，光点无法创建。'
-      );
-      return;
-    }
-
-    this.lightMesh = new THREE.Mesh(geometry, material);
-    this.lightMesh.name = 'MovingLight_Math';
-    this.lightMesh.visible = false;
-    this.lightMesh.userData = { glow: true };
-
-    const lightAnchor = this.coordinateSystem.getLightAnchor();
-    lightAnchor.add(this.lightMesh);
-
-    postprocessSys.addGlowObject(this.lightMesh); // **注册到新的辉光系统**
-
-    logger.debug('MathLightSystem', '光点球体已创建');
-  }
-
-  _bindEvents() {
-    this.eventBus.on('moving-light-position-updated', (position: any) => {
-      this.updatePosition(position);
-    });
-
-    this.eventBus.on('animation-reset', () => {
-      this.hide();
-    });
-
-    // ✅ 核心改造：监听通用配置变更事件
-    this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
-  }
-
-  /**
-   * ✅ 新增: 统一处理配置变更
-   * @param {{key: string, value: any}} param0
-   */
-  _handleConfigChange({ key, value }: { key: string; value: any }) {
-    if (!this.lightMesh) return;
-
-    switch (key) {
-      case 'particles.pathPointSize':
-        this.lightMesh.scale.setScalar(value);
-        break;
-    }
-  }
-
-  updatePosition(position: any) {
-    if (this.lightMesh && position) {
-      this.currentPosition.copy(position);
-      this.lightMesh.position.copy(position);
-      this.lightMesh.visible = true;
-    }
-  }
-
-  hide() {
-    if (this.lightMesh) {
-      this.lightMesh.visible = false;
-    }
-  }
-
-  enable() {
-    // 启用光点时，只有在动画进行中才应该可见
-    // AnimationSystem 会通过 'moving-light-position-updated' 事件来控制其具体可见性
-    // 所以这里只是一个逻辑上的启用标记
-    logger.debug('MathLightSystem', '已启用 (可见性由动画系统控制)');
-  }
-
-  disable() {
-    this.hide(); // 禁用时，强制隐藏
-    logger.debug('MathLightSystem', '已禁用');
-  }
-
-  dispose() {
-    if (this.lightMesh && this.coordinateSystem) {
-      const lightAnchor = this.coordinateSystem.getLightAnchor();
-      lightAnchor.remove(this.lightMesh);
-      this.lightMesh.geometry.dispose();
-      this.lightMesh.material.dispose();
-    }
-
-    this.initialized = false;
-    logger.info('MathLightSystem', '移动光点已销毁');
-  }
-}
-
-const mathLightSys = new MathLightSystem();
-export default mathLightSys;
 
 ```
 
@@ -3637,10 +3676,14 @@ export default particlesSys;
 ```
 /**
  * @file path-sys.ts
- * @description 路径系统 - 动态轨迹线条 + 实时绘制
- * 🔧 修正: 移除对旧辉光层 (GLOW_LAYER) 的引用，改用新的 postprocessSys.addGlowObject() 方法。
- * 🔧 修正: 移除对共享材质的 .dispose() 调用，以保护材质服务。
- * 🔧 补充: 恢复 enable/disable 方法以兼容场景导演。
+ * @description 极简路径系统 - 火箭轨迹的可视化
+ * @version 5.1 (Type Safety Fix)
+ *
+ * 核心逻辑：
+ *   1. 预分配足够的顶点空间（基于节点数量）
+ *   2. 监听火箭位置更新，动态扩展绘制范围
+ *   3. 使用 drawRange 控制可见部分
+ *   4. ✅ 添加完整的类型守卫，修复所有 undefined 错误
  */
 import * as THREE from 'three';
 import logger from '../utils/logger';
@@ -3650,28 +3693,25 @@ import postprocessSys from './postprocess-sys';
 
 class PathSystem {
   private eventBus: any;
-
-  // ✅ 公共属性
   public scene: THREE.Scene | null = null;
   public isEnabled: boolean = true;
 
   private coordinateSystem: any;
   private initialized: boolean;
   private pathLine: THREE.Line | null;
-  private allPoints: THREE.Vector3[];
-  private currentDrawIndex: number;
   private pathContainer: THREE.Group | null;
+
+  // 核心数据
+  private rawPoints: THREE.Vector3[] = []; // CSV原始节点
+  private samplesPerSegment: number = 10; // 每段插值点数
+  private currentDrawCount: number = 0; // 当前绘制的顶点数
+  private totalSamples: number = 0; // 总采样点数
 
   constructor() {
     this.eventBus = null;
-
     this.coordinateSystem = null;
     this.initialized = false;
-
     this.pathLine = null;
-    this.allPoints = [];
-    this.currentDrawIndex = 0;
-
     this.pathContainer = null;
   }
 
@@ -3706,7 +3746,7 @@ class PathSystem {
       this._bindEvents();
 
       this.initialized = true;
-      logger.info('PathSystem', '路径系统初始化完成');
+      logger.info('PathSystem', '✅ 极简路径系统初始化完成');
 
       return this;
     } catch (err: unknown) {
@@ -3716,75 +3756,101 @@ class PathSystem {
   }
 
   _bindEvents() {
+    // 🔥 核心事件1：数据加载完成，创建路径几何体
     this.eventBus.on('data-loaded', (data: { points: THREE.Vector3[] }) => {
-      this.allPoints = data.points;
-      this.currentDrawIndex = 0;
+      this.rawPoints = data.points;
       this._createPath();
     });
 
-    this.eventBus.on('moving-light-position-updated', (position: THREE.Vector3) => {
-      this._updatePathToPosition(position);
+    // 🔥 核心事件2：火箭位置更新，扩展路径绘制
+    this.eventBus.on('moving-light-position-updated', ({ progress }: { progress: number }) => {
+      this._updatePathByProgress(progress);
     });
 
-    this.eventBus.on('animation-step-updated', (step: number) => {
-      this._jumpToStep(step);
-    });
+    // 配置变更
+    this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
 
+    // 动画重置
     this.eventBus.on('animation-reset', () => {
-      this.currentDrawIndex = 0;
+      this.currentDrawCount = 0;
       if (this.pathLine) {
         this.pathLine.geometry.setDrawRange(0, 0);
       }
     });
-
-    this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
   }
 
   _handleConfigChange({ key, value }: { key: string; value: any }) {
-    if (!this.pathLine) return;
-
-    switch (key) {
-      case 'path.scale':
-        if (this.pathContainer) {
-          this.pathContainer.scale.setScalar(value);
-        }
-        break;
+    if (key === 'path.scale' && this.pathContainer) {
+      this.pathContainer.scale.setScalar(value);
     }
   }
 
+  /**
+   * 🔥 核心方法1：创建路径几何体（预分配足够空间）
+   * ✅ 修复：添加完整的类型守卫
+   */
   _createPath() {
-    if (!this.allPoints || this.allPoints.length === 0) {
-      logger.warn('PathSystem', '路径点为空');
+    if (this.rawPoints.length < 2) {
+      logger.error('PathSystem', '节点数量不足');
       return;
     }
 
+    // 清理旧对象
     if (this.pathLine && this.pathContainer) {
-      // ✅ 核心修正: 从辉光场景中移除旧对象
       postprocessSys.removeGlowObject(this.pathLine);
       this.pathContainer.remove(this.pathLine);
       this.pathLine.geometry.dispose();
-      // ✅ 核心修正: 不要销毁由 materialSys 管理的共享材质
-      // this.pathLine.material.dispose();
     }
 
-    const geometry = new THREE.BufferGeometry();
-    const maxPoints = this.allPoints.length;
-    const positions = new Float32Array(maxPoints * 3);
+    // 计算总采样点数（每段插值 + 最后一个节点）
+    const totalSegments = this.rawPoints.length - 1;
+    this.totalSamples = totalSegments * this.samplesPerSegment + 1;
 
-    for (let i = 0; i < maxPoints; i++) {
-      const point = this.allPoints[i];
-      positions[i * 3] = point?.x || 0;
-      positions[i * 3 + 1] = point?.y || 0;
-      positions[i * 3 + 2] = point?.z || 0;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(this.totalSamples * 3);
+
+    // 🔥 核心逻辑：预填充所有插值点
+    let idx = 0;
+    for (let i = 0; i < totalSegments; i++) {
+      const p0 = this.rawPoints[i];
+      const p1 = this.rawPoints[i + 1];
+
+      // ✅ 核心修复：添加类型守卫
+      if (!p0 || !p1) {
+        logger.warn('PathSystem', `跳过无效段: index=${i}`);
+        continue;
+      }
+
+      for (let j = 0; j < this.samplesPerSegment; j++) {
+        const t = j / this.samplesPerSegment;
+        const x = THREE.MathUtils.lerp(p0.x, p1.x, t);
+        const y = THREE.MathUtils.lerp(p0.y, p1.y, t);
+        const z = THREE.MathUtils.lerp(p0.z, p1.z, t);
+
+        positions[idx * 3] = x;
+        positions[idx * 3 + 1] = y;
+        positions[idx * 3 + 2] = z;
+        idx++;
+      }
+    }
+
+    // ✅ 修复：添加最后一个节点的类型守卫
+    const lastPoint = this.rawPoints[this.rawPoints.length - 1];
+    if (lastPoint) {
+      positions[idx * 3] = lastPoint.x;
+      positions[idx * 3 + 1] = lastPoint.y;
+      positions[idx * 3 + 2] = lastPoint.z;
+    } else {
+      logger.warn('PathSystem', '最后一个节点不存在');
     }
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setDrawRange(0, 0);
+    geometry.setDrawRange(0, 0); // 初始不绘制
 
     const material = materialSys.get('pathLine');
 
     if (!material) {
-      logger.error('PathSystem', '无法从 MaterialService 获取 "pathLine" 材质，路径无法创建。');
+      logger.error('PathSystem', '❌ 无法获取路径材质');
       return;
     }
 
@@ -3792,48 +3858,43 @@ class PathSystem {
     this.pathLine.name = 'PathLine';
     this.pathLine.userData = { glow: true };
 
-    // ✅ 核心修正: 使用新的方法将路径添加到辉光场景
     postprocessSys.addGlowObject(this.pathLine);
-
     this.pathContainer?.add(this.pathLine);
 
-    this.currentDrawIndex = 0;
-    logger.info('PathSystem', `路径已创建: 总点数 ${this.allPoints.length}`);
+    this.currentDrawCount = 0;
+
+    logger.info(
+      'PathSystem',
+      `✅ 路径已创建 | 节点数: ${this.rawPoints.length} | 总采样点: ${this.totalSamples}`
+    );
   }
 
-  _updatePathToPosition(position: THREE.Vector3) {
-    if (!this.pathLine || !this.allPoints.length) return;
+  /**
+   * 🔥 核心方法2：根据归一化进度 [0, 1] 更新路径绘制范围
+   */
+  _updatePathByProgress(progress: number) {
+    if (!this.pathLine || this.totalSamples === 0) return;
 
-    let closestIndex = 0;
-    let minDist = Infinity;
+    // 钳制进度范围
+    progress = THREE.MathUtils.clamp(progress, 0, 1);
 
-    for (let i = this.currentDrawIndex; i < this.allPoints.length; i++) {
-      const dist = this.allPoints[i] ? position.distanceTo(this.allPoints[i]!) : Infinity;
-      if (dist < minDist) {
-        minDist = dist;
-        closestIndex = i;
-      }
-      if (dist > minDist && i > this.currentDrawIndex + 5) break; // 优化: 如果距离开始变大，则停止搜索
+    // 计算当前应该绘制到第几个顶点
+    const targetDrawCount = Math.floor(progress * this.totalSamples);
+
+    // 只在需要扩展时更新（避免重复刷新）
+    if (targetDrawCount > this.currentDrawCount) {
+      this.currentDrawCount = targetDrawCount;
+      this.pathLine.geometry.setDrawRange(0, Math.max(1, this.currentDrawCount));
     }
-
-    if (closestIndex > this.currentDrawIndex) {
-      this.currentDrawIndex = closestIndex;
-      this.pathLine.geometry.setDrawRange(0, this.currentDrawIndex + 1);
-    }
   }
 
-  _jumpToStep(step: number) {
-    if (!this.pathLine || !this.allPoints.length) return;
-
-    const targetIndex = Math.min(step, this.allPoints.length - 1);
-    this.currentDrawIndex = targetIndex;
-    this.pathLine.geometry.setDrawRange(0, this.currentDrawIndex + 1);
-  }
-
+  /**
+   * 更新相机位置（用于深度着色器）
+   */
   updateCameraPosition(camera: THREE.Camera) {
     if (this.pathLine && camera && this.pathContainer) {
       const material = this.pathLine.material as THREE.ShaderMaterial;
-      if (material.uniforms.uCameraPosition) {
+      if (material.uniforms?.uCameraPosition) {
         const worldCamPos = camera.position.clone();
         const localCamPos = this.pathContainer.worldToLocal(worldCamPos);
         material.uniforms.uCameraPosition.value.copy(localCamPos);
@@ -3842,10 +3903,9 @@ class PathSystem {
   }
 
   update(_delta: number) {
-    // 占位
+    // 占位方法（未来可添加动画效果）
   }
 
-  // ✅ 补充: 恢复 enable/disable 方法以兼容 scene-director-sys
   enable() {
     this.isEnabled = true;
     if (this.pathContainer) this.pathContainer.visible = true;
@@ -3979,6 +4039,13 @@ class PostprocessSystem {
 
   private _createComposer() {
     if (!this.renderer || !this.mainScene || !this.camera) return;
+
+    // 确保渲染器有有效尺寸
+    const size = this.renderer.getSize(new THREE.Vector2());
+    if (size.width === 0 || size.height === 0) {
+      logger.warn('PostprocessSystem', 'Renderer 尺寸无效，延迟创建 Composer');
+      return;
+    }
 
     this.composer = new EffectComposer(this.renderer, {
       frameBufferType: THREE.UnsignedByteType,
@@ -4176,26 +4243,418 @@ export default postprocessSys;
 
 ```
 
+### src/systems/renderers/light-renderer.ts
+
+```
+/**
+ * @file light-renderer.ts
+ * @description 光点渲染器接口定义 - 策略模式的核心抽象
+ */
+import * as THREE from 'three';
+
+export interface ILightRenderer {
+  /**
+   * 创建视觉对象（球体/模型/粒子等）
+   */
+  create(): Promise<void> | void;
+
+  /**
+   * 更新光点位置
+   */
+  updatePosition(position: THREE.Vector3): void;
+
+  /**
+   * 更新光点朝向（可选，仅3D模型需要）
+   */
+  updateRotation?(direction: THREE.Vector3): void;
+
+  /**
+   * 显示光点
+   */
+  show(): void;
+
+  /**
+   * 隐藏光点
+   */
+  hide(): void;
+
+  /**
+   * 销毁资源
+   */
+  dispose(): void;
+
+  /**
+   * 是否已准备好（异步加载完成）
+   */
+  readonly isReady: boolean;
+}
+
+```
+
+### src/systems/renderers/math-light-renderer.ts
+
+```
+/**
+ * @file math-light-renderer.ts
+ * @description 数学球体光点渲染器 - 基于 THREE.Mesh
+ */
+import * as THREE from 'three';
+import { ILightRenderer } from './light-renderer';
+import materialSys from '../material-sys';
+import postprocessSys from '../postprocess-sys';
+import logger from '../../utils/logger';
+
+export class MathLightRenderer implements ILightRenderer {
+  private mesh: THREE.Mesh | null = null;
+  private coordinateSystem: any;
+  private _isReady = false;
+
+  constructor(coordinateSystem: any) {
+    this.coordinateSystem = coordinateSystem;
+  }
+
+  get isReady(): boolean {
+    return this._isReady;
+  }
+
+  create(): void {
+    const geometry = new THREE.SphereGeometry(0.5, 16, 16);
+    const material = materialSys.get('movingLight');
+
+    if (!material) {
+      logger.error('MathLightRenderer', '无法获取材质');
+      return;
+    }
+
+    this.mesh = new THREE.Mesh(geometry, material);
+    this.mesh.name = 'MovingLight_Math';
+    this.mesh.visible = false;
+    this.mesh.userData = { glow: true };
+
+    const lightAnchor = this.coordinateSystem.getLightAnchor();
+    lightAnchor.add(this.mesh);
+
+    postprocessSys.addGlowObject(this.mesh);
+
+    this._isReady = true;
+    logger.info('MathLightRenderer', '✅ 数学球体已创建');
+  }
+
+  updatePosition(position: THREE.Vector3): void {
+    if (this.mesh) {
+      this.mesh.position.copy(position);
+      this.mesh.visible = true;
+    }
+  }
+
+  show(): void {
+    if (this.mesh) this.mesh.visible = true;
+  }
+
+  hide(): void {
+    if (this.mesh) this.mesh.visible = false;
+  }
+
+  dispose(): void {
+    if (this.mesh) {
+      postprocessSys.removeGlowObject(this.mesh);
+      const lightAnchor = this.coordinateSystem.getLightAnchor();
+      lightAnchor.remove(this.mesh);
+      this.mesh.geometry.dispose();
+      // 不销毁共享材质
+    }
+    this._isReady = false;
+    logger.info('MathLightRenderer', '数学球体已销毁');
+  }
+}
+
+```
+
+### src/systems/renderers/model-light-renderer.ts
+
+```
+/**
+ * @file model-light-renderer.ts
+ * @description 3D模型光点渲染器 - 组合方案：跟随点光源 + 轻微自发光
+ * @version 3.0 (Combined Lighting Solution)
+ *
+ * 核心改进：
+ *   1. ✅ 添加跟随火箭的点光源（方案1）
+ *   2. ✅ 为模型材质添加轻微自发光（方案3）
+ *   3. ✅ 使用 Three.js r152+ 的新 API (colorSpace 替代 encoding)
+ *   4. ✅ 平滑朝向插值 + 竞态条件防护
+ */
+
+import * as THREE from 'three';
+import { ILightRenderer } from './light-renderer';
+import modelSys from '../model-sys';
+import postprocessSys from '../postprocess-sys';
+import logger from '../../utils/logger';
+
+export class ModelLightRenderer implements ILightRenderer {
+  private group: THREE.Group | null = null;
+  private followLight: THREE.PointLight | null = null; // ✅ 新增：跟随光源
+  private coordinateSystem: any;
+  private modelPath: string;
+  private previousPosition = new THREE.Vector3();
+  private _isReady = false;
+  private pendingPosition: THREE.Vector3 | null = null;
+
+  // 竞态条件防护
+  private loadAbortController: AbortController | null = null;
+  private currentLoadId: number = 0;
+
+  // 朝向平滑插值
+  private targetRotation = new THREE.Quaternion();
+  private currentRotation = new THREE.Quaternion();
+  private baseLerpAlpha = 0.15;
+
+  constructor(coordinateSystem: any, modelPath = '/models/rocket.glb') {
+    this.coordinateSystem = coordinateSystem;
+    this.modelPath = modelPath;
+  }
+
+  get isReady(): boolean {
+    return this._isReady;
+  }
+
+  async create(): Promise<void> {
+    try {
+      // 取消旧的加载请求
+      if (this.loadAbortController) {
+        this.loadAbortController.abort();
+      }
+      this.loadAbortController = new AbortController();
+
+      const loadId = ++this.currentLoadId;
+      logger.info('ModelLightRenderer', `开始加载模型 (loadId=${loadId}): ${this.modelPath}`);
+
+      const loadedModel = await modelSys.load(this.modelPath);
+
+      // 检查是否被中止
+      if (this.loadAbortController?.signal.aborted) {
+        logger.warn('ModelLightRenderer', `加载被中止 (loadId=${loadId})`);
+        this._cleanupModel(loadedModel);
+        return;
+      }
+
+      if (loadId !== this.currentLoadId) {
+        logger.warn('ModelLightRenderer', `新的加载请求已发出，放弃旧结果 (loadId=${loadId})`);
+        return;
+      }
+
+      // 创建容器组
+      this.group = new THREE.Group();
+      this.group.name = 'MovingLight_Model';
+      this.group.add(loadedModel);
+      this.group.scale.setScalar(1.0);
+      this.group.visible = false;
+
+      // ✅ 方案1：创建跟随光源
+      this.followLight = new THREE.PointLight('#ffffff', 2.0, 50);
+      this.followLight.position.set(0, 5, 5); // 相对于模型的位置
+      this.followLight.name = 'FollowLight';
+      this.group.add(this.followLight);
+
+      // ✅ 方案3：设置材质（包含轻微自发光）
+      this._setupMaterials(loadedModel);
+
+      // 初始化旋转四元数
+      const initialDirection = new THREE.Vector3(0, 1, 0);
+      const forward = new THREE.Vector3(0, 1, 0);
+      this.targetRotation.setFromUnitVectors(forward, initialDirection);
+      this.currentRotation.copy(this.targetRotation);
+      this.group.quaternion.copy(this.currentRotation);
+
+      const lightAnchor = this.coordinateSystem.getLightAnchor();
+      lightAnchor.add(this.group);
+
+      postprocessSys.addGlowObject(this.group);
+
+      this._isReady = true;
+
+      // 延迟应用待处理位置
+      if (this.pendingPosition) {
+        const cachedPosition = this.pendingPosition.clone();
+        setTimeout(() => {
+          this.updatePosition(cachedPosition);
+          logger.info(
+            'ModelLightRenderer',
+            `已应用待处理位置 (loadId=${loadId}): (${cachedPosition.x.toFixed(2)}, ${cachedPosition.y.toFixed(2)}, ${cachedPosition.z.toFixed(2)})`
+          );
+        }, 50);
+        this.pendingPosition = null;
+      }
+
+      logger.info('ModelLightRenderer', `✅ 模型已加载并准备就绪 (loadId=${loadId})`);
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        logger.warn('ModelLightRenderer', `模型加载被中止`);
+        return;
+      }
+      logger.error('ModelLightRenderer', `模型加载失败: ${(err as Error).message}`);
+    }
+  }
+
+  /**
+   * ✅ 方案3：设置材质（轻微自发光 + Three.js r152+ 兼容）
+   */
+  private _setupMaterials(model: THREE.Object3D): void {
+    model.traverse((child: THREE.Object3D) => {
+      if (!(child as THREE.Mesh).isMesh) return;
+      const mesh = child as THREE.Mesh;
+
+      const hasTexture =
+        mesh.material && (mesh.material as THREE.MeshStandardMaterial).map !== null;
+
+      if (hasTexture) {
+        const mat = mesh.material as THREE.MeshStandardMaterial;
+
+        // ✅ 修复：添加轻微自发光（使用原始颜色）
+        mat.emissive = mat.color.clone().multiplyScalar(0.9); // 原色的30%
+        mat.emissiveIntensity = 0; // 提高到0.8
+
+        // 优化 PBR 属性
+        mat.roughness = 0.65; // 更光滑
+        mat.metalness = 0.8; // 增加金属感
+
+        mat.toneMapped = true;
+
+        // ✅ 修复: 使用 Three.js r152+ 的新 API
+        if (mat.map) {
+          mat.map.colorSpace = THREE.SRGBColorSpace; // 替代旧的 .encoding
+        }
+
+        mat.needsUpdate = true;
+      } else {
+        // ✅ 无贴图部分也使用发光材质
+        mesh.material = new THREE.MeshStandardMaterial({
+          color: new THREE.Color('#00ff88'),
+          emissive: new THREE.Color('#00ff88'),
+          emissiveIntensity: 0.5,
+          roughness: 0.4,
+          metalness: 0.3,
+        });
+      }
+    });
+  }
+
+  /**
+   * 更新位置（包含平滑朝向）
+   */
+  updatePosition(position: THREE.Vector3): void {
+    if (!this._isReady || !this.group) {
+      this.pendingPosition = position.clone();
+      logger.info('ModelLightRenderer', '位置缓存中，等待渲染器就绪');
+      return;
+    }
+
+    this.pendingPosition = null;
+
+    this.group.position.copy(position);
+
+    // 计算运动向量和速度
+    const displacement = new THREE.Vector3().subVectors(position, this.previousPosition);
+    const speed = displacement.length();
+
+    if (speed > 0.01) {
+      displacement.normalize();
+
+      const forward = new THREE.Vector3(0, 1, 0);
+      this.targetRotation.setFromUnitVectors(forward, displacement);
+
+      // 根据速度动态调整插值系数
+      const dynamicAlpha = THREE.MathUtils.clamp(this.baseLerpAlpha + speed * 0.02, 0.05, 0.3);
+
+      this.currentRotation.slerp(this.targetRotation, dynamicAlpha);
+      this.group.quaternion.copy(this.currentRotation);
+
+      this.previousPosition.copy(position);
+    }
+
+    this.group.visible = true;
+
+    logger.debug(
+      'ModelLightRenderer',
+      `位置已更新: (${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)})`
+    );
+  }
+
+  show(): void {
+    if (this.group) this.group.visible = true;
+  }
+
+  hide(): void {
+    if (this.group) this.group.visible = false;
+  }
+
+  /**
+   * 清理模型资源
+   */
+  private _cleanupModel(model: THREE.Object3D): void {
+    model.traverse((child: THREE.Object3D) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        mesh.geometry?.dispose();
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((m) => m.dispose());
+        } else {
+          mesh.material?.dispose();
+        }
+      }
+    });
+  }
+
+  dispose(): void {
+    if (this.loadAbortController) {
+      this.loadAbortController.abort();
+      this.loadAbortController = null;
+    }
+
+    if (this.group) {
+      postprocessSys.removeGlowObject(this.group);
+      const lightAnchor = this.coordinateSystem.getLightAnchor();
+      lightAnchor.remove(this.group);
+
+      // ✅ 新增: 清理光源
+      if (this.followLight) {
+        this.followLight.dispose();
+        this.followLight = null;
+      }
+
+      this._cleanupModel(this.group);
+    }
+
+    this._isReady = false;
+    this.pendingPosition = null;
+    logger.info('ModelLightRenderer', '模型已销毁');
+  }
+}
+
+```
+
 ### src/systems/scene-director-sys.ts
 
 ```
 /**
- * @file scene-director-sys.js
+ * @file scene-director-sys.ts
  * @description 场景导演系统 - 根据配置动态启用/禁用场景中的视觉组件
+ * 🔧 修复: 区分初始化和场景切换，只在切换时强制更新位置
  */
 import logger from '../utils/logger';
 import config from '../config';
+import state from './state';
 
 // 引入所有受其控制的视觉系统
 import pathSys from './path-sys';
-import mathLightSys from './math-light-sys';
 import particlesSys from './particles-sys';
-// import modelSys from './model-sys';; // 未来用于加载模型
+import lightSys from './light-sys';
 
 class SceneDirector {
   private eventBus: any = null;
   private initialized = false;
   private components: Map<string, any> = new Map();
+  private isInitializing = true; // ✅ 标记是否在初始化阶段
 
   constructor() {
     this.eventBus = null;
@@ -4210,27 +4669,26 @@ class SceneDirector {
     this._registerComponents();
     this._bindEvents();
 
-    // 立即应用初始配置
+    // 在应用配置前就标记初始化完成
+    this.initialized = true;
+    this.isInitializing = false;
+
+    // 立即应用初始配置（此时不会触发位置更新）
     this._applyCurrentComposition();
 
-    this.initialized = true;
     logger.info('SceneDirector', '场景导演系统初始化完成');
     return this;
   }
 
-  /**
-   * 注册所有可被导演控制的视觉组件。
-   * key 必须与 config.js -> sceneComposition -> type 的值完全对应。
-   */
-  _registerComponents() {
+  private _registerComponents() {
     this.components.set('math-path', pathSys);
-    this.components.set('math-light', mathLightSys);
+    this.components.set('math-light', lightSys);
+    this.components.set('model-light', lightSys); // 共用同一个实例
     this.components.set('particle-dust', particlesSys);
-    // 未来可以添加 'model' 等更多类型
     logger.debug('SceneDirector', `注册了 ${this.components.size} 个视觉组件`);
   }
 
-  _bindEvents() {
+  private _bindEvents() {
     this.eventBus.on('config-changed', ({ key, value }: { key: string; value: any }) => {
       if (key === 'sceneComposition.active') {
         logger.info('SceneDirector', `检测到场景构成切换: ${value}`);
@@ -4239,10 +4697,7 @@ class SceneDirector {
     });
   }
 
-  /**
-   * 应用当前的场景构成配置
-   */
-  _applyCurrentComposition() {
+  private _applyCurrentComposition() {
     const activeCompositionName = config.get('sceneComposition.active');
     const composition = config.get(`sceneComposition.compositions.${activeCompositionName}`);
 
@@ -4253,7 +4708,7 @@ class SceneDirector {
 
     logger.info('SceneDirector', `正在应用场景构成: "${activeCompositionName}"`);
 
-    // 1. 先禁用所有受控组件，确保一个干净的状态
+    // 1. 先禁用所有受控组件
     this.components.forEach((component) => {
       if (typeof component.disable === 'function') {
         component.disable();
@@ -4272,8 +4727,49 @@ class SceneDirector {
         logger.warn('SceneDirector', `  -> 未知组件类型: ${item.type}`);
       }
     });
+
+    // 🔧 修复：场景切换后强制刷新当前位置（Tween.js版本）
+    // 🔧 核心修复：场景切换后刷新当前位置（增强版）
+    if (!this.isInitializing) {
+      // 第一次尝试：立即发送位置更新（用于已就绪的渲染器）
+      setTimeout(() => {
+        const currentStep = state.get('animation.currentStep') || 0;
+        const mappedPoints = state.get('data.mappedPoints') || [];
+        const totalSteps = mappedPoints.length;
+
+        if (totalSteps > 0 && currentStep < totalSteps) {
+          const position = mappedPoints[currentStep];
+          if (position) {
+            logger.info('SceneDirector', `场景切换后刷新位置 (快速): 步数=${currentStep}`);
+            this.eventBus.emit('moving-light-position-updated', {
+              position: position.clone(),
+              distance: currentStep / Math.max(1, totalSteps - 1),
+            });
+          }
+        }
+      }, 100); // 第一次尝试：100ms
+
+      // 第二次尝试：延迟发送（确保异步加载的渲染器也能收到）
+      setTimeout(() => {
+        const currentStep = state.get('animation.currentStep') || 0;
+        const mappedPoints = state.get('data.mappedPoints') || [];
+        const totalSteps = mappedPoints.length;
+
+        if (totalSteps > 0 && currentStep < totalSteps) {
+          const position = mappedPoints[currentStep];
+          if (position) {
+            logger.info('SceneDirector', `场景切换后刷新位置 (延迟): 步数=${currentStep}`);
+            this.eventBus.emit('moving-light-position-updated', {
+              position: position.clone(),
+              distance: currentStep / Math.max(1, totalSteps - 1),
+            });
+          }
+        }
+      }, 350); // 第二次尝试：350ms（给模型加载足够时间）
+    }
   }
 
+  // 确保 dispose 在类内部正确结构
   dispose() {
     this.components.clear();
     this.initialized = false;
@@ -5848,13 +6344,147 @@ export default uiRegistry;
 
 ```
 
+### src/ui/ui-scene.ts
+
+```
+/**
+ * @file ui-scene.ts
+ * @description 场景构成切换UI - 控制光点模式（数学球体 vs 3D模型）
+ * ✨ 功能：提供一个独立的UI面板来切换场景中的视觉组件
+ */
+import { Pane } from 'tweakpane';
+import eventBus from '../event-bus';
+import config from '../config';
+import logger from '../utils/logger';
+import uiContainer from './ui-container';
+
+class UIScene {
+  private pane: Pane | null = null;
+  private initialized: boolean = false;
+  private controls: Map<string, any> = new Map();
+  private configData: any;
+
+  constructor() {
+    this.configData = config.getRaw();
+  }
+
+  async init() {
+    if (this.initialized) {
+      logger.warn('UIScene', 'UI已初始化');
+      return this;
+    }
+
+    if (!uiContainer.getScrollContent()) {
+      logger.error('UIScene', '容器未初始化');
+      return;
+    }
+
+    try {
+      this.pane = new Pane({
+        title: '场景构成',
+        container: uiContainer.getScrollContent() || undefined,
+        expanded: true,
+      });
+
+      this._createControls();
+      this._bindEvents();
+
+      this.initialized = true;
+
+      // 注册到UI注册表
+      const uiRegistry = (await import('./ui-registry.js')).default;
+      uiRegistry.register('ui-scene', this);
+
+      logger.info('UIScene', '场景构成 UI 已初始化');
+
+      return this;
+    } catch (err: unknown) {
+      logger.error('UIScene', `初始化失败: ${(err as Error).message}`);
+      throw err;
+    }
+  }
+
+  private _createControls() {
+    // 场景模式选择器
+    const sceneMode = this.pane!.addBinding(this.configData.sceneComposition, 'active', {
+      label: '光点模式',
+      options: {
+        数学球体: 'defaultMath',
+        '3D模型 (火箭)': 'modelAnt',
+      },
+    });
+
+    sceneMode.on('change', (ev: any) => {
+      config.set('sceneComposition.active', ev.value);
+      logger.info('UIScene', `场景模式已切换: ${ev.value}`);
+    });
+
+    this.controls.set('sceneComposition.active', sceneMode);
+
+    //只保留模型设置文件夹（移除使用说明）
+    const modelFolder = this.pane!.addFolder({
+      title: '模型设置',
+      expanded: false,
+    });
+
+    modelFolder.addBlade({
+      view: 'text',
+      label: '当前模型',
+      parse: (v: string) => String(v),
+      value: 'rocket.glb',
+    });
+  }
+
+  private _bindEvents() {
+    // 监听外部配置变更，同步UI
+    eventBus.on('config-changed', ({ key, value }: { key: string; value: any }) => {
+      if (key === 'sceneComposition.active') {
+        const control = this.controls.get(key);
+        if (control && this.configData.sceneComposition.active !== value) {
+          this.configData.sceneComposition.active = value;
+          control.refresh();
+        }
+      }
+    });
+
+    // 监听预设加载
+    eventBus.on('preset-loaded', () => {
+      this.refresh();
+    });
+  }
+
+  refresh() {
+    this.controls.forEach((control) => {
+      if (control && typeof control.refresh === 'function') {
+        control.refresh();
+      }
+    });
+    logger.debug('UIScene', 'UI 已刷新');
+  }
+
+  dispose() {
+    if (this.pane) {
+      this.pane.dispose();
+      this.pane = null;
+    }
+    this.controls.clear();
+    this.initialized = false;
+    logger.info('UIScene', 'UI 已销毁');
+  }
+}
+
+const uiScene = new UIScene();
+export default uiScene;
+
+```
+
 ### src/utils/logger.ts
 
 ```
 /**
  * @file logger.ts
- * @description 日志工具 - 统一日志输出
- * ✨ 新增: debugThrottled 方法，用于对高频日志进行节流，避免刷屏。
+ * @description 日志工具 - 统一日志输出 + 诊断系统
+ * ✨ 新增: 完整的诊断系统，支持缓冲、节流、链路追踪
  */
 
 const LOG_LEVELS = {
@@ -5865,15 +6495,22 @@ const LOG_LEVELS = {
 };
 
 class Logger {
-  // ✅ 公共属性
+  // 公共属性
   public level: number = 1; // LOG_LEVELS.INFO
 
   private enableTimestamp: boolean;
-  private throttledLogs: Map<string, number>; // ✅ 新增: 用于存储节流日志的最后时间戳
+  private throttledLogs: Map<string, number>;
+
+  // 诊断系统属性
+  private diagnosticBuffer: string[] = [];
+  private maxDiagnosticPerFrame = 5; // 每帧最多显示 5 条诊断
+  private diagnosticFlushInterval = 500; // 500ms 刷新一次诊断缓冲
+  private flushTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     this.enableTimestamp = true;
     this.throttledLogs = new Map();
+    this._startDiagnosticFlusher();
   }
 
   setLevel(level: string) {
@@ -5890,12 +6527,7 @@ class Logger {
   }
 
   /**
-   * ✨ 新增: 节流调试日志
-   * 对同一个 key，在指定的 interval 毫秒内只打印一次。
-   * @param module 模块名
-   * @param key 节流的唯一标识符
-   * @param message 日志消息
-   * @param interval 节流间隔（毫秒），默认为 1000ms
+   * 节流调试日志
    */
   debugThrottled(module: string, key: string, message: string, interval = 1000) {
     if (this.level > LOG_LEVELS.DEBUG) return;
@@ -5932,13 +6564,118 @@ class Logger {
       console.error(`%c${this._format('ERROR', module, message)}`, 'color: #f44336');
     }
   }
+
+  // ========== 诊断系统方法 ==========
+
+  /**
+   * 诊断日志 - 用于帧级调试，自动缓冲
+   */
+  diagnostic(module: string, message: string, symbol = '●') {
+    const line = `${symbol} [${module}] ${message}`;
+
+    if (this.diagnosticBuffer.length < this.maxDiagnosticPerFrame) {
+      this.diagnosticBuffer.push(line);
+    }
+  }
+
+  /**
+   * 关键诊断 - 立即输出，不缓冲
+   */
+  diagnosticCritical(module: string, message: string) {
+    console.log(
+      `%c🔴 [${module}] ${message}`,
+      'color: #ff5722; font-weight: bold; font-size: 12px;'
+    );
+  }
+
+  /**
+   * 成功诊断
+   */
+  diagnosticSuccess(module: string, message: string) {
+    console.log(`%c✅ [${module}] ${message}`, 'color: #4caf50; font-size: 12px;');
+  }
+
+  /**
+   * ⚠️  警告诊断
+   */
+  diagnosticWarning(module: string, message: string) {
+    console.log(`%c⚠️  [${module}] ${message}`, 'color: #ff9800; font-size: 12px;');
+  }
+
+  /**
+   * 追踪诊断 - 用于追踪事件链路
+   */
+  diagnosticTrace(source: string, event: string, target: string, data?: any) {
+    const dataStr = data ? ` | ${JSON.stringify(data)}` : '';
+    this.diagnostic('Trace', `${source} → ${event} → ${target}${dataStr}`, '→');
+  }
+
+  /**
+   * 配置诊断系统
+   */
+  setDiagnosticConfig(maxPerFrame?: number, flushInterval?: number) {
+    if (maxPerFrame !== undefined) this.maxDiagnosticPerFrame = maxPerFrame;
+    if (flushInterval !== undefined) {
+      this.diagnosticFlushInterval = flushInterval;
+      // 重新启动 flusher
+      this._stopDiagnosticFlusher();
+      this._startDiagnosticFlusher();
+    }
+  }
+
+  /**
+   * 启动诊断缓冲定时刷新
+   */
+  private _startDiagnosticFlusher() {
+    this.flushTimer = setInterval(() => {
+      this._flushDiagnosticBuffer();
+    }, this.diagnosticFlushInterval);
+  }
+
+  /**
+   * 停止诊断缓冲定时刷新
+   */
+  private _stopDiagnosticFlusher() {
+    if (this.flushTimer !== null) {
+      clearInterval(this.flushTimer);
+      this.flushTimer = null;
+    }
+  }
+
+  /**
+   * 立即刷新诊断缓冲
+   */
+  private _flushDiagnosticBuffer() {
+    if (this.diagnosticBuffer.length === 0) return;
+
+    const timestamp = new Date().toISOString().slice(11, 23);
+    const header = `%c[${timestamp}] 📋 诊断快照 (${this.diagnosticBuffer.length} items)`;
+
+    console.group(header, 'color: #2196f3; font-weight: bold; font-size: 12px;');
+    this.diagnosticBuffer.forEach((line) => {
+      console.log(`%c${line}`, 'color: #666; font-family: monospace; font-size: 11px;');
+    });
+    console.groupEnd();
+
+    this.diagnosticBuffer = [];
+  }
+
+  /**
+   * 销毁前清理
+   */
+  destroy() {
+    this._stopDiagnosticFlusher();
+    this.diagnosticBuffer = [];
+    this.throttledLogs.clear();
+  }
 }
 
 const logger = new Logger();
 
-// 开发环境设置为 DEBUG
+// 开发环境设置为 DEBUG，并配置诊断系统
 if (import.meta.env.DEV) {
   logger.setLevel('DEBUG');
+  logger.setDiagnosticConfig(5, 500); // 每帧5条，500ms刷新
 }
 
 export default logger;

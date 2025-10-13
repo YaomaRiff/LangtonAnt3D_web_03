@@ -9,9 +9,9 @@ import logger from './utils/logger';
 import eventBus from './event-bus';
 
 const DEFAULT_CONFIG = {
-  // 🟢 新增：场景构成定义
+  // 场景构成定义
   sceneComposition: {
-    active: 'defaultMath', // 当前激活的构成方案
+    active: 'modelAnt', // 当前激活的构成方案
     compositions: {
       defaultMath: [
         // 默认的数学可视化场景
@@ -21,8 +21,9 @@ const DEFAULT_CONFIG = {
       ],
       // 预留一个模型场景的例子，未来使用
       modelAnt: [
-        { type: 'model', name: 'ant', path: '/models/ant.glb', enabled: true },
-        { type: 'particle-dust', enabled: false },
+        { type: 'math-path', enabled: true }, // 保留路径
+        { type: 'model-light', enabled: true }, // 使用模型光点
+        { type: 'particle-dust', enabled: true },
       ],
     },
   },
@@ -33,7 +34,7 @@ const DEFAULT_CONFIG = {
   },
 
   animation: {
-    speedFactor: 1.65,
+    speedFactor: 0.05,
     loop: true,
   },
 
