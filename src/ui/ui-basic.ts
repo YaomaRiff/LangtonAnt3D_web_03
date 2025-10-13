@@ -168,9 +168,12 @@ class UIBasic {
     });
     this.controls.set('animation.currentStep', stepSlider);
 
+    // 监听数据加载，更新滑块范围
     eventBus.on('data-loaded', (data: { points: any[] }) => {
-      stepSlider.max = data.points.length - 1;
+      const maxStep = Math.max(0, data.points.length - 1);
+      stepSlider.max = maxStep;
       stepSlider.refresh();
+      logger.info('UIBasic', `步数滑块已更新: 0 ~ ${maxStep}`);
     });
 
     const speed = folder.addBinding(this.configData.animation, 'speedFactor', {

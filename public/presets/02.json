@@ -1,6 +1,6 @@
 {
-  "name": "01",
-  "timestamp": "2025-10-13T18:33:37.089Z",
+  "name": "02",
+  "timestamp": "2025-10-13T18:34:02.033Z",
   "animation": {
     "loop": true,
     "speedFactor": 0.05
@@ -15,7 +15,7 @@
     }
   },
   "environment": {
-    "pathColor": "#b6e2ef"
+    "pathColor": "#dab6ef"
   },
   "particles": {
     "breathIntensity": 0.27,

@@ -35,6 +35,7 @@ import environmentSys from './systems/environment-sys';
 import materialSys from './systems/material-sys';
 import modelSys from './systems/model-sys';
 import sceneDirector from './systems/scene-director-sys';
+import visualEffectsSys from './systems/visual-effects-sys';
 
 // 实体
 import pathSys from './systems/path-sys';
@@ -164,6 +165,8 @@ class Application {
 
       sceneDirector.init({ eventBus });
 
+      visualEffectsSys.init();
+
       this._bindEvents();
       this._handleResize(); // 第一次手动调用以设置正确尺寸
       this._startRenderLoop();
@@ -174,6 +177,13 @@ class Application {
       }
 
       this.initialized = true;
+
+      // ✅ 新增：触发场景准备完成事件
+      setTimeout(() => {
+        eventBus.emit('scene-ready');
+        logger.info('App', '🎬 场景准备完成，视觉效果已激活');
+      }, 500); // 延迟500ms确保所有系统就绪
+
       logger.info('App', '✅ 应用初始化完成');
     } catch (err: unknown) {
       logger.error('App', `初始化失败: ${(err as Error).message}`);
@@ -275,6 +285,7 @@ class Application {
 
     sceneDirector.dispose();
     coordinateSystem.dispose();
+    visualEffectsSys.dispose();
     cameraSys.dispose();
     dataSys.dispose();
     animationSys.dispose();

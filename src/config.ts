@@ -28,9 +28,78 @@ const DEFAULT_CONFIG = {
     },
   },
 
+  exhaust: {
+    // 🔧 新增：调试工具配置
+    debug: {
+      showEmitterAxis: false, // 是否显示发射器坐标轴
+      axisSize: 0.6, // 坐标轴大小
+    },
+    flame: {
+      baseColor: '#ff0055', // 尾焰底部颜色（橙色）
+      tipColor: '#d4e83c', // 尾焰顶部颜色（黄色）
+      intensity: 1.0, // 基础强度
+      speedMultiplier: 0.3, // 速度对强度的影响系数
+      length: 1.6, // 尾焰长度
+      radius: 0.2, // 尾焰半径
+      offsetX: 0, // 火箭坐标到尾焰底面的 X 偏移
+      offsetY: -0.8, // 火箭坐标到尾焰底面的 Y 偏移（负值表示向下）
+      offsetZ: 0, // 火箭坐标到尾焰底面的 Z 偏移
+    },
+    smoke: {
+      maxParticles: 0, // 最大粒子数
+      emitRate: 8, // 每秒发射数量
+      particleLifetime: 0.8, // 粒子寿命（秒）
+      sizeGrowth: 0.8, // 尺寸增长速度
+
+      initialSize: 0.3, // 粒子初始大小
+      emitOnlyWhenMoving: false, // 是否只在移动时发射
+
+      velocityMultiplier: 0.2, // 速度倍率
+      initialVelocity: -0.5, // 初始速度（负值向后）
+      randomSpread: 0.5, // 随机扩散半径
+      swirlIntensity: 0.5, // 旋转扰动强度
+      emitterOffsetX: 0, // 火箭坐标到烟雾发射器的 X 偏移
+      emitterOffsetY: -2.5, // 火箭坐标到烟雾发射器的 Y 偏移
+      emitterOffsetZ: 0, // 火箭坐标到烟雾发射器的 Z 偏移
+    },
+    vibration: {
+      intensity: 0.03, // 震动强度（单位距离）
+      frequency: 50, // 主震动频率（Hz）
+      timeVariation: 0.3, // 时间随机性 [0-1]
+    },
+    // 火箭机体抖动配置
+    rocketJitter: {
+      intensity: 0.02, // 抖动球体半径
+      frequency: 30, // 基础频率（Hz）
+      timeVariation: 0.4, // 时间随机性 [0-1]
+    },
+    // 尾焰抖动配置
+    flameJitter: {
+      intensity: 0.05, // 抖动球体半径
+      frequency: 60, // 基础频率（Hz）
+      timeVariation: 0.5, // 时间随机性 [0-1]
+    },
+  },
+
   data: {
     csvUrl: '../data/data.csv',
     availableDatasets: [],
+  },
+
+  // 视觉效果控制
+  visualEffects: {
+    rocketJitter: {
+      enabled: true,
+      runOnReady: true, // 场景加载完就开始抖动
+    },
+    flameJitter: {
+      enabled: true,
+      runOnReady: true,
+    },
+    exhaustFlame: {
+      enabled: true,
+      runOnReady: true, // 尾焰始终显示
+    },
   },
 
   animation: {
@@ -115,7 +184,7 @@ const DEFAULT_CONFIG = {
 
     // 光晕效果 (Bloom)
     bloom: {
-      enabled: false,
+      enabled: true,
       intensity: 1.0, // 效果强度
       luminanceThreshold: 0.1, // 亮度阈值
       luminanceSmoothing: 0.2, // 阈值平滑度
@@ -154,7 +223,7 @@ const DEFAULT_CONFIG = {
     mode: 'perspective',
     view: 'free',
     fov: 75,
-    position: { x: 0, y: 0, z: 10 },
+    initialDistance: 5, // 相机到原点的距离
     near: 0.1,
     far: 2000,
     controls: {

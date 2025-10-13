@@ -1,8 +1,10 @@
 /**
  * @file camera-sys.ts
  * @description 相机系统 - 透视/正交切换 + camera-controls 集成
- * @✅ 核心改造: 监听统一的 'config-changed' 事件。
- * @✅ 核心改造: 修改 handleResize 方法以接收外部尺寸。
+ * ✅ 核心简化:
+ *   1. 完全移除旧的坐标模式（camera.position）
+ *   2. 统一使用 initialDistance 在球面上初始化相机
+ *   3. 删除了所有冗余的初始化逻辑
  */
 import * as THREE from 'three';
 import CameraControls from 'camera-controls';
@@ -14,10 +16,7 @@ CameraControls.install({ THREE });
 
 class CameraSystem {
   private eventBus: any;
-
-  // ✅ 公共属性
   public scene: THREE.Scene | null = null;
-
   private renderer: THREE.WebGLRenderer | null;
   private initialized: boolean;
 
@@ -32,7 +31,6 @@ class CameraSystem {
 
   constructor() {
     this.eventBus = null;
-
     this.renderer = null;
     this.initialized = false;
 
@@ -87,17 +85,35 @@ class CameraSystem {
     }
   }
 
+  /**
+   * ✅ 核心方法：创建相机（纯距离模式）
+   */
   _createCameras() {
-    // 初始 aspect 只是一个占位符，将在第一次 handleResize 时被正确设置
-    const aspect = 16 / 9;
+    const aspect = 16 / 9; // 占位符，将在 handleResize 时更新
     const fov = config.get('camera.fov') || 75;
     const near = config.get('camera.near') || 0.1;
     const far = config.get('camera.far') || 2000;
 
     this.perspectiveCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this.perspectiveCamera.position.set(10, 8, 15);
+
+    // ✅ 统一使用距离模式初始化
+    const distance = config.get('camera.initialDistance') || 50;
+    const phi = Math.PI / 4; // 45° 仰角
+    const theta = Math.PI / 4; // 45° 方位角
+
+    const x = distance * Math.sin(phi) * Math.cos(theta);
+    const y = distance * Math.cos(phi);
+    const z = distance * Math.sin(phi) * Math.sin(theta);
+
+    this.perspectiveCamera.position.set(x, y, z);
     this.perspectiveCamera.name = 'PerspectiveCamera';
 
+    logger.info(
+      'CameraSystem',
+      `透视相机已创建 | 初始距离: ${distance.toFixed(2)} | 位置: (${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)})`
+    );
+
+    // 创建正交相机
     const height = this.orthoFrustumSize;
     const width = height * aspect;
 
@@ -113,9 +129,12 @@ class CameraSystem {
     this.orthographicCamera.name = 'OrthographicCamera';
     this.orthographicCamera.zoom = 1.0;
 
-    logger.debug('CameraSystem', `相机已创建`);
+    logger.debug('CameraSystem', '正交相机已创建');
   }
 
+  /**
+   * ✅ 核心方法：创建控制器（纯距离模式）
+   */
   _createControls() {
     this.controls = new CameraControls(this.activeCamera!, this.renderer!.domElement);
     applyPerspMouseMapping(this.controls);
@@ -125,11 +144,27 @@ class CameraSystem {
     this.controls.draggingSmoothTime = controlsConfig.draggingSmoothTime || 0.25;
     this.controls.minDistance = controlsConfig.minDistance || 1;
 
-    setTimeout(() => this._updateMaxDistance(), 100);
+    // 设置 maxDistance
+    this._updateMaxDistance();
 
-    logger.debug('CameraSystem', 'camera-controls 初始化完成');
+    // ✅ 统一使用距离模式设置初始位置
+    const distance = config.get('camera.initialDistance') || 50;
+    const phi = Math.PI / 4;
+    const theta = Math.PI / 4;
+
+    const x = distance * Math.sin(phi) * Math.cos(theta);
+    const y = distance * Math.cos(phi);
+    const z = distance * Math.sin(phi) * Math.sin(theta);
+
+    this.controls.setPosition(x, y, z, false);
+    this.controls.setTarget(0, 0, 0, false);
+
+    logger.info('CameraSystem', `Controls 初始位置已设置 | 距离: ${distance.toFixed(2)}`);
   }
 
+  /**
+   * ✅ 更新 maxDistance
+   */
   _updateMaxDistance() {
     const sphereRadius = config.get('particles.sphereRadius') || 100;
     const systemScale = config.get('particles.systemScale') || 1.0;
@@ -143,6 +178,9 @@ class CameraSystem {
     }
   }
 
+  /**
+   * ✅ 锁定旋转中心到世界原点
+   */
   _setRotationCenterToOrigin() {
     if (this.controls) {
       this.controls.setTarget(0, 0, 0, false);
@@ -150,6 +188,9 @@ class CameraSystem {
     }
   }
 
+  /**
+   * ✅ 绑定事件监听
+   */
   _bindEvents() {
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
     this.eventBus.on('view-changed', (viewKey: string) => this._applyViewPreset(viewKey));
@@ -160,14 +201,16 @@ class CameraSystem {
         this._setRotationCenterToOrigin();
       }
     });
+
     this.eventBus.on('data-processing-completed', () => {
       this._setRotationCenterToOrigin();
       logger.info('CameraSystem', '数据处理完成后已锁定旋转中心');
     });
-
-    // 不再直接监听 window.resize，由 main.ts 统一调度
   }
 
+  /**
+   * ✅ 处理配置变更
+   */
   _handleConfigChange({ key, value }: { key: string; value: any }) {
     switch (key) {
       case 'camera.mode':
@@ -181,6 +224,10 @@ class CameraSystem {
         }
         break;
 
+      case 'camera.initialDistance':
+        this._updateCameraDistance(value);
+        break;
+
       case 'particles.systemScale':
       case 'particles.sphereRadius':
         this._updateMaxDistance();
@@ -188,6 +235,29 @@ class CameraSystem {
     }
   }
 
+  /**
+   * ✅ 动态更新相机距离（保持当前朝向）
+   */
+  private _updateCameraDistance(distance: number) {
+    if (!this.controls || !this.perspectiveCamera || distance <= 0) return;
+
+    const target = new THREE.Vector3();
+    this.controls.getTarget(target);
+
+    const direction = new THREE.Vector3()
+      .subVectors(this.perspectiveCamera.position, target)
+      .normalize();
+
+    const newPosition = direction.multiplyScalar(distance).add(target);
+
+    this.controls.setPosition(newPosition.x, newPosition.y, newPosition.z, true);
+
+    logger.info('CameraSystem', `相机距离已更新: ${distance.toFixed(2)}`);
+  }
+
+  /**
+   * ✅ 切换相机模式
+   */
   _switchToMode(mode: string) {
     if (mode === this.currentMode || !this.controls) return;
 
@@ -215,6 +285,9 @@ class CameraSystem {
     logger.info('CameraSystem', `切换到${mode}相机`);
   }
 
+  /**
+   * ✅ 应用视图预设
+   */
   _applyViewPreset(viewKey: string) {
     if (!this.controls) return;
     const distance = 50;
@@ -235,6 +308,9 @@ class CameraSystem {
     this.controls.setLookAt(position.x, position.y, position.z, 0, 0, 0, true);
   }
 
+  /**
+   * ✅ 翻转视图
+   */
   _flipView() {
     if (!this.controls || !this.activeCamera) return;
     const currentPos = this.activeCamera.position.clone();
@@ -244,7 +320,9 @@ class CameraSystem {
     this.controls.setLookAt(newPos.x, newPos.y, newPos.z, target.x, target.y, target.z, true);
   }
 
-  // ✅ 核心修改: 接收 width 和 height
+  /**
+   * ✅ 处理窗口大小变化
+   */
   handleResize(width: number, height: number) {
     if (!this.perspectiveCamera || !this.orthographicCamera) return;
 
@@ -262,17 +340,30 @@ class CameraSystem {
     this.orthographicCamera.updateProjectionMatrix();
   }
 
+  /**
+   * ✅ 每帧更新
+   */
   update(delta: number) {
     if (this.controls) this.controls.update(delta);
   }
 
+  /**
+   * ✅ 获取当前相机
+   */
   getActiveCamera(): THREE.PerspectiveCamera | THREE.OrthographicCamera {
     return this.activeCamera!;
   }
+
+  /**
+   * ✅ 获取控制器
+   */
   getControls(): CameraControls {
     return this.controls!;
   }
 
+  /**
+   * ✅ 销毁系统
+   */
   dispose() {
     if (this.controls) this.controls.dispose();
     this.initialized = false;

@@ -187,22 +187,8 @@ class DataSystem {
 
     this.eventBus.emit('data-processing-started');
 
-    const box = new THREE.Box3();
-    points.forEach((p: THREE.Vector3) => box.expandByPoint(p));
-
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-
-    const cameraDistFactor = 2.5;
-    const distance = maxDim * cameraDistFactor;
-
-    if (this.controls) {
-      this.controls.setPosition(distance * 0.6, distance * 0.4, distance * 0.8, false);
-
-      this.controls.setTarget(0, 0, 0, false);
-    }
-
-    logger.info('DataSystem', `相机已调整 | 距离: ${distance.toFixed(2)} | 目标: (0,0,0)`);
+    // 移除所有自动调整逻辑
+    logger.info('DataSystem', '数据已加载，保持用户设置的相机位置');
   }
 
   dispose() {

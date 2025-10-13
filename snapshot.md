@@ -1,7 +1,7 @@
 # Project Snapshot
 - Root: `.`
-- Created: 2025-10-13 02:54:03
-- Files: 49 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
+- Created: 2025-10-13 18:24:42
+- Files: 52 (ext=[.js, .ts, .mjs, .json, .css, .html, .frag, .vert], maxSize=200000B)
 - Force-Excluded: package-lock.json
 
 ---
@@ -38,7 +38,8 @@ LangtonAnt3D_web_03/
 │  │  ├─ path-sys.ts
 │  │  ├─ postprocess-sys.ts
 │  │  ├─ scene-director-sys.ts
-│  │  └─ state.ts
+│  │  ├─ state.ts
+│  │  └─ visual-effects-sys.ts
 │  ├─ types/
 │  │  └─ index.ts
 │  ├─ ui/
@@ -51,6 +52,8 @@ LangtonAnt3D_web_03/
 │  │  ├─ ui-registry.ts
 │  │  └─ ui-scene.ts
 │  ├─ utils/
+│  │  ├─ axis-helper.ts
+│  │  ├─ jitter-generator.ts
 │  │  ├─ logger.ts
 │  │  └─ url-resolver.ts
 │  ├─ config.ts
@@ -234,7 +237,7 @@ export default [
 {
   "name": "langtonant3d-web-03",
   "private": true,
-  "version": "0.2.5",
+  "version": "0.2.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -436,9 +439,78 @@ const DEFAULT_CONFIG = {
     },
   },
 
+  exhaust: {
+    // 🔧 新增：调试工具配置
+    debug: {
+      showEmitterAxis: true, // 是否显示发射器坐标轴
+      axisSize: 0.6, // 坐标轴大小
+    },
+    flame: {
+      baseColor: '#ff0055', // 尾焰底部颜色（橙色）
+      tipColor: '#d4e83c', // 尾焰顶部颜色（黄色）
+      intensity: 1.0, // 基础强度
+      speedMultiplier: 0.3, // 速度对强度的影响系数
+      length: 1.6, // 尾焰长度
+      radius: 0.2, // 尾焰半径
+      offsetX: 0, // 火箭坐标到尾焰底面的 X 偏移
+      offsetY: -0.8, // 火箭坐标到尾焰底面的 Y 偏移（负值表示向下）
+      offsetZ: 0, // 火箭坐标到尾焰底面的 Z 偏移
+    },
+    smoke: {
+      maxParticles: 12, // 最大粒子数
+      emitRate: 4, // 每秒发射数量
+      particleLifetime: 1.0, // 粒子寿命（秒）
+      sizeGrowth: 0.8, // 尺寸增长速度
+
+      initialSize: 0.3, // 粒子初始大小
+      emitOnlyWhenMoving: true, // 是否只在移动时发射
+
+      velocityMultiplier: 1.0, // 速度倍率
+      initialVelocity: -1.5, // 初始速度（负值向后）
+      randomSpread: 0.5, // 随机扩散半径
+      swirlIntensity: 0.5, // 旋转扰动强度
+      emitterOffsetX: 0, // 火箭坐标到烟雾发射器的 X 偏移
+      emitterOffsetY: -2.5, // 火箭坐标到烟雾发射器的 Y 偏移
+      emitterOffsetZ: 0, // 火箭坐标到烟雾发射器的 Z 偏移
+    },
+    vibration: {
+      intensity: 0.03, // 震动强度（单位距离）
+      frequency: 50, // 主震动频率（Hz）
+      timeVariation: 0.3, // 时间随机性 [0-1]
+    },
+    // 火箭机体抖动配置
+    rocketJitter: {
+      intensity: 0.02, // 抖动球体半径
+      frequency: 30, // 基础频率（Hz）
+      timeVariation: 0.4, // 时间随机性 [0-1]
+    },
+    // 尾焰抖动配置
+    flameJitter: {
+      intensity: 0.05, // 抖动球体半径
+      frequency: 60, // 基础频率（Hz）
+      timeVariation: 0.5, // 时间随机性 [0-1]
+    },
+  },
+
   data: {
     csvUrl: '../data/data.csv',
     availableDatasets: [],
+  },
+
+  // 视觉效果控制
+  visualEffects: {
+    rocketJitter: {
+      enabled: true,
+      runOnReady: true, // 场景加载完就开始抖动
+    },
+    flameJitter: {
+      enabled: true,
+      runOnReady: true,
+    },
+    exhaustFlame: {
+      enabled: true,
+      runOnReady: true, // 尾焰始终显示
+    },
   },
 
   animation: {
@@ -523,7 +595,7 @@ const DEFAULT_CONFIG = {
 
     // 光晕效果 (Bloom)
     bloom: {
-      enabled: false,
+      enabled: true,
       intensity: 1.0, // 效果强度
       luminanceThreshold: 0.1, // 亮度阈值
       luminanceSmoothing: 0.2, // 阈值平滑度
@@ -562,7 +634,7 @@ const DEFAULT_CONFIG = {
     mode: 'perspective',
     view: 'free',
     fov: 75,
-    position: { x: 0, y: 0, z: 10 },
+    initialDistance: 5, // 相机到原点的距离
     near: 0.1,
     far: 2000,
     controls: {
@@ -832,6 +904,7 @@ import environmentSys from './systems/environment-sys';
 import materialSys from './systems/material-sys';
 import modelSys from './systems/model-sys';
 import sceneDirector from './systems/scene-director-sys';
+import visualEffectsSys from './systems/visual-effects-sys';
 
 // 实体
 import pathSys from './systems/path-sys';
@@ -961,6 +1034,8 @@ class Application {
 
       sceneDirector.init({ eventBus });
 
+      visualEffectsSys.init();
+
       this._bindEvents();
       this._handleResize(); // 第一次手动调用以设置正确尺寸
       this._startRenderLoop();
@@ -971,6 +1046,13 @@ class Application {
       }
 
       this.initialized = true;
+
+      // ✅ 新增：触发场景准备完成事件
+      setTimeout(() => {
+        eventBus.emit('scene-ready');
+        logger.info('App', '🎬 场景准备完成，视觉效果已激活');
+      }, 500); // 延迟500ms确保所有系统就绪
+
       logger.info('App', '✅ 应用初始化完成');
     } catch (err: unknown) {
       logger.error('App', `初始化失败: ${(err as Error).message}`);
@@ -1072,6 +1154,7 @@ class Application {
 
     sceneDirector.dispose();
     coordinateSystem.dispose();
+    visualEffectsSys.dispose();
     cameraSys.dispose();
     dataSys.dispose();
     animationSys.dispose();
@@ -1987,8 +2070,10 @@ export default audioSys;
 /**
  * @file camera-sys.ts
  * @description 相机系统 - 透视/正交切换 + camera-controls 集成
- * @✅ 核心改造: 监听统一的 'config-changed' 事件。
- * @✅ 核心改造: 修改 handleResize 方法以接收外部尺寸。
+ * ✅ 核心简化:
+ *   1. 完全移除旧的坐标模式（camera.position）
+ *   2. 统一使用 initialDistance 在球面上初始化相机
+ *   3. 删除了所有冗余的初始化逻辑
  */
 import * as THREE from 'three';
 import CameraControls from 'camera-controls';
@@ -2000,10 +2085,7 @@ CameraControls.install({ THREE });
 
 class CameraSystem {
   private eventBus: any;
-
-  // ✅ 公共属性
   public scene: THREE.Scene | null = null;
-
   private renderer: THREE.WebGLRenderer | null;
   private initialized: boolean;
 
@@ -2018,7 +2100,6 @@ class CameraSystem {
 
   constructor() {
     this.eventBus = null;
-
     this.renderer = null;
     this.initialized = false;
 
@@ -2073,17 +2154,35 @@ class CameraSystem {
     }
   }
 
+  /**
+   * ✅ 核心方法：创建相机（纯距离模式）
+   */
   _createCameras() {
-    // 初始 aspect 只是一个占位符，将在第一次 handleResize 时被正确设置
-    const aspect = 16 / 9;
+    const aspect = 16 / 9; // 占位符，将在 handleResize 时更新
     const fov = config.get('camera.fov') || 75;
     const near = config.get('camera.near') || 0.1;
     const far = config.get('camera.far') || 2000;
 
     this.perspectiveCamera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this.perspectiveCamera.position.set(10, 8, 15);
+
+    // ✅ 统一使用距离模式初始化
+    const distance = config.get('camera.initialDistance') || 50;
+    const phi = Math.PI / 4; // 45° 仰角
+    const theta = Math.PI / 4; // 45° 方位角
+
+    const x = distance * Math.sin(phi) * Math.cos(theta);
+    const y = distance * Math.cos(phi);
+    const z = distance * Math.sin(phi) * Math.sin(theta);
+
+    this.perspectiveCamera.position.set(x, y, z);
     this.perspectiveCamera.name = 'PerspectiveCamera';
 
+    logger.info(
+      'CameraSystem',
+      `透视相机已创建 | 初始距离: ${distance.toFixed(2)} | 位置: (${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)})`
+    );
+
+    // 创建正交相机
     const height = this.orthoFrustumSize;
     const width = height * aspect;
 
@@ -2099,9 +2198,12 @@ class CameraSystem {
     this.orthographicCamera.name = 'OrthographicCamera';
     this.orthographicCamera.zoom = 1.0;
 
-    logger.debug('CameraSystem', `相机已创建`);
+    logger.debug('CameraSystem', '正交相机已创建');
   }
 
+  /**
+   * ✅ 核心方法：创建控制器（纯距离模式）
+   */
   _createControls() {
     this.controls = new CameraControls(this.activeCamera!, this.renderer!.domElement);
     applyPerspMouseMapping(this.controls);
@@ -2111,11 +2213,27 @@ class CameraSystem {
     this.controls.draggingSmoothTime = controlsConfig.draggingSmoothTime || 0.25;
     this.controls.minDistance = controlsConfig.minDistance || 1;
 
-    setTimeout(() => this._updateMaxDistance(), 100);
+    // 设置 maxDistance
+    this._updateMaxDistance();
 
-    logger.debug('CameraSystem', 'camera-controls 初始化完成');
+    // ✅ 统一使用距离模式设置初始位置
+    const distance = config.get('camera.initialDistance') || 50;
+    const phi = Math.PI / 4;
+    const theta = Math.PI / 4;
+
+    const x = distance * Math.sin(phi) * Math.cos(theta);
+    const y = distance * Math.cos(phi);
+    const z = distance * Math.sin(phi) * Math.sin(theta);
+
+    this.controls.setPosition(x, y, z, false);
+    this.controls.setTarget(0, 0, 0, false);
+
+    logger.info('CameraSystem', `Controls 初始位置已设置 | 距离: ${distance.toFixed(2)}`);
   }
 
+  /**
+   * ✅ 更新 maxDistance
+   */
   _updateMaxDistance() {
     const sphereRadius = config.get('particles.sphereRadius') || 100;
     const systemScale = config.get('particles.systemScale') || 1.0;
@@ -2129,6 +2247,9 @@ class CameraSystem {
     }
   }
 
+  /**
+   * ✅ 锁定旋转中心到世界原点
+   */
   _setRotationCenterToOrigin() {
     if (this.controls) {
       this.controls.setTarget(0, 0, 0, false);
@@ -2136,6 +2257,9 @@ class CameraSystem {
     }
   }
 
+  /**
+   * ✅ 绑定事件监听
+   */
   _bindEvents() {
     this.eventBus.on('config-changed', this._handleConfigChange.bind(this));
     this.eventBus.on('view-changed', (viewKey: string) => this._applyViewPreset(viewKey));
@@ -2146,14 +2270,16 @@ class CameraSystem {
         this._setRotationCenterToOrigin();
       }
     });
+
     this.eventBus.on('data-processing-completed', () => {
       this._setRotationCenterToOrigin();
       logger.info('CameraSystem', '数据处理完成后已锁定旋转中心');
     });
-
-    // 不再直接监听 window.resize，由 main.ts 统一调度
   }
 
+  /**
+   * ✅ 处理配置变更
+   */
   _handleConfigChange({ key, value }: { key: string; value: any }) {
     switch (key) {
       case 'camera.mode':
@@ -2167,6 +2293,10 @@ class CameraSystem {
         }
         break;
 
+      case 'camera.initialDistance':
+        this._updateCameraDistance(value);
+        break;
+
       case 'particles.systemScale':
       case 'particles.sphereRadius':
         this._updateMaxDistance();
@@ -2174,6 +2304,29 @@ class CameraSystem {
     }
   }
 
+  /**
+   * ✅ 动态更新相机距离（保持当前朝向）
+   */
+  private _updateCameraDistance(distance: number) {
+    if (!this.controls || !this.perspectiveCamera || distance <= 0) return;
+
+    const target = new THREE.Vector3();
+    this.controls.getTarget(target);
+
+    const direction = new THREE.Vector3()
+      .subVectors(this.perspectiveCamera.position, target)
+      .normalize();
+
+    const newPosition = direction.multiplyScalar(distance).add(target);
+
+    this.controls.setPosition(newPosition.x, newPosition.y, newPosition.z, true);
+
+    logger.info('CameraSystem', `相机距离已更新: ${distance.toFixed(2)}`);
+  }
+
+  /**
+   * ✅ 切换相机模式
+   */
   _switchToMode(mode: string) {
     if (mode === this.currentMode || !this.controls) return;
 
@@ -2201,6 +2354,9 @@ class CameraSystem {
     logger.info('CameraSystem', `切换到${mode}相机`);
   }
 
+  /**
+   * ✅ 应用视图预设
+   */
   _applyViewPreset(viewKey: string) {
     if (!this.controls) return;
     const distance = 50;
@@ -2221,6 +2377,9 @@ class CameraSystem {
     this.controls.setLookAt(position.x, position.y, position.z, 0, 0, 0, true);
   }
 
+  /**
+   * ✅ 翻转视图
+   */
   _flipView() {
     if (!this.controls || !this.activeCamera) return;
     const currentPos = this.activeCamera.position.clone();
@@ -2230,7 +2389,9 @@ class CameraSystem {
     this.controls.setLookAt(newPos.x, newPos.y, newPos.z, target.x, target.y, target.z, true);
   }
 
-  // ✅ 核心修改: 接收 width 和 height
+  /**
+   * ✅ 处理窗口大小变化
+   */
   handleResize(width: number, height: number) {
     if (!this.perspectiveCamera || !this.orthographicCamera) return;
 
@@ -2248,17 +2409,30 @@ class CameraSystem {
     this.orthographicCamera.updateProjectionMatrix();
   }
 
+  /**
+   * ✅ 每帧更新
+   */
   update(delta: number) {
     if (this.controls) this.controls.update(delta);
   }
 
+  /**
+   * ✅ 获取当前相机
+   */
   getActiveCamera(): THREE.PerspectiveCamera | THREE.OrthographicCamera {
     return this.activeCamera!;
   }
+
+  /**
+   * ✅ 获取控制器
+   */
   getControls(): CameraControls {
     return this.controls!;
   }
 
+  /**
+   * ✅ 销毁系统
+   */
   dispose() {
     if (this.controls) this.controls.dispose();
     this.initialized = false;
@@ -2701,22 +2875,8 @@ class DataSystem {
 
     this.eventBus.emit('data-processing-started');
 
-    const box = new THREE.Box3();
-    points.forEach((p: THREE.Vector3) => box.expandByPoint(p));
-
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-
-    const cameraDistFactor = 2.5;
-    const distance = maxDim * cameraDistFactor;
-
-    if (this.controls) {
-      this.controls.setPosition(distance * 0.6, distance * 0.4, distance * 0.8, false);
-
-      this.controls.setTarget(0, 0, 0, false);
-    }
-
-    logger.info('DataSystem', `相机已调整 | 距离: ${distance.toFixed(2)} | 目标: (0,0,0)`);
+    // 移除所有自动调整逻辑
+    logger.info('DataSystem', '数据已加载，保持用户设置的相机位置');
   }
 
   dispose() {
@@ -4375,14 +4535,14 @@ export class MathLightRenderer implements ILightRenderer {
 ```
 /**
  * @file model-light-renderer.ts
- * @description 3D模型光点渲染器 - 组合方案：跟随点光源 + 轻微自发光
- * @version 3.0 (Combined Lighting Solution)
+ * @description 3D模型光点渲染器 - 完整版：跟随光源 + 尾焰 + 烟雾 + 抖动 + 调试坐标轴
+ * @version 5.3 (BugFix Complete)
  *
- * 核心改进：
- *   1. ✅ 添加跟随火箭的点光源（方案1）
- *   2. ✅ 为模型材质添加轻微自发光（方案3）
- *   3. ✅ 使用 Three.js r152+ 的新 API (colorSpace 替代 encoding)
- *   4. ✅ 平滑朝向插值 + 竞态条件防护
+ * 🔧 修复：
+ *   1. 添加了所有必要的导入
+ *   2. 补充了缺失的 _updateDebugConfig 方法
+ *   3. 修复了 debugConfig 的作用域问题
+ *   4. 移除了未使用的变量警告
  */
 
 import * as THREE from 'three';
@@ -4390,10 +4550,59 @@ import { ILightRenderer } from './light-renderer';
 import modelSys from '../model-sys';
 import postprocessSys from '../postprocess-sys';
 import logger from '../../utils/logger';
+import config from '../../config';
+import eventBus from '../../event-bus';
+import { JitterGenerator } from '../../utils/jitter-generator';
+import { createAxisHelper, updateAxisHelper, toggleAxisHelper } from '../../utils/axis-helper';
+import visualEffectsSys from '../visual-effects-sys';
 
+// ========== 烟雾粒子类 ==========
+class SmokeParticle {
+  position: THREE.Vector3 = new THREE.Vector3();
+  velocity: THREE.Vector3 = new THREE.Vector3();
+  age: number = 0;
+  maxAge: number = 2.0;
+  size: number = 0.3;
+  opacity: number = 1.0;
+  rotationPhase: number = Math.random() * Math.PI * 2;
+
+  update(delta: number): boolean {
+    this.age += delta;
+
+    const t = this.age / this.maxAge;
+    this.opacity = Math.pow(1.0 - t, 2);
+
+    this.size += delta * config.get('exhaust.smoke.sizeGrowth');
+
+    const swirl =
+      Math.sin(this.age * 3 + this.rotationPhase) * config.get('exhaust.smoke.swirlIntensity');
+    this.velocity.x += swirl * delta;
+    this.velocity.z +=
+      Math.cos(this.age * 3 + this.rotationPhase) *
+      config.get('exhaust.smoke.swirlIntensity') *
+      delta;
+
+    this.position.add(this.velocity.clone().multiplyScalar(delta));
+
+    return this.age < this.maxAge;
+  }
+}
+
+// ========== 主渲染器类 ==========
 export class ModelLightRenderer implements ILightRenderer {
   private group: THREE.Group | null = null;
-  private followLight: THREE.PointLight | null = null; // ✅ 新增：跟随光源
+  private followLight: THREE.PointLight | null = null;
+
+  // 🔥 尾焰系统
+  private exhaustFlame: THREE.Mesh | null = null;
+  private flameMaterial: THREE.ShaderMaterial | null = null;
+
+  // 🔥 烟雾系统
+  private smokeParticles: THREE.Points | null = null;
+  private smokePool: SmokeParticle[] = [];
+  private emitTimer = 0;
+
+  // 核心属性
   private coordinateSystem: any;
   private modelPath: string;
   private previousPosition = new THREE.Vector3();
@@ -4409,6 +4618,16 @@ export class ModelLightRenderer implements ILightRenderer {
   private currentRotation = new THREE.Quaternion();
   private baseLerpAlpha = 0.15;
 
+  // 🔥 抖动生成器
+  private rocketJitterGen: JitterGenerator | null = null;
+  private flameJitterGen: JitterGenerator | null = null;
+
+  // 🔧 调试工具
+  private emitterAxisHelper: THREE.Group | null = null;
+
+  // 🔥 性能统计
+  private lastUpdateTime = 0;
+
   constructor(coordinateSystem: any, modelPath = '/models/rocket.glb') {
     this.coordinateSystem = coordinateSystem;
     this.modelPath = modelPath;
@@ -4420,7 +4639,6 @@ export class ModelLightRenderer implements ILightRenderer {
 
   async create(): Promise<void> {
     try {
-      // 取消旧的加载请求
       if (this.loadAbortController) {
         this.loadAbortController.abort();
       }
@@ -4431,7 +4649,6 @@ export class ModelLightRenderer implements ILightRenderer {
 
       const loadedModel = await modelSys.load(this.modelPath);
 
-      // 检查是否被中止
       if (this.loadAbortController?.signal.aborted) {
         logger.warn('ModelLightRenderer', `加载被中止 (loadId=${loadId})`);
         this._cleanupModel(loadedModel);
@@ -4450,13 +4667,19 @@ export class ModelLightRenderer implements ILightRenderer {
       this.group.scale.setScalar(1.0);
       this.group.visible = false;
 
-      // ✅ 方案1：创建跟随光源
+      // 创建跟随光源
       this.followLight = new THREE.PointLight('#ffffff', 2.0, 50);
-      this.followLight.position.set(0, 5, 5); // 相对于模型的位置
+      this.followLight.position.set(0, 5, 5);
       this.followLight.name = 'FollowLight';
       this.group.add(this.followLight);
 
-      // ✅ 方案3：设置材质（包含轻微自发光）
+      // 🔥 核心：创建尾焰
+      this._createExhaustFlame();
+
+      // 创建烟雾系统
+      this._createSmokeSystem();
+
+      // 设置材质
       this._setupMaterials(loadedModel);
 
       // 初始化旋转四元数
@@ -4471,17 +4694,30 @@ export class ModelLightRenderer implements ILightRenderer {
 
       postprocessSys.addGlowObject(this.group);
 
+      // 初始化抖动生成器
+      const rocketJitterCfg = config.get('exhaust.rocketJitter');
+      this.rocketJitterGen = new JitterGenerator(
+        rocketJitterCfg.intensity,
+        rocketJitterCfg.frequency,
+        rocketJitterCfg.timeVariation
+      );
+
+      const flameJitterCfg = config.get('exhaust.flameJitter');
+      this.flameJitterGen = new JitterGenerator(
+        flameJitterCfg.intensity,
+        flameJitterCfg.frequency,
+        flameJitterCfg.timeVariation
+      );
+
+      // 绑定配置变更监听
+      this._bindConfigEvents();
+
       this._isReady = true;
 
-      // 延迟应用待处理位置
       if (this.pendingPosition) {
         const cachedPosition = this.pendingPosition.clone();
         setTimeout(() => {
           this.updatePosition(cachedPosition);
-          logger.info(
-            'ModelLightRenderer',
-            `已应用待处理位置 (loadId=${loadId}): (${cachedPosition.x.toFixed(2)}, ${cachedPosition.y.toFixed(2)}, ${cachedPosition.z.toFixed(2)})`
-          );
         }, 50);
         this.pendingPosition = null;
       }
@@ -4497,7 +4733,341 @@ export class ModelLightRenderer implements ILightRenderer {
   }
 
   /**
-   * ✅ 方案3：设置材质（轻微自发光 + Three.js r152+ 兼容）
+   * 🔥 核心方法：创建尾焰（完全配置驱动版本）
+   */
+  private _createExhaustFlame(): void {
+    const flameConfig = config.get('exhaust.flame');
+
+    const flameGeometry = new THREE.ConeGeometry(
+      flameConfig.radius,
+      flameConfig.length,
+      8,
+      1,
+      true
+    );
+
+    this.flameMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0.0 },
+        uBaseColor: { value: new THREE.Color(flameConfig.baseColor) },
+        uTipColor: { value: new THREE.Color(flameConfig.tipColor) },
+        uIntensity: { value: flameConfig.intensity },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying vec3 vPosition;
+        void main() {
+          vUv = uv;
+          vPosition = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        uniform vec3 uBaseColor;
+        uniform vec3 uTipColor;
+        uniform float uIntensity;
+        varying vec2 vUv;
+        varying vec3 vPosition;
+
+        void main() {
+          float gradient = smoothstep(0.0, 1.0, vUv.y);
+          vec3 color = mix(uBaseColor, uTipColor, gradient);
+
+          float flicker = 0.8 + 0.2 * sin(uTime * 10.0 + vPosition.y * 5.0);
+          
+          float dist = length(vUv - vec2(0.5, 0.5));
+          float alpha = (1.0 - smoothstep(0.0, 0.5, dist)) * flicker * uIntensity;
+
+          gl_FragColor = vec4(color, alpha);
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+
+    this.exhaustFlame = new THREE.Mesh(flameGeometry, this.flameMaterial);
+    this.exhaustFlame.name = 'ExhaustFlame';
+    this.exhaustFlame.rotation.x = Math.PI;
+    this.exhaustFlame.position.set(flameConfig.offsetX, flameConfig.offsetY, flameConfig.offsetZ);
+    this.exhaustFlame.userData = { glow: true };
+
+    this.group!.add(this.exhaustFlame);
+    postprocessSys.addGlowObject(this.exhaustFlame);
+
+    logger.info('ModelLightRenderer', '✅ 尾焰已创建（配置驱动）');
+  }
+
+  /**
+   * 🔥 核心方法：创建烟雾粒子系统（配置驱动 + 调试坐标轴）
+   */
+  private _createSmokeSystem(): void {
+    const smokeConfig = config.get('exhaust.smoke');
+    const debugConfig = config.get('exhaust.debug');
+    const maxParticles = smokeConfig.maxParticles;
+
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(maxParticles * 3);
+    const colors = new Float32Array(maxParticles * 3);
+    const sizes = new Float32Array(maxParticles);
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+    const material = new THREE.PointsMaterial({
+      size: 0.5,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.6,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      sizeAttenuation: true,
+      map: this._createSmokeTexture(),
+    });
+
+    this.smokeParticles = new THREE.Points(geometry, material);
+    this.smokeParticles.name = 'ExhaustSmoke';
+
+    // ✅ 创建发射器坐标轴
+    this.emitterAxisHelper = createAxisHelper(debugConfig.axisSize, new THREE.Vector3());
+    this.emitterAxisHelper.visible = debugConfig.showEmitterAxis;
+
+    const lightAnchor = this.coordinateSystem.getLightAnchor();
+    lightAnchor.add(this.smokeParticles);
+    lightAnchor.add(this.emitterAxisHelper);
+
+    logger.info('ModelLightRenderer', '✅ 烟雾系统已创建（带坐标轴调试）');
+  }
+
+  /**
+   * 创建球形粒子纹理
+   */
+  private _createSmokeTexture(): THREE.Texture {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext('2d')!;
+
+    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 64, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    return texture;
+  }
+
+  /**
+   * 🔥 核心方法：发射烟雾粒子（配置驱动，世界坐标）
+   */
+  private _emitSmokeParticle(worldPosition: THREE.Vector3, direction: THREE.Vector3): void {
+    const smokeConfig = config.get('exhaust.smoke');
+
+    if (this.smokePool.length >= smokeConfig.maxParticles) {
+      this.smokePool.shift();
+    }
+
+    const particle = new SmokeParticle();
+    particle.maxAge = smokeConfig.particleLifetime;
+
+    // 将局部偏移量转换到世界坐标
+    const localOffset = new THREE.Vector3(
+      smokeConfig.emitterOffsetX,
+      smokeConfig.emitterOffsetY,
+      smokeConfig.emitterOffsetZ
+    );
+
+    // 应用火箭的当前旋转到偏移量
+    const worldOffset = localOffset.clone().applyQuaternion(this.group!.quaternion);
+    const emitterWorldPos = worldPosition.clone().add(worldOffset);
+    particle.position.copy(emitterWorldPos);
+
+    // 应用初始大小
+    particle.size = smokeConfig.initialSize;
+
+    const randomAngle = Math.random() * Math.PI * 2;
+    const randomRadius = Math.random() * smokeConfig.randomSpread;
+
+    // 应用速度倍率
+    particle.velocity
+      .copy(direction)
+      .multiplyScalar(smokeConfig.initialVelocity * smokeConfig.velocityMultiplier);
+
+    particle.velocity.x += Math.cos(randomAngle) * randomRadius;
+    particle.velocity.z += Math.sin(randomAngle) * randomRadius;
+
+    this.smokePool.push(particle);
+
+    // ✅ 更新坐标轴位置
+    if (this.emitterAxisHelper) {
+      updateAxisHelper(this.emitterAxisHelper, emitterWorldPos);
+    }
+  }
+
+  /**
+   * 🔥 核心方法：更新烟雾系统 - 同步世界坐标
+   */
+  private _updateSmokeSystem(delta: number): void {
+    if (!this.smokeParticles) return;
+
+    const smokeConfig = config.get('exhaust.smoke');
+
+    this.smokePool = this.smokePool.filter((p) => p.update(delta));
+
+    const geometry = this.smokeParticles.geometry;
+
+    const posAttr = geometry.attributes.position;
+    const colorAttr = geometry.attributes.color;
+    const sizeAttr = geometry.attributes.size;
+
+    if (!posAttr || !colorAttr || !sizeAttr) {
+      logger.warn('ModelLightRenderer', '烟雾系统缺少必要的 BufferAttribute');
+      return;
+    }
+
+    const positions = posAttr.array as Float32Array;
+    const colors = colorAttr.array as Float32Array;
+    const sizes = sizeAttr.array as Float32Array;
+
+    for (let i = 0; i < smokeConfig.maxParticles; i++) {
+      const particle = this.smokePool[i];
+
+      if (i < this.smokePool.length && particle) {
+        positions[i * 3] = particle.position.x;
+        positions[i * 3 + 1] = particle.position.y;
+        positions[i * 3 + 2] = particle.position.z;
+
+        const brightness = particle.opacity;
+        colors[i * 3] = brightness;
+        colors[i * 3 + 1] = brightness;
+        colors[i * 3 + 2] = brightness;
+
+        sizes[i] = particle.size;
+      } else {
+        positions[i * 3] = 0;
+        positions[i * 3 + 1] = 0;
+        positions[i * 3 + 2] = 0;
+        sizes[i] = 0;
+      }
+    }
+
+    posAttr.needsUpdate = true;
+    colorAttr.needsUpdate = true;
+    sizeAttr.needsUpdate = true;
+
+    geometry.setDrawRange(0, Math.min(this.smokePool.length, smokeConfig.maxParticles));
+  }
+
+  /**
+   * 🔥 新增方法：绑定配置变更事件
+   */
+  private _bindConfigEvents(): void {
+    const bus = this.coordinateSystem?.eventBus || eventBus;
+
+    bus.on('config-changed', ({ key }: { key: string }) => {
+      if (!key.startsWith('exhaust.')) return;
+
+      if (key.startsWith('exhaust.flame')) {
+        this._updateFlameConfig();
+      }
+
+      if (key.startsWith('exhaust.smoke')) {
+        this._updateSmokeConfig();
+      }
+
+      if (key.startsWith('exhaust.debug')) {
+        this._updateDebugConfig();
+      }
+
+      if (key.startsWith('exhaust.rocketJitter')) {
+        this._updateRocketJitterConfig();
+      }
+      if (key.startsWith('exhaust.flameJitter')) {
+        this._updateFlameJitterConfig();
+      }
+    });
+  }
+
+  /**
+   * 🔥 新增方法：更新尾焰配置
+   */
+  private _updateFlameConfig(): void {
+    if (!this.flameMaterial?.uniforms || !this.exhaustFlame) return;
+
+    const flameConfig = config.get('exhaust.flame');
+    const u = this.flameMaterial.uniforms;
+
+    if (u.uBaseColor) u.uBaseColor.value.set(flameConfig.baseColor);
+    if (u.uTipColor) u.uTipColor.value.set(flameConfig.tipColor);
+    if (u.uIntensity) u.uIntensity.value = flameConfig.intensity;
+
+    const newGeometry = new THREE.ConeGeometry(flameConfig.radius, flameConfig.length, 8, 1, true);
+    this.exhaustFlame.geometry.dispose();
+    this.exhaustFlame.geometry = newGeometry;
+
+    this.exhaustFlame.position.set(flameConfig.offsetX, flameConfig.offsetY, flameConfig.offsetZ);
+
+    logger.debug('ModelLightRenderer', '尾焰配置已更新');
+  }
+
+  /**
+   * 更新烟雾配置
+   */
+  private _updateSmokeConfig(): void {
+    const smokeConfig = config.get('exhaust.smoke');
+
+    this.smokePool.forEach((p) => {
+      p.maxAge = smokeConfig.particleLifetime;
+    });
+
+    logger.debug('ModelLightRenderer', '烟雾配置已更新');
+  }
+
+  /**
+   * ✅ 新增方法：更新调试配置
+   */
+  private _updateDebugConfig(): void {
+    if (!this.emitterAxisHelper) return;
+
+    const debugConfig = config.get('exhaust.debug');
+    toggleAxisHelper(this.emitterAxisHelper, debugConfig.showEmitterAxis);
+
+    // 更新轴线大小（需要重新创建）
+    if (debugConfig.axisSize !== this.emitterAxisHelper.scale.x) {
+      this.emitterAxisHelper.scale.setScalar(debugConfig.axisSize);
+    }
+
+    logger.debug('ModelLightRenderer', '调试配置已更新');
+  }
+
+  /**
+   * 更新火箭抖动配置
+   */
+  private _updateRocketJitterConfig(): void {
+    if (!this.rocketJitterGen) return;
+    const cfg = config.get('exhaust.rocketJitter');
+    this.rocketJitterGen.updateConfig(cfg.intensity, cfg.frequency, cfg.timeVariation);
+    logger.debug('ModelLightRenderer', '火箭抖动配置已更新');
+  }
+
+  /**
+   * 更新尾焰抖动配置
+   */
+  private _updateFlameJitterConfig(): void {
+    if (!this.flameJitterGen) return;
+    const cfg = config.get('exhaust.flameJitter');
+    this.flameJitterGen.updateConfig(cfg.intensity, cfg.frequency, cfg.timeVariation);
+    logger.debug('ModelLightRenderer', '尾焰抖动配置已更新');
+  }
+
+  /**
+   * 设置材质
    */
   private _setupMaterials(model: THREE.Object3D): void {
     model.traverse((child: THREE.Object3D) => {
@@ -4509,25 +5079,17 @@ export class ModelLightRenderer implements ILightRenderer {
 
       if (hasTexture) {
         const mat = mesh.material as THREE.MeshStandardMaterial;
-
-        // ✅ 修复：添加轻微自发光（使用原始颜色）
-        mat.emissive = mat.color.clone().multiplyScalar(0.9); // 原色的30%
-        mat.emissiveIntensity = 0; // 提高到0.8
-
-        // 优化 PBR 属性
-        mat.roughness = 0.65; // 更光滑
-        mat.metalness = 0.8; // 增加金属感
-
+        mat.emissive = mat.color.clone().multiplyScalar(0.9);
+        mat.emissiveIntensity = 0;
+        mat.roughness = 0.65;
+        mat.metalness = 0.8;
         mat.toneMapped = true;
 
-        // ✅ 修复: 使用 Three.js r152+ 的新 API
         if (mat.map) {
-          mat.map.colorSpace = THREE.SRGBColorSpace; // 替代旧的 .encoding
+          mat.map.colorSpace = THREE.SRGBColorSpace;
         }
-
         mat.needsUpdate = true;
       } else {
-        // ✅ 无贴图部分也使用发光材质
         mesh.material = new THREE.MeshStandardMaterial({
           color: new THREE.Color('#00ff88'),
           emissive: new THREE.Color('#00ff88'),
@@ -4540,44 +5102,109 @@ export class ModelLightRenderer implements ILightRenderer {
   }
 
   /**
-   * 更新位置（包含平滑朝向）
+   * 🔥 核心方法：更新位置（包含平滑朝向 + 尾焰 + 烟雾 + 抖动）
    */
   updatePosition(position: THREE.Vector3): void {
     if (!this._isReady || !this.group) {
       this.pendingPosition = position.clone();
-      logger.info('ModelLightRenderer', '位置缓存中，等待渲染器就绪');
       return;
     }
 
     this.pendingPosition = null;
 
-    this.group.position.copy(position);
+    const now = performance.now() / 1000;
+    const delta = now - this.lastUpdateTime;
+    this.lastUpdateTime = now;
 
-    // 计算运动向量和速度
     const displacement = new THREE.Vector3().subVectors(position, this.previousPosition);
     const speed = displacement.length();
 
     if (speed > 0.01) {
       displacement.normalize();
 
+      // 平滑朝向
       const forward = new THREE.Vector3(0, 1, 0);
       this.targetRotation.setFromUnitVectors(forward, displacement);
 
-      // 根据速度动态调整插值系数
       const dynamicAlpha = THREE.MathUtils.clamp(this.baseLerpAlpha + speed * 0.02, 0.05, 0.3);
-
       this.currentRotation.slerp(this.targetRotation, dynamicAlpha);
-      this.group.quaternion.copy(this.currentRotation);
 
+      // 🔥 火箭机体抖动（受控版本）
+      let rocketJitter = new THREE.Vector3();
+      if (visualEffectsSys.isEffectActive('rocketJitter') && this.rocketJitterGen) {
+        rocketJitter = this.rocketJitterGen.update(now * 1000);
+      }
+
+      this.group.quaternion.copy(this.currentRotation);
+      this.group.position.copy(position).add(rocketJitter);
+
+      // ✅ 获取尾焰配置
+      const flameConfig = config.get('exhaust.flame');
+
+      // 🔥 尾焰独立抖动（受控版本）
+      if (
+        this.exhaustFlame &&
+        this.flameJitterGen &&
+        visualEffectsSys.isEffectActive('flameJitter')
+      ) {
+        const flameJitter = this.flameJitterGen.update(now * 1000);
+        this.exhaustFlame.position.set(
+          flameConfig.offsetX + flameJitter.x,
+          flameConfig.offsetY + flameJitter.y,
+          flameConfig.offsetZ + flameJitter.z
+        );
+      }
+
+      // 🔥 更新尾焰
+      if (this.flameMaterial?.uniforms) {
+        const u = this.flameMaterial.uniforms;
+
+        if (u.uTime) u.uTime.value = now;
+        if (u.uIntensity) {
+          const dynamicIntensity = flameConfig.intensity + speed * flameConfig.speedMultiplier;
+          u.uIntensity.value = THREE.MathUtils.clamp(dynamicIntensity, 0.5, 2.0);
+        }
+      }
+
+      if (this.exhaustFlame) {
+        const baseScale = 1.0;
+        const speedScale = THREE.MathUtils.clamp(speed * flameConfig.speedMultiplier, 0.8, 2.0);
+        this.exhaustFlame.scale.setScalar(baseScale * speedScale);
+      }
+
+      // 🔥 更新烟雾发射
+      const smokeConfig = config.get('exhaust.smoke');
+      const emitInterval = 1.0 / smokeConfig.emitRate;
+
+      this.emitTimer += delta;
+
+      const shouldEmit = smokeConfig.emitOnlyWhenMoving ? speed > 0.01 : true;
+
+      if (this.emitTimer >= emitInterval && shouldEmit) {
+        this.emitTimer = 0;
+        this._emitSmokeParticle(position, displacement);
+      }
+
+      this._updateSmokeSystem(delta);
       this.previousPosition.copy(position);
+    } else {
+      // 静止时处理
+      const smokeConfig = config.get('exhaust.smoke');
+      if (!smokeConfig.emitOnlyWhenMoving) {
+        this.emitTimer += delta;
+        const emitInterval = 1.0 / smokeConfig.emitRate;
+
+        if (this.emitTimer >= emitInterval) {
+          this.emitTimer = 0;
+          const defaultDirection = new THREE.Vector3(0, -1, 0);
+          this._emitSmokeParticle(position, defaultDirection);
+        }
+      }
+
+      this._updateSmokeSystem(delta);
     }
 
     this.group.visible = true;
-
-    logger.debug(
-      'ModelLightRenderer',
-      `位置已更新: (${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)})`
-    );
   }
 
   show(): void {
@@ -4588,9 +5215,6 @@ export class ModelLightRenderer implements ILightRenderer {
     if (this.group) this.group.visible = false;
   }
 
-  /**
-   * 清理模型资源
-   */
   private _cleanupModel(model: THREE.Object3D): void {
     model.traverse((child: THREE.Object3D) => {
       if ((child as THREE.Mesh).isMesh) {
@@ -4616,18 +5240,34 @@ export class ModelLightRenderer implements ILightRenderer {
       const lightAnchor = this.coordinateSystem.getLightAnchor();
       lightAnchor.remove(this.group);
 
-      // ✅ 新增: 清理光源
       if (this.followLight) {
         this.followLight.dispose();
         this.followLight = null;
+      }
+
+      if (this.exhaustFlame) {
+        postprocessSys.removeGlowObject(this.exhaustFlame);
+        this.exhaustFlame.geometry.dispose();
+        this.flameMaterial?.dispose();
+      }
+
+      if (this.smokeParticles) {
+        this.smokeParticles.geometry.dispose();
+        (this.smokeParticles.material as THREE.Material).dispose();
+        const lightAnchor = this.coordinateSystem.getLightAnchor();
+        lightAnchor.remove(this.smokeParticles);
+      }
+
+      if (this.emitterAxisHelper) {
+        const lightAnchor = this.coordinateSystem.getLightAnchor();
+        lightAnchor.remove(this.emitterAxisHelper);
       }
 
       this._cleanupModel(this.group);
     }
 
     this._isReady = false;
-    this.pendingPosition = null;
-    logger.info('ModelLightRenderer', '模型已销毁');
+    logger.info('ModelLightRenderer', '模型光点渲染器已销毁');
   }
 }
 
@@ -4921,6 +5561,130 @@ export default state;
 
 ```
 
+### src/systems/visual-effects-sys.ts
+
+```
+/**
+ * @file visual-effects-sys.ts
+ * @description 视觉效果管理器 - 控制抖动、尾焰等效果的启用时机
+ * @version 1.0 (Minimal)
+ *
+ * 核心功能：
+ *   - 场景准备后自动激活配置的效果
+ *   - 提供统一的效果查询接口
+ */
+import logger from '../utils/logger';
+import config from '../config';
+import eventBus from '../event-bus';
+
+interface EffectConfig {
+  enabled: boolean; // 效果是否启用
+  runOnReady: boolean; // 场景加载完立即运行
+}
+
+class VisualEffectsSystem {
+  private effects: Map<string, EffectConfig> = new Map();
+  private activeEffects: Set<string> = new Set();
+  private initialized = false;
+
+  init() {
+    if (this.initialized) {
+      logger.warn('VisualEffects', '视觉效果管理器已初始化');
+      return this;
+    }
+
+    this._loadEffectsConfig();
+    this._bindEvents();
+
+    this.initialized = true;
+    logger.info('VisualEffects', '视觉效果管理器已初始化');
+
+    return this;
+  }
+
+  private _loadEffectsConfig() {
+    const cfg = config.get('visualEffects');
+
+    if (!cfg) {
+      logger.warn('VisualEffects', '配置中未找到 visualEffects，使用默认配置');
+      // 提供默认配置
+      this.effects.set('rocketJitter', { enabled: true, runOnReady: true });
+      this.effects.set('flameJitter', { enabled: true, runOnReady: true });
+      this.effects.set('exhaustFlame', { enabled: true, runOnReady: true });
+      return;
+    }
+
+    Object.keys(cfg).forEach((key) => {
+      this.effects.set(key, cfg[key]);
+    });
+
+    logger.debug('VisualEffects', `已加载 ${this.effects.size} 个效果配置`);
+  }
+
+  private _bindEvents() {
+    // 场景准备完成 - 激活所有 runOnReady 的效果
+    eventBus.on('scene-ready', () => {
+      this._activateReadyEffects();
+    });
+
+    // 配置变更 - 重新加载配置
+    eventBus.on('config-changed', ({ key }: { key: string }) => {
+      if (key.startsWith('visualEffects.')) {
+        this._loadEffectsConfig();
+      }
+    });
+  }
+
+  private _activateReadyEffects() {
+    this.effects.forEach((cfg, name) => {
+      if (cfg.enabled && cfg.runOnReady) {
+        this.activeEffects.add(name);
+        logger.info('VisualEffects', `✅ 已激活效果: ${name}`);
+      }
+    });
+
+    logger.info('VisualEffects', `场景准备完成，已激活 ${this.activeEffects.size} 个效果`);
+  }
+
+  /**
+   * 检查某个效果是否处于激活状态
+   */
+  isEffectActive(name: string): boolean {
+    return this.activeEffects.has(name);
+  }
+
+  /**
+   * 手动激活某个效果（用于特殊情况）
+   */
+  activateEffect(name: string) {
+    const cfg = this.effects.get(name);
+    if (cfg && cfg.enabled) {
+      this.activeEffects.add(name);
+      logger.debug('VisualEffects', `手动激活效果: ${name}`);
+    }
+  }
+
+  /**
+   * 手动停用某个效果
+   */
+  deactivateEffect(name: string) {
+    this.activeEffects.delete(name);
+    logger.debug('VisualEffects', `停用效果: ${name}`);
+  }
+
+  dispose() {
+    this.effects.clear();
+    this.activeEffects.clear();
+    this.initialized = false;
+    logger.info('VisualEffects', '视觉效果管理器已销毁');
+  }
+}
+
+const visualEffectsSys = new VisualEffectsSystem();
+export default visualEffectsSys;
+
+```
+
 ### src/types/index.ts
 
 ```
@@ -5173,9 +5937,12 @@ class UIBasic {
     });
     this.controls.set('animation.currentStep', stepSlider);
 
+    // 监听数据加载，更新滑块范围
     eventBus.on('data-loaded', (data: { points: any[] }) => {
-      stepSlider.max = data.points.length - 1;
+      const maxStep = Math.max(0, data.points.length - 1);
+      stepSlider.max = maxStep;
       stepSlider.refresh();
+      logger.info('UIBasic', `步数滑块已更新: 0 ~ ${maxStep}`);
     });
 
     const speed = folder.addBinding(this.configData.animation, 'speedFactor', {
@@ -6475,6 +7242,190 @@ class UIScene {
 
 const uiScene = new UIScene();
 export default uiScene;
+
+```
+
+### src/utils/axis-helper.ts
+
+```
+/**
+ * @file axis-helper.ts
+ * @description 坐标轴可视化工具 - 用于调试对象位置
+ * @version 1.0
+ */
+import * as THREE from 'three';
+import logger from './logger';
+
+/**
+ * 创建带标签的坐标轴辅助线
+ * @param size - 轴线长度
+ * @param position - 初始位置
+ * @returns 坐标轴组对象
+ */
+export function createAxisHelper(
+  size: number = 1.0,
+  position: THREE.Vector3 = new THREE.Vector3()
+): THREE.Group {
+  const group = new THREE.Group();
+  group.name = 'AxisHelper';
+  group.position.copy(position);
+
+  // X轴 (红色)
+  const xGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(size, 0, 0),
+  ]);
+  const xMaterial = new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 });
+  const xAxis = new THREE.Line(xGeometry, xMaterial);
+  xAxis.name = 'X-Axis';
+  group.add(xAxis);
+
+  // Y轴 (绿色)
+  const yGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0, size, 0),
+  ]);
+  const yMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 });
+  const yAxis = new THREE.Line(yGeometry, yMaterial);
+  yAxis.name = 'Y-Axis';
+  group.add(yAxis);
+
+  // Z轴 (蓝色)
+  const zGeometry = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(0, 0, size),
+  ]);
+  const zMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff, linewidth: 2 });
+  const zAxis = new THREE.Line(zGeometry, zMaterial);
+  zAxis.name = 'Z-Axis';
+  group.add(zAxis);
+
+  // 添加端点球体作为标记
+  const sphereGeometry = new THREE.SphereGeometry(size * 0.05, 8, 8);
+
+  const xSphere = new THREE.Mesh(sphereGeometry, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+  xSphere.position.set(size, 0, 0);
+  group.add(xSphere);
+
+  const ySphere = new THREE.Mesh(sphereGeometry, new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+  ySphere.position.set(0, size, 0);
+  group.add(ySphere);
+
+  const zSphere = new THREE.Mesh(sphereGeometry, new THREE.MeshBasicMaterial({ color: 0x0000ff }));
+  zSphere.position.set(0, 0, size);
+  group.add(zSphere);
+
+  logger.debug('AxisHelper', `坐标轴已创建 | 大小: ${size}`);
+
+  return group;
+}
+
+/**
+ * 更新坐标轴辅助线的位置
+ */
+export function updateAxisHelper(axisGroup: THREE.Group, position: THREE.Vector3): void {
+  axisGroup.position.copy(position);
+}
+
+/**
+ * 切换坐标轴的可见性
+ */
+export function toggleAxisHelper(axisGroup: THREE.Group, visible: boolean): void {
+  axisGroup.visible = visible;
+}
+
+```
+
+### src/utils/jitter-generator.ts
+
+```
+/**
+ * @file jitter-generator.ts
+ * @description 通用抖动生成器 - 球内均匀分布 + 随机时间间隔
+ * @version 1.0
+ *
+ * 核心特性：
+ *   1. 拒绝采样法实现球内真正均匀分布
+ *   2. 时间间隔随机化，避免机械感
+ *   3. 支持运行时配置热更新
+ */
+import * as THREE from 'three';
+
+export class JitterGenerator {
+  private lastUpdateTime: number = 0;
+  private currentTarget: THREE.Vector3 = new THREE.Vector3();
+  private nextUpdateDelay: number = 0;
+
+  constructor(
+    private intensity: number, // 抖动球体半径
+    private frequency: number, // 基础频率（Hz）
+    private timeVariation: number // 时间随机性 [0-1]
+  ) {
+    this._generateNewTarget();
+    this._scheduleNextUpdate();
+  }
+
+  /**
+   * 🎯 核心方法：生成球内均匀分布的随机点
+   * 使用拒绝采样法（Rejection Sampling）
+   */
+  private _generateNewTarget(): void {
+    let x: number, y: number, z: number, lengthSq: number;
+
+    // 拒绝采样：在立方体中随机取点，拒绝超出球体的点
+    do {
+      x = (Math.random() * 2 - 1) * this.intensity;
+      y = (Math.random() * 2 - 1) * this.intensity;
+      z = (Math.random() * 2 - 1) * this.intensity;
+      lengthSq = x * x + y * y + z * z;
+    } while (lengthSq > this.intensity * this.intensity);
+
+    this.currentTarget.set(x, y, z);
+  }
+
+  /**
+   * ⏱️ 计算下次更新的时间间隔（带随机性）
+   */
+  private _scheduleNextUpdate(): void {
+    const baseInterval = 1000 / this.frequency; // 毫秒
+    const randomFactor = 1 + (Math.random() * 2 - 1) * this.timeVariation;
+    this.nextUpdateDelay = baseInterval * randomFactor;
+  }
+
+  /**
+   * 🔄 每帧调用，返回当前抖动偏移量
+   * @param currentTime - 当前时间戳（毫秒）
+   * @returns 抖动向量的克隆
+   */
+  update(currentTime: number): THREE.Vector3 {
+    if (currentTime - this.lastUpdateTime >= this.nextUpdateDelay) {
+      this._generateNewTarget();
+      this._scheduleNextUpdate();
+      this.lastUpdateTime = currentTime;
+    }
+    return this.currentTarget.clone();
+  }
+
+  /**
+   * 🛠️ 动态更新配置
+   */
+  updateConfig(intensity?: number, frequency?: number, timeVariation?: number): void {
+    if (intensity !== undefined) this.intensity = intensity;
+    if (frequency !== undefined) this.frequency = frequency;
+    if (timeVariation !== undefined) this.timeVariation = timeVariation;
+  }
+
+  /**
+   * 获取当前配置（用于调试）
+   */
+  getConfig(): { intensity: number; frequency: number; timeVariation: number } {
+    return {
+      intensity: this.intensity,
+      frequency: this.frequency,
+      timeVariation: this.timeVariation,
+    };
+  }
+}
 
 ```
 
