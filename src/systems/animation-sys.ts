@@ -215,6 +215,11 @@ class AnimationSystem {
     logger.debug('AnimationSystem', `⏭️ 跳转到步数 ${step}`);
   }
 
+  // 别名方法，保持API一致性
+  setStep(step: number) {
+    this.stepTo(step);
+  }
+
   dispose() {
     this.isPlaying = false;
     this.initialized = false;

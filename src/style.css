@@ -288,6 +288,332 @@ body {
   display: none !important;
 }
 
+/* ==================== 进度条容器 (独立在顶部) ==================== */
+#progress-container {
+  height: 60px;
+  background: rgba(20, 20, 25, 0.95);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+  gap: 20px;
+  z-index: 100;
+}
+
+.progress-wrapper {
+  flex: 1;
+  height: 8px;
+  position: relative;
+  margin: 0 20px;
+}
+
+/* ==================== 底部控制面板样式 ==================== */
+.control-panel {
+  position: relative;
+  height: 80px;
+  background: rgba(20, 20, 25, 0.95);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  gap: 20px;
+  z-index: 100;
+}
+
+/* 左侧视角控制 */
+.view-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.view-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: #b0b0b0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.view-btn:hover {
+  background: rgba(74, 124, 126, 0.3);
+  border-color: var(--accent);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.view-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* 中央播放控制 */
+.playback-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.control-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: #b0b0b0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  transform: scale(1.05);
+}
+
+.play-btn {
+  width: 48px;
+  height: 48px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 8px;
+}
+
+.play-btn:hover {
+  background: #5a9092;
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(74, 124, 126, 0.4);
+}
+
+.play-btn:active {
+  transform: scale(0.98);
+}
+
+/* 时间显示样式 */
+.time-display {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  min-width: 100px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.separator {
+  margin: 0 6px;
+  opacity: 0.7;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #5a9092);
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.1s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.progress-bar:hover .progress-fill::after {
+  opacity: 1;
+}
+
+.progress-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.progress-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.progress-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* 右侧音乐控制 */
+.audio-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.audio-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  color: #b0b0b0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.audio-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent);
+  color: var(--text-primary);
+  transform: scale(1.05);
+}
+
+.audio-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .control-panel {
+    height: 70px;
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .view-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .play-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .control-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .progress-area {
+    max-width: 200px;
+  }
+
+  .time-display {
+    font-size: 11px;
+    min-width: 70px;
+  }
+}
+
+@media (max-width: 480px) {
+  .control-panel {
+    height: 60px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .view-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .view-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .play-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .control-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  .control-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .play-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .audio-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .progress-area {
+    max-width: 120px;
+  }
+
+  .time-display {
+    font-size: 10px;
+    min-width: 60px;
+  }
+}
+
 /* ==================== 响应式适配 ==================== */
 @media (max-width: 768px) {
   .title-glass {

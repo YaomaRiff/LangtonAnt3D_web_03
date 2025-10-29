@@ -141,24 +141,24 @@ const DEFAULT_CONFIG = {
   },
 
   particles: {
-    floatIntensity: 0.2,
-    breathIntensity: 0.1,
-    dustCount: 3000,
-    dustSize: 0.6,
-    dustOpacity: 0.6,
-    dustColor: '#AF85B7',
+    floatIntensity: 0.62,
+    breathIntensity: 0.27,
+    dustCount: 1900,
+    dustSize: 0.73,
+    dustOpacity: 0.47,
+    dustColor: '#c09bc7',
     pathPointColor: '#F0B7B7',
     pathPointSize: 0.5,
     pathPointOpacity: 0.9,
     sphereRadius: 1400,
     systemScale: 1.0,
-    rotationSpeed: 0,
-    rotationTiltXZ: 0,
-    rotationTiltXY: 0,
+    rotationSpeed: 0.1,
+    rotationTiltXZ: -48,
+    rotationTiltXY: 52,
   },
 
   path: {
-    depthIntensity: 0.5,
+    depthIntensity: 0.95,
     depthEnhanced: true,
     scale: 1.0,
   },
@@ -171,7 +171,7 @@ const DEFAULT_CONFIG = {
     fogDensity: 0.015,
     fogVolumeScale: 1.0,
     pathFogIntensity: 0.1,
-    pathColor: '#F0B7B7',
+    pathColor: '#b6e2ef',
     dustColor: '#AF85B7',
     positionScale: 2.0,
     yScale: 1.0,
@@ -195,29 +195,29 @@ const DEFAULT_CONFIG = {
     // 景深效果 (Bokeh)
     bokeh: {
       enabled: false,
-      focus: 40.0, // 焦距
-      dof: 0.02, // 景深范围
-      aperture: 0.025, // 光圈大小
-      maxBlur: 0.01, // 最大模糊
+      focus: 41.099999999999994, // 焦距
+      dof: 0.016, // 景深范围
+      aperture: 8.673617379884035e-19, // 光圈大小
+      maxBlur: 0.008, // 最大模糊
     },
 
     // 色差效果 (Chromatic Aberration)
     chromaticAberration: {
-      enabled: false,
+      enabled: true,
       offset: { x: 0.001, y: 0.001 }, // 颜色偏移量
     },
 
     // 胶片效果 (Film) - 替代旧的 Noise 和 Scanline
     film: {
-      enabled: false,
-      scanlineIntensity: 0.3, // 扫描线强度
-      noiseIntensity: 0.3, // 噪点强度
-      scanlineCount: 2048, // 扫描线数量
+      enabled: true,
+      scanlineIntensity: 0.26, // 扫描线强度
+      noiseIntensity: 0.29000000000000004, // 噪点强度
+      scanlineCount: 2368, // 扫描线数量
       grayscale: false, // 是否灰度
     },
 
     // 色彩调整效果
-    brightnessContrast: { enabled: false, brightness: 0.0, contrast: 0.0 },
+    brightnessContrast: { enabled: true, brightness: 0.04, contrast: 0.1 },
   },
 
   // 静态页面配置
@@ -313,8 +313,8 @@ const DEFAULT_CONFIG = {
     isMuted: false, // 音频开关状态
     volume: 0.5, // 音量 0-1
     backgroundMusic: {
-      enabled: false, // 背景音乐开关
-      url: '', // 音乐文件URL
+      enabled: true, // 背景音乐开关
+      url: '/audio/background-music.mp3', // 音乐文件URL
       loop: true, // 循环播放
     },
   },
@@ -415,11 +415,7 @@ class ConfigManager {
     }
   }
 
-  applyPresetData(_presetData: any) {
-    logger.warn('Config', 'applyPresetData 已被弃用，请使用 PresetManager 的新加载逻辑');
-    return true;
-  }
-
+  
   reset() {
     const oldConfig = this._config;
     this._config = deepClone(DEFAULT_CONFIG);
@@ -446,5 +442,4 @@ export const initConfig = () => configManager.init();
 export const get = (key?: string): any => configManager.get(key);
 export const set = (key: string, value: any) => configManager.set(key, value);
 export const getRaw = (): any => configManager.getRaw();
-export const applyPresetData = (data: any) => configManager.applyPresetData(data);
 export const reset = () => configManager.reset();

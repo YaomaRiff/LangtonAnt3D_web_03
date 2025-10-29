@@ -7,6 +7,7 @@
  */
 import * as THREE from 'three';
 import logger from '../utils/logger';
+import config from '../config';
 
 import { resolveAssetUrl } from '../utils/url-resolver'; // ✅ 核心修正：导入URL解析工具
 
@@ -51,6 +52,19 @@ class AudioSystem {
       this.camera = camera;
 
       this._bindEvents();
+
+      // 🔥 新增：自动加载背景音乐
+      const backgroundMusicConfig = config.get('audio.backgroundMusic');
+      if (backgroundMusicConfig && backgroundMusicConfig.enabled) {
+        const musicUrl = backgroundMusicConfig.url;
+        if (musicUrl) {
+          logger.info('AudioSystem', `自动加载背景音乐: ${musicUrl}`);
+          // 延迟加载，避免阻塞初始化
+          setTimeout(() => {
+            this.loadAudio(musicUrl);
+          }, 100);
+        }
+      }
 
       this.initialized = true;
       logger.info('AudioSystem', '音频系统初始化完成(延迟创建 AudioContext)');

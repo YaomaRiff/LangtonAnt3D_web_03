@@ -1,33 +1,42 @@
 /**
  * @file user-ui.ts
- * @description 用户友好的简化UI系统 - 仅包含4个核心控件
- * @version 1.1 (Clean UI System)
+ * @description 现代化播放器风格UI控制面板 - 路径步数控制 + 相机视角 + 音乐
+ * @version 2.0 (Modern Player UI)
  */
 
 import configManager, { type ConfigEvent } from './config';
 import eventBus from './event-bus';
-import presetManager from './preset-manager';
+import logger from './utils/logger';
 import animationSys from './systems/animation-sys';
 import cameraSys from './systems/camera-sys';
 import audioSys from './systems/audio-sys';
-
-interface UIControl {
-  id: string;
-  title: string;
-  container: HTMLElement;
-  visible: boolean;
-}
+import dataSys from './systems/data-sys';
 
 export class UserUI {
-  private controls: Map<string, UIControl> = new Map();
   private isInitialized = false;
+  private currentStep = 0;
+  private totalSteps = 0;
+  private isPlaying = false;
+  private isDragging = false;
+
+  // UI元素引用
+  private playBtn: HTMLButtonElement | null = null;
+  private playIcon: SVGElement | null = null;
+  private pauseIcon: SVGElement | null = null;
+  private progressSlider: HTMLInputElement | null = null;
+  private progressFill: HTMLDivElement | null = null;
+  private currentStepDisplay: HTMLSpanElement | null = null;
+  private totalStepsDisplay: HTMLSpanElement | null = null;
+  private audioBtn: HTMLButtonElement | null = null;
+  private audioOnIcon: SVGElement | null = null;
+  private audioOffIcon: SVGElement | null = null;
 
   constructor() {
     // 延迟初始化，等待DOM准备完成
   }
 
   public async initialize() {
-    console.log('🎛️ Initializing User UI...');
+    console.log('🎛️ Initializing Modern Player UI...');
 
     // 等待DOM加载完成
     if (document.readyState === 'loading') {
@@ -36,434 +45,333 @@ export class UserUI {
       });
     }
 
-    this.setupControls();
+    this.setupControlElements();
     this.setupEventListeners();
+    this.updateUIState();
     this.isInitialized = true;
-    console.log('✅ User UI initialized');
+    console.log('✅ Modern Player UI initialized');
   }
 
-  private setupControls() {
-    // 创建动画控制
-    this.createAnimationControl();
+  private setupControlElements() {
+    // 播放控制按钮
+    this.playBtn = document.getElementById('play-pause') as HTMLButtonElement;
+    this.playIcon = this.playBtn?.querySelector('.play-icon') as SVGElement;
+    this.pauseIcon = this.playBtn?.querySelector('.pause-icon') as SVGElement;
 
-    // 创建相机控制
-    this.createCameraControl();
+    // 进度条
+    this.progressSlider = document.getElementById('progress-slider') as HTMLInputElement;
+    this.progressFill = document.getElementById('progress-fill') as HTMLDivElement;
 
-    // 创建预设控制
-    this.createPresetControl();
+    // 步数显示
+    this.currentStepDisplay = document.getElementById('current-step') as HTMLSpanElement;
+    this.totalStepsDisplay = document.getElementById('total-steps') as HTMLSpanElement;
 
-    // 创建音频控制
-    this.createAudioControl();
+    // 音频控制
+    this.audioBtn = document.getElementById('audio-toggle') as HTMLButtonElement;
+    this.audioOnIcon = this.audioBtn?.querySelector('.audio-on') as SVGElement;
+    this.audioOffIcon = this.audioBtn?.querySelector('.audio-off') as SVGElement;
+
+    console.log('🎮 Control elements initialized');
   }
 
-  private createAnimationControl() {
-    const container = document.getElementById('animation-control');
-    if (!container) return;
-
-    container.innerHTML = `
-      <h3 class="text-white font-mono text-sm mb-3 opacity-80">Animation</h3>
-      <div class="space-y-2">
-        <button id="play-pause-btn" class="ui-button w-full">
-          <span id="play-icon">⏸️</span> <span id="play-text">Pause</span>
-        </button>
-        <button id="reset-animation-btn" class="ui-button w-full">
-          🔄 Reset
-        </button>
-        <div class="flex items-center space-x-2">
-          <label class="text-xs text-gray-400">Speed:</label>
-          <input type="range" id="speed-slider" min="0.1" max="3" step="0.1" value="1"
-                 class="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-          <span id="speed-value" class="text-xs text-gray-400 w-8">1.0</span>
-        </div>
-      </div>
-    `;
-
-    this.controls.set('animation', {
-      id: 'animation',
-      title: 'Animation',
-      container,
-      visible: true
+  private setupEventListeners() {
+    // 播放/暂停按钮
+    this.playBtn?.addEventListener('click', () => {
+      this.togglePlayPause();
     });
 
-    this.setupAnimationEvents();
-  }
-
-  private createCameraControl() {
-    const container = document.getElementById('camera-control');
-    if (!container) return;
-
-    container.innerHTML = `
-      <h3 class="text-white font-mono text-sm mb-3 opacity-80">Camera</h3>
-      <div class="space-y-2">
-        <button id="camera-auto-btn" class="ui-button w-full active">
-          🎥 Auto Rotate
-        </button>
-        <button id="camera-front-btn" class="ui-button w-full">
-          🔳 Front View
-        </button>
-        <button id="camera-top-btn" class="ui-button w-full">
-          ⬆️ Top View
-        </button>
-        <button id="camera-side-btn" class="ui-button w-full">
-          ➡️ Side View
-        </button>
-      </div>
-    `;
-
-    this.controls.set('camera', {
-      id: 'camera',
-      title: 'Camera',
-      container,
-      visible: true
+    // 进度条控制
+    this.progressSlider?.addEventListener('input', (e) => {
+      if (!this.isDragging) {
+        this.handleProgressChange((e.target as HTMLInputElement).value);
+      }
     });
 
-    this.setupCameraEvents();
-  }
-
-  private createPresetControl() {
-    const container = document.getElementById('preset-control');
-    if (!container) return;
-
-    // 获取可用预设列表
-    const presets = presetManager.getAvailablePresets();
-
-    container.innerHTML = `
-      <h3 class="text-white font-mono text-sm mb-3 opacity-80">Presets</h3>
-      <div class="space-y-2">
-        <select id="preset-select" class="w-full bg-glass-dark border border-glass-border rounded text-white text-sm p-2">
-          ${presets.map(preset => `<option value="${preset}">${preset}</option>`).join('')}
-        </select>
-        <div class="flex space-x-1">
-          <button id="load-preset-btn" class="ui-button flex-1">
-            📂 Load
-          </button>
-          <button id="save-preset-btn" class="ui-button flex-1">
-            💾 Save
-          </button>
-        </div>
-      </div>
-    `;
-
-    this.controls.set('preset', {
-      id: 'preset',
-      title: 'Presets',
-      container,
-      visible: true
+    this.progressSlider?.addEventListener('mousedown', () => {
+      this.isDragging = true;
     });
 
-    this.setupPresetEvents();
-  }
-
-  private createAudioControl() {
-    const container = document.getElementById('audio-control');
-    if (!container) return;
-
-    container.innerHTML = `
-      <h3 class="text-white font-mono text-sm mb-3 opacity-80">Audio</h3>
-      <div class="space-y-2">
-        <button id="audio-toggle-btn" class="ui-button w-full">
-          <span id="audio-icon">🔇</span> <span id="audio-text">Off</span>
-        </button>
-        <div class="flex items-center space-x-2">
-          <label class="text-xs text-gray-400">Volume:</label>
-          <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5"
-                 class="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-          <span id="volume-value" class="text-xs text-gray-400 w-8">50%</span>
-        </div>
-      </div>
-    `;
-
-    this.controls.set('audio', {
-      id: 'audio',
-      title: 'Audio',
-      container,
-      visible: true
+    this.progressSlider?.addEventListener('mouseup', () => {
+      this.isDragging = false;
+      if (this.progressSlider) {
+        this.handleProgressChange(this.progressSlider.value);
+      }
     });
 
-    this.setupAudioEvents();
-  }
+    // 进度条点击
+    const progressBar = document.querySelector('.progress-bar');
+    progressBar?.addEventListener('click', (e) => {
+      const rect = progressBar.getBoundingClientRect();
+      const percent = ((e.clientX - rect.left) / rect.width) * 100;
+      this.handleProgressChange(percent.toString());
+    });
 
-  private setupAnimationEvents() {
-    const playPauseBtn = document.getElementById('play-pause-btn') as HTMLButtonElement;
-    const resetBtn = document.getElementById('reset-animation-btn') as HTMLButtonElement;
-    const speedSlider = document.getElementById('speed-slider') as HTMLInputElement;
-    const speedValue = document.getElementById('speed-value') as HTMLSpanElement;
+    // 步数控制按钮
+    document.getElementById('step-backward')?.addEventListener('click', () => {
+      this.changeStep(-10);
+    });
 
-    if (playPauseBtn) {
-      playPauseBtn.addEventListener('click', () => {
-        const isCurrentlyPlaying = animationSys.getIsPlaying();
-        if (isCurrentlyPlaying) {
-          animationSys.pause();
-        } else {
-          animationSys.play();
-        }
-        configManager.set('animation.isPlaying', !isCurrentlyPlaying);
-        this.updatePlayPauseButton(!isCurrentlyPlaying);
-      });
-    }
+    document.getElementById('step-forward')?.addEventListener('click', () => {
+      this.changeStep(10);
+    });
 
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        animationSys.reset();
-      });
-    }
+    // 视角控制按钮
+    document.getElementById('view-left')?.addEventListener('click', () => {
+      this.setView('side');
+    });
 
-    if (speedSlider && speedValue) {
-      speedSlider.addEventListener('input', (e) => {
-        const speed = parseFloat((e.target as HTMLInputElement).value);
-        configManager.set('animation.speedFactor', speed);
-        speedValue.textContent = speed.toFixed(1);
-      });
-    }
+    document.getElementById('view-front')?.addEventListener('click', () => {
+      this.setView('front');
+    });
+
+    document.getElementById('view-top')?.addEventListener('click', () => {
+      this.setView('top');
+    });
+
+    document.getElementById('view-perspective')?.addEventListener('click', () => {
+      this.setPerspectiveView();
+    });
+
+    // 音频控制
+    this.audioBtn?.addEventListener('click', () => {
+      this.toggleAudio();
+    });
 
     // 监听动画状态变化
     eventBus.on('animation-state-changed', (isPlaying: boolean) => {
-      this.updatePlayPauseButton(isPlaying);
+      this.isPlaying = isPlaying;
+      this.updatePlayButton();
     });
-  }
-
-  private setupCameraEvents() {
-    const autoBtn = document.getElementById('camera-auto-btn') as HTMLButtonElement;
-    const frontBtn = document.getElementById('camera-front-btn') as HTMLButtonElement;
-    const topBtn = document.getElementById('camera-top-btn') as HTMLButtonElement;
-    const sideBtn = document.getElementById('camera-side-btn') as HTMLButtonElement;
-
-    const setCameraActive = (activeBtn: HTMLButtonElement) => {
-      [autoBtn, frontBtn, topBtn, sideBtn].forEach(btn => {
-        if (btn) btn.classList.remove('active');
-      });
-      if (activeBtn) activeBtn.classList.add('active');
-    };
-
-    if (autoBtn) {
-      autoBtn.addEventListener('click', () => {
-        cameraSys.setAutoRotate(true);
-        configManager.set('camera.autoRotate', true);
-        setCameraActive(autoBtn);
-      });
-    }
-
-    if (frontBtn) {
-      frontBtn.addEventListener('click', () => {
-        cameraSys.setAutoRotate(false);
-        cameraSys.setView('front');
-        configManager.set('camera.autoRotate', false);
-        setCameraActive(frontBtn);
-      });
-    }
-
-    if (topBtn) {
-      topBtn.addEventListener('click', () => {
-        cameraSys.setAutoRotate(false);
-        cameraSys.setView('top');
-        configManager.set('camera.autoRotate', false);
-        setCameraActive(topBtn);
-      });
-    }
-
-    if (sideBtn) {
-      sideBtn.addEventListener('click', () => {
-        cameraSys.setAutoRotate(false);
-        cameraSys.setView('side');
-        configManager.set('camera.autoRotate', false);
-        setCameraActive(sideBtn);
-      });
-    }
-  }
-
-  private setupPresetEvents() {
-    const presetSelect = document.getElementById('preset-select') as HTMLSelectElement;
-    const loadBtn = document.getElementById('load-preset-btn') as HTMLButtonElement;
-    const saveBtn = document.getElementById('save-preset-btn') as HTMLButtonElement;
-
-    if (loadBtn && presetSelect) {
-      loadBtn.addEventListener('click', () => {
-        const presetName = presetSelect.value;
-        if (presetName) {
-          presetManager.loadPreset(presetName);
-          console.log(`📂 Preset loaded: ${presetName}`);
-        }
-      });
-    }
-
-    if (saveBtn) {
-      saveBtn.addEventListener('click', () => {
-        const presetName = prompt('Enter preset name:');
-        if (presetName) {
-          presetManager.savePreset(presetName);
-          console.log(`💾 Preset saved: ${presetName}`);
-          // 更新预设列表
-          this.refreshPresetList();
-        }
-      });
-    }
-  }
-
-  private setupAudioEvents() {
-    const audioToggleBtn = document.getElementById('audio-toggle-btn') as HTMLButtonElement;
-    const volumeSlider = document.getElementById('volume-slider') as HTMLInputElement;
-    const volumeValue = document.getElementById('volume-value') as HTMLSpanElement;
-
-    if (audioToggleBtn) {
-      audioToggleBtn.addEventListener('click', () => {
-        const isMuted = audioSys.toggleMute();
-        configManager.set('audio.isMuted', isMuted);
-        configManager.set('audio.volume', audioSys.getVolume());
-        this.updateAudioButton(!isMuted);
-      });
-    }
-
-    if (volumeSlider && volumeValue) {
-      volumeSlider.addEventListener('input', (e) => {
-        const volume = parseFloat((e.target as HTMLInputElement).value);
-        audioSys.setVolume(volume);
-        configManager.set('audio.volume', volume);
-        configManager.set('audio.isMuted', volume === 0);
-        volumeValue.textContent = Math.round(volume * 100) + '%';
-      });
-    }
 
     // 监听音频状态变化
     eventBus.on('audio-state-changed', (isPlaying: boolean) => {
       this.updateAudioButton(isPlaying);
     });
+
+    // 监听数据加载完成
+    eventBus.on('data-loaded', (data: any) => {
+      if (data && data.points) {
+        this.totalSteps = data.points.length || 0;
+        this.updateStepDisplay();
+        logger.info('UserUI', `数据已加载，总步数: ${this.totalSteps}`);
+      }
+    });
+
+    console.log('🎧 Event listeners set up');
   }
 
-  private updatePlayPauseButton(isPlaying: boolean) {
-    const playIcon = document.getElementById('play-icon');
-    const playText = document.getElementById('play-text');
+  private togglePlayPause() {
+    if (this.isPlaying) {
+      animationSys.pause();
+    } else {
+      animationSys.play();
+    }
+    this.isPlaying = !this.isPlaying;
+    configManager.set('animation.isPlaying', this.isPlaying);
+    this.updatePlayButton();
+  }
 
-    if (playIcon && playText) {
-      if (isPlaying) {
-        playIcon.textContent = '⏸️';
-        playText.textContent = 'Pause';
+  private updatePlayButton() {
+    if (this.playIcon && this.pauseIcon) {
+      if (this.isPlaying) {
+        this.playIcon.style.display = 'none';
+        this.pauseIcon.style.display = 'block';
       } else {
-        playIcon.textContent = '▶️';
-        playText.textContent = 'Play';
+        this.playIcon.style.display = 'block';
+        this.pauseIcon.style.display = 'none';
       }
     }
+  }
+
+  private handleProgressChange(value: string) {
+    const percent = parseFloat(value) / 100;
+    const newStep = Math.round(percent * this.totalSteps);
+    this.currentStep = Math.max(0, Math.min(newStep, this.totalSteps));
+
+    // 更新进度条
+    this.updateProgressBar();
+
+    // 触发步数变化事件
+    eventBus.emit('step-changed', {
+      step: this.currentStep,
+      percent: percent * 100
+    });
+
+    // 更新动画系统
+    animationSys.setStep(this.currentStep);
+    this.updateStepDisplay();
+  }
+
+  private changeStep(delta: number) {
+    this.currentStep = Math.max(0, Math.min(this.currentStep + delta, this.totalSteps));
+
+    const percent = this.totalSteps > 0 ? (this.currentStep / this.totalSteps) * 100 : 0;
+
+    if (this.progressSlider) {
+      this.progressSlider.value = percent.toString();
+    }
+
+    this.updateProgressBar();
+
+    eventBus.emit('step-changed', {
+      step: this.currentStep,
+      percent: percent
+    });
+
+    animationSys.setStep(this.currentStep);
+    this.updateStepDisplay();
+  }
+
+  private updateProgressBar() {
+    if (this.progressFill && this.totalSteps > 0) {
+      const percent = (this.currentStep / this.totalSteps) * 100;
+      this.progressFill.style.width = `${percent}%`;
+
+      if (this.progressSlider) {
+        this.progressSlider.value = percent.toString();
+      }
+    }
+  }
+
+  private updateStepDisplay() {
+    if (this.currentStepDisplay) {
+      this.currentStepDisplay.textContent = this.currentStep.toString();
+    }
+    if (this.totalStepsDisplay) {
+      this.totalStepsDisplay.textContent = this.totalSteps.toString();
+    }
+  }
+
+  private setView(viewName: 'left' | 'front' | 'top' | 'side') {
+    // 移除所有视角按钮的active状态
+    document.querySelectorAll('.view-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+
+    // 设置当前视角按钮为active
+    let buttonId = '';
+    switch (viewName) {
+      case 'side':
+        buttonId = 'view-left';
+        break;
+      case 'front':
+        buttonId = 'view-front';
+        break;
+      case 'top':
+        buttonId = 'view-top';
+        break;
+    }
+
+    const activeBtn = document.getElementById(buttonId);
+    if (activeBtn) {
+      activeBtn.classList.add('active');
+    }
+
+    // 切换到正交相机模式并设置视角
+    configManager.set('camera.mode', 'orthographic');
+    cameraSys.setView(viewName);
+
+    // 关闭自动旋转
+    cameraSys.setAutoRotate(false);
+    configManager.set('camera.autoRotate', false);
+  }
+
+  private setPerspectiveView() {
+    // 移除所有视角按钮的active状态
+    document.querySelectorAll('.view-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+
+    // 设置透视相机按钮为active
+    const perspectiveBtn = document.getElementById('view-perspective');
+    if (perspectiveBtn) {
+      perspectiveBtn.classList.add('active');
+    }
+
+    // 切换到透视相机模式
+    configManager.set('camera.mode', 'perspective');
+    cameraSys.setAutoRotate(false);
+    configManager.set('camera.autoRotate', false);
+  }
+
+  private toggleAudio() {
+    const isMuted = audioSys.toggleMute();
+    const isPlaying = !isMuted;
+
+    configManager.set('audio.isMuted', isMuted);
+    configManager.set('audio.volume', audioSys.getVolume());
+
+    this.updateAudioButton(isPlaying);
   }
 
   private updateAudioButton(isPlaying: boolean) {
-    const audioIcon = document.getElementById('audio-icon');
-    const audioText = document.getElementById('audio-text');
-
-    if (audioIcon && audioText) {
+    if (this.audioOnIcon && this.audioOffIcon) {
       if (isPlaying) {
-        audioIcon.textContent = '🔊';
-        audioText.textContent = 'On';
+        this.audioOnIcon.style.display = 'block';
+        this.audioOffIcon.style.display = 'none';
+        this.audioBtn?.classList.add('active');
       } else {
-        audioIcon.textContent = '🔇';
-        audioText.textContent = 'Off';
+        this.audioOnIcon.style.display = 'none';
+        this.audioOffIcon.style.display = 'block';
+        this.audioBtn?.classList.remove('active');
       }
     }
   }
 
-  private refreshPresetList() {
-    const presetSelect = document.getElementById('preset-select') as HTMLSelectElement;
-    if (presetSelect) {
-      const presets = presetManager.getAvailablePresets();
-      const currentValue = presetSelect.value;
-      presetSelect.innerHTML = presets.map(preset =>
-        `<option value="${preset}" ${preset === currentValue ? 'selected' : ''}>${preset}</option>`
-      ).join('');
-    }
-  }
+  private updateUIState() {
+    // 初始化播放状态
+    this.isPlaying = configManager.get('animation.isPlaying') || false;
+    this.updatePlayButton();
 
-  private setupEventListeners() {
-    // 监听配置变化事件
-    eventBus.on('config-changed', (event: ConfigEvent) => {
-      this.handleConfigChange(event);
-    });
+    // 初始化音频状态
+    const audioMuted = configManager.get('audio.isMuted') || true;
+    this.updateAudioButton(!audioMuted);
 
-    // 监听预设加载/保存事件
-    eventBus.on('preset-loaded', (presetName: string) => {
-      console.log(`📂 Preset loaded: ${presetName}`);
-    });
-
-    eventBus.on('preset-saved', (presetName: string) => {
-      console.log(`💾 Preset saved: ${presetName}`);
-    });
-  }
-
-  private handleConfigChange(event: ConfigEvent) {
-    // 根据配置变化更新UI状态
-    switch (event.key) {
-      case 'animation.isPlaying':
-        this.updatePlayPauseButton(event.newValue);
-        break;
-      case 'animation.speedFactor':
-        const speedSlider = document.getElementById('speed-slider') as HTMLInputElement;
-        const speedValue = document.getElementById('speed-value') as HTMLSpanElement;
-        if (speedSlider && speedValue) {
-          speedSlider.value = event.newValue.toString();
-          speedValue.textContent = event.newValue.toFixed(1);
-        }
-        break;
-      case 'audio.isMuted':
-        this.updateAudioButton(!event.newValue);
-        break;
-      case 'audio.volume':
-        const volumeSlider = document.getElementById('volume-slider') as HTMLInputElement;
-        const volumeValue = document.getElementById('volume-value') as HTMLSpanElement;
-        if (volumeSlider && volumeValue) {
-          volumeSlider.value = event.newValue.toString();
-          volumeValue.textContent = Math.round(event.newValue * 100) + '%';
-        }
-        break;
-      case 'camera.autoRotate':
-        const autoBtn = document.getElementById('camera-auto-btn') as HTMLButtonElement;
-        if (autoBtn) {
-          if (event.newValue) {
-            autoBtn.classList.add('active');
-          } else {
-            autoBtn.classList.remove('active');
-          }
-        }
-        break;
-    }
+    // 初始化步数显示
+    this.updateStepDisplay();
   }
 
   /**
-   * 显示/隐藏特定控件
+   * 设置当前步数（供外部系统调用）
    */
-  public toggleControl(controlId: string, visible?: boolean) {
-    const control = this.controls.get(controlId);
-    if (control) {
-      const isVisible = visible !== undefined ? visible : !control.visible;
-      control.visible = isVisible;
-      control.container.style.display = isVisible ? 'block' : 'none';
-    }
+  public setStep(step: number) {
+    this.currentStep = Math.max(0, Math.min(step, this.totalSteps));
+    this.updateProgressBar();
+    this.updateStepDisplay();
   }
 
   /**
-   * 显示/隐藏所有控件
+   * 设置总步数（供外部系统调用）
    */
-  public toggleAllControls(visible?: boolean) {
-    this.controls.forEach((control) => {
-      this.toggleControl(control.id, visible);
-    });
+  public setTotalSteps(total: number) {
+    this.totalSteps = total;
+    this.updateStepDisplay();
+    this.updateProgressBar();
   }
 
   /**
-   * 获取控件状态
+   * 获取当前步数
    */
-  public getControlState() {
-    const state: Record<string, boolean> = {};
-    this.controls.forEach((control) => {
-      state[control.id] = control.visible;
-    });
-    return state;
+  public getCurrentStep(): number {
+    return this.currentStep;
+  }
+
+  /**
+   * 获取总步数
+   */
+  public getTotalSteps(): number {
+    return this.totalSteps;
   }
 
   /**
    * 清理资源
    */
   public dispose() {
-    this.controls.clear();
-    eventBus.off('config-changed', (event: ConfigEvent) => {
-      this.handleConfigChange(event);
-    });
+    this.isInitialized = false;
+    eventBus.off('animation-state-changed', this.updatePlayButton);
+    eventBus.off('audio-state-changed', this.updateAudioButton);
+    eventBus.off('data-loading-completed', this.updateStepDisplay);
+    console.log('🗑️ Modern Player UI disposed');
   }
 }
 

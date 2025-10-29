@@ -10,7 +10,6 @@ import * as THREE from 'three';
 import logger from './utils/logger';
 import config, { initConfig } from './config';
 import eventBus from './event-bus';
-import presetManager from './preset-manager';
 
 // 简化的UI系统
 import { userUI } from './user-ui';
@@ -119,12 +118,10 @@ class Application {
         controls: cameraSys.getControls(),
       });
 
-      // 7. 初始化预设系统
-      await presetManager.init();
-      // 8. 初始化监视器UI (保留状态显示)
+            // 7. 初始化监视器UI (保留状态显示)
       uiMonitor.init();
 
-      // 9. 初始化核心服务系统
+      // 8. 初始化核心服务系统
       materialSys.init();
       modelSys.init();
 
