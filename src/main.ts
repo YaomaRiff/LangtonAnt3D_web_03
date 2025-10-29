@@ -13,14 +13,9 @@ import config, { initConfig } from './config';
 import eventBus from './event-bus';
 import presetManager from './preset-manager';
 
-// UI 系统
-import uiContainer from './ui/ui-container';
-import uiBasic from './ui/ui-basic';
-import uiPost from './ui/ui-post';
-import uiPresets from './ui/ui-presets';
-import uiCoordinates from './ui/ui-coordinates';
+// 简化的UI系统
+import { userUI } from './user-ui';
 import uiMonitor from './ui/ui-monitor';
-import uiScene from './ui/ui-scene';
 
 // 核心系统
 import coordinateSystem from './systems/coordinates-sys';
@@ -46,7 +41,7 @@ class Application {
   private renderer: THREE.WebGLRenderer | null;
   private clock: THREE.Clock;
   private initialized: boolean;
-  private monitorContainer: HTMLElement | null = null; // 新增：监视器容器引用
+  private sceneContainer: HTMLElement | null = null; // 场景容器引用
 
   constructor() {
     this.scene = null;
@@ -64,9 +59,9 @@ class Application {
     try {
       logger.info('App', '🚀 应用启动中...');
 
-      this.monitorContainer = document.getElementById('monitor-container');
-      if (!this.monitorContainer) {
-        throw new Error('启动失败: 未在DOM中找到 #monitor-container。');
+      this.sceneContainer = document.getElementById('scene-container');
+      if (!this.sceneContainer) {
+        throw new Error('启动失败: 未在DOM中找到 #scene-container。');
       }
 
       // 1. 初始化配置
@@ -86,8 +81,8 @@ class Application {
         this.scene.userData.coordinateSystem = coordinateSystem;
       }
 
-      // 4. 初始化UI容器 (现在它会找到自己的位置)
-      uiContainer.init();
+      // 4. 初始化简化的用户UI
+      await userUI.initialize();
 
       // 5. 初始化相机系统
       if (!this.scene || !this.renderer) {
@@ -125,17 +120,9 @@ class Application {
         controls: cameraSys.getControls(),
       });
 
-      // 7. 初始化基础 UI
-      await uiBasic.init();
-      await uiScene.init();
-      // 8. 初始化后处理 UI
-      await uiPost.init();
+      // 7. 初始化预设系统
       await presetManager.init();
-      // 9. 初始化预设系统
-      await uiPresets.init();
-      // 10. 初始化坐标系统UI
-      await uiCoordinates.init({ eventBus });
-      //10.5. 初始化监视器UI
+      // 8. 初始化监视器UI (保留状态显示)
       uiMonitor.init();
 
       // 11. 初始化核心服务系统
@@ -212,15 +199,15 @@ class Application {
     // 移除所有内联定位样式，交给 CSS 处理
     canvas.style.display = 'block';
 
-    //将 Canvas 添加到右侧监视器容器
-    this.monitorContainer!.appendChild(canvas);
+    //将 Canvas 添加到场景容器
+    this.sceneContainer!.appendChild(canvas);
 
     // 立即设置初始尺寸，防止 Framebuffer 错误
-    const initialWidth = this.monitorContainer!.clientWidth || window.innerWidth;
-    const initialHeight = this.monitorContainer!.clientHeight || window.innerHeight;
+    const initialWidth = this.sceneContainer!.clientWidth || window.innerWidth;
+    const initialHeight = this.sceneContainer!.clientHeight || window.innerHeight;
     this.renderer.setSize(initialWidth, initialHeight);
 
-    logger.info('App', `Canvas 已添加到 #monitor-container`);
+    logger.info('App', `Canvas 已添加到 #scene-container`);
     logger.debug('App', '渲染器已创建');
   }
 
@@ -238,11 +225,11 @@ class Application {
   }
 
   _handleResize() {
-    if (!this.renderer || !this.monitorContainer) return;
+    if (!this.renderer || !this.sceneContainer) return;
 
-    //监视器容器获取尺寸
-    const width = this.monitorContainer.clientWidth;
-    const height = this.monitorContainer.clientHeight;
+    //场景容器获取尺寸
+    const width = this.sceneContainer.clientWidth;
+    const height = this.sceneContainer.clientHeight;
 
     // 更新渲染器
     this.renderer.setSize(width, height);
@@ -297,13 +284,8 @@ class Application {
     environmentSys.dispose();
     pathSys.dispose();
     lightSys.dispose();
-    uiBasic.dispose();
-    uiScene.dispose();
-    uiPost.dispose();
-    uiPresets.dispose();
-    uiCoordinates.dispose();
     uiMonitor.dispose();
-    uiContainer.dispose();
+    userUI.dispose();
 
     if (this.renderer) {
       this.renderer.dispose();

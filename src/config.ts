@@ -105,6 +105,7 @@ const DEFAULT_CONFIG = {
   animation: {
     speedFactor: 0.05,
     loop: true,
+    isPlaying: true, // 新增：播放/暂停状态
   },
 
   coordinates: {
@@ -295,6 +296,7 @@ const DEFAULT_CONFIG = {
     initialDistance: 5, // 相机到原点的距离
     near: 0.1,
     far: 2000,
+    autoRotate: true, // 新增：自动旋转
     controls: {
       enabled: true,
       dollySpeed: 1.0,
@@ -303,6 +305,17 @@ const DEFAULT_CONFIG = {
       draggingSmoothTime: 0.25,
       minDistance: 1,
       maxDistance: 100,
+    },
+  },
+
+  // 新增：音频配置
+  audio: {
+    isMuted: false, // 音频开关状态
+    volume: 0.5, // 音量 0-1
+    backgroundMusic: {
+      enabled: false, // 背景音乐开关
+      url: '', // 音乐文件URL
+      loop: true, // 循环播放
     },
   },
 };

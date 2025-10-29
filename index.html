@@ -29,32 +29,50 @@
         <img id="background-image" src="" alt="" />
 
         <!-- 毛玻璃内容面板 -->
-        <div id="glass-panel">
-          <h1 id="main-title" class="title">(OUwNO)Ant</h1>
-          <p id="main-subtitle" class="subtitle">Langton's Ant 3D Visualization</p>
-          <div id="custom-text" class="custom-text"></div>
+        <div id="glass-panel" class="glass-panel">
+          <h1 id="main-title" class="title-glass animate-fade-in">(OUwNO)Ant</h1>
+          <p id="main-subtitle" class="subtitle-glass animate-slide-up">Langton's Ant 3D Visualization</p>
+          <div id="custom-text" class="text-gray-300 mb-8"></div>
 
-          <div class="action-buttons">
-            <button id="start-btn" class="primary-btn">进入体验</button>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <button id="start-btn" class="button-glass animate-slide-up">进入体验</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 现有3D场景 (初始隐藏) -->
-    <div id="main-layout" class="hidden">
-      <!-- 左侧控制面板 -->
-      <div id="left-panel">
-        <!-- UI 容器将在这里创建其内容 -->
-      </div>
-
-      <!-- 右侧监视器 -->
-      <div id="monitor-container">
+    <!-- 简化的3D场景 (初始隐藏) -->
+    <div id="main-layout" class="hidden w-full h-full flex">
+      <!-- 3D Canvas 容器 -->
+      <div id="scene-container" class="flex-1 relative">
         <!-- 3D Canvas 将被添加到这里 -->
 
-        <!-- 监视器覆盖层UI的挂载点 -->
-        <div id="monitor-overlay-ui">
-          <!-- ui-monitor.ts 将在这里创建内容 -->
+        <!-- 简化的UI覆盖层 -->
+        <div id="ui-overlay" class="absolute top-4 left-4 space-y-4">
+          <!-- 动画控制 -->
+          <div id="animation-control" class="ui-control-panel">
+            <!-- 动画控制内容将在这里生成 -->
+          </div>
+
+          <!-- 相机控制 -->
+          <div id="camera-control" class="ui-control-panel">
+            <!-- 相机控制内容将在这里生成 -->
+          </div>
+
+          <!-- 预设管理 -->
+          <div id="preset-control" class="ui-control-panel">
+            <!-- 预设控制内容将在这里生成 -->
+          </div>
+
+          <!-- 音频控制 -->
+          <div id="audio-control" class="ui-control-panel">
+            <!-- 音频控制内容将在这里生成 -->
+          </div>
+        </div>
+
+        <!-- 监视器信息保留在右上角 -->
+        <div id="monitor-overlay-ui" class="absolute top-4 right-4">
+          <!-- 监视器信息将在这里显示 -->
         </div>
       </div>
     </div>

@@ -190,6 +190,34 @@ class AudioSystem {
     }
   }
 
+  /**
+   * 获取当前音量
+   */
+  getVolume(): number {
+    return this.volume;
+  }
+
+  /**
+   * 获取播放状态
+   */
+  getIsPlaying(): boolean {
+    return this.sound?.isPlaying || false;
+  }
+
+  /**
+   * 切换静音状态
+   */
+  toggleMute(): boolean {
+    const currentVolume = this.getVolume();
+    if (currentVolume > 0) {
+      this.setVolume(0);
+      return true; // 现在是静音状态
+    } else {
+      this.setVolume(0.5); // 恢复到50%音量
+      return false; // 现在不是静音状态
+    }
+  }
+
   dispose() {
     this.stop();
 

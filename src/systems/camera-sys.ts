@@ -362,6 +362,29 @@ class CameraSystem {
   }
 
   /**
+   * ✅ 设置预设视角
+   */
+  setView(viewName: 'front' | 'top' | 'side') {
+    this._applyViewPreset(viewName);
+  }
+
+  /**
+   * ✅ 设置自动旋转
+   */
+  setAutoRotate(enabled: boolean) {
+    if (this.controls) {
+      this.controls.autoRotate = enabled;
+    }
+  }
+
+  /**
+   * ✅ 获取自动旋转状态
+   */
+  getAutoRotate(): boolean {
+    return this.controls?.autoRotate || false;
+  }
+
+  /**
    * ✅ 销毁系统
    */
   dispose() {

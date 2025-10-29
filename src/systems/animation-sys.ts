@@ -198,6 +198,10 @@ class AnimationSystem {
     logger.info('AnimationSystem', '🔄 重置');
   }
 
+  getIsPlaying(): boolean {
+    return this.isPlaying;
+  }
+
   stepTo(step: number) {
     if (step < 0 || step >= this.mappedPoints.length) {
       logger.warn('AnimationSystem', `⚠️ 无效步数: ${step}`);

@@ -1,8 +1,11 @@
 /**
  * @file style.css
  * @description 全局样式表 - 仅布局 + Terminal 变量
- * @version 6.0 (Clean Tweakpane)
+ * @version 6.0 (Clean Tweakpane) + Tailwind CSS Integration
  */
+
+/* 引入 Tailwind CSS */
+@import './styles/tailwind.css';
 
 /* ==================== 暗色调配色系统 ==================== */
 :root {
@@ -55,51 +58,26 @@ body {
 #app-wrapper {
   width: 100%;
   height: 100%;
-  padding: 10px;
   display: flex;
+  flex-direction: column;
 }
 
 #main-layout {
   display: flex;
   width: 100%;
   height: 100%;
-  gap: 10px;
 }
 
-/* ==================== 左侧面板（Tweakpane 容器）==================== */
-#left-panel {
-  width: 320px;
-  flex-shrink: 0;
-  background-color: #273030;
-  border: 1px solid #292c2c;
-  border-radius: 4px;
-  overflow: hidden;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
-}
-
-/* 滚动内容容器 */
-#ui-scroll-content {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 12px;
-  box-sizing: border-box;
-}
-
-/* ==================== 右侧监视器 ==================== */
-#monitor-container {
+/* ==================== 场景容器 ==================== */
+#scene-container {
   flex: 1;
   position: relative;
-  border: 2px solid var(--terminal-border);
   background-color: #000;
   overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 /* 3D Canvas */
-#monitor-container canvas {
+#scene-container canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
@@ -108,15 +86,12 @@ body {
 /* 监视器覆盖层UI（使用 Terminal 风格）*/
 #monitor-overlay-ui {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 15px;
+  right: 15px;
   pointer-events: none;
-  padding: 15px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  gap: 5px;
   align-items: flex-end;
 }
 

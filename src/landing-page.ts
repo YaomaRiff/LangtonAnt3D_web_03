@@ -94,9 +94,30 @@ class LandingPage {
     const customTextElement = document.getElementById('custom-text');
     const buttonElement = document.getElementById('start-btn');
 
-    if (titleElement) titleElement.textContent = landingConfig.title;
-    if (subtitleElement) subtitleElement.textContent = landingConfig.subtitle;
-    if (customTextElement) customTextElement.innerHTML = landingConfig.customText;
+    if (titleElement) {
+      titleElement.textContent = landingConfig.title;
+      // 确保使用Tailwind类
+      if (!titleElement.classList.contains('title-glass')) {
+        titleElement.className = 'title-glass';
+      }
+    }
+
+    if (subtitleElement) {
+      subtitleElement.textContent = landingConfig.subtitle;
+      // 确保使用Tailwind类
+      if (!subtitleElement.classList.contains('subtitle-glass')) {
+        subtitleElement.className = 'subtitle-glass';
+      }
+    }
+
+    if (customTextElement) {
+      customTextElement.innerHTML = landingConfig.customText;
+      // 确保有基础样式类
+      if (!customTextElement.classList.contains('text-gray-300')) {
+        customTextElement.className = 'text-gray-300 mb-8';
+      }
+    }
+
     if (buttonElement) buttonElement.textContent = landingConfig.buttonText;
   }
 
@@ -495,16 +516,14 @@ class LandingPage {
 
     // 处理全屏毛玻璃
     if (layoutConfig.fullScreenGlass) {
-      glassPanel.style.position = 'fixed';
-      glassPanel.style.top = '0';
-      glassPanel.style.left = '0';
-      glassPanel.style.width = '100%';
-      glassPanel.style.height = '100%';
-      glassPanel.style.maxWidth = 'none';
-      glassPanel.style.maxHeight = 'none';
-      glassPanel.style.borderRadius = '0';
-      glassPanel.style.transform = 'none';
+      // 移除现有类，添加全屏类
+      glassPanel.className = 'glass-panel-fullscreen';
     } else {
+      // 确保有基础毛玻璃类
+      if (!glassPanel.classList.contains('glass-panel')) {
+        glassPanel.className = 'glass-panel';
+      }
+
       // 处理面板位置
       this.setGlassPanelPosition(glassPanel, layoutConfig);
 
@@ -542,6 +561,12 @@ class LandingPage {
       actionButtonsElement.style.justifyContent = this.getAlignmentValue(layoutConfig.buttonAlign);
       actionButtonsElement.style.gap = layoutConfig.buttonGap;
       actionButtonsElement.style.flexWrap = layoutConfig.buttonWrap;
+
+      // 确保按钮使用Tailwind类
+      const startBtn = document.getElementById('start-btn');
+      if (startBtn && !startBtn.classList.contains('button-glass')) {
+        startBtn.className = 'button-glass';
+      }
     }
 
     console.log('Layout settings applied:', layoutConfig);
