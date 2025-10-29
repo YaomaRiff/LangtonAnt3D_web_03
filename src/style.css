@@ -1,7 +1,7 @@
 /**
  * @file style.css
- * @description 全局样式表 - 仅布局 + Terminal 变量
- * @version 6.0 (Clean Tweakpane) + Tailwind CSS Integration
+ * @description 全局样式表 - 布局 + Terminal 变量 + Tailwind CSS
+ * @version 7.1 (Clean UI System)
  */
 
 /* 引入 Tailwind CSS */
@@ -130,29 +130,6 @@ body {
   opacity: 0.8;
 }
 
-/* ==================== 滚动条样式（左侧面板）==================== */
-#left-panel::-webkit-scrollbar,
-#ui-scroll-content::-webkit-scrollbar {
-  width: 10px;
-}
-
-#left-panel::-webkit-scrollbar-track,
-#ui-scroll-content::-webkit-scrollbar-track {
-  background: #f0f0f0;
-  border-left: 1px solid #ddd;
-}
-
-#left-panel::-webkit-scrollbar-thumb,
-#ui-scroll-content::-webkit-scrollbar-thumb {
-  background: #ccc;
-  border: 2px solid #f0f0f0;
-  border-radius: 4px;
-}
-
-#left-panel::-webkit-scrollbar-thumb:hover,
-#ui-scroll-content::-webkit-scrollbar-thumb:hover {
-  background: #999;
-}
 
 /* ==================== 简洁初始页面样式 ==================== */
 #landing-overlay {
@@ -313,48 +290,16 @@ body {
 
 /* ==================== 响应式适配 ==================== */
 @media (max-width: 768px) {
-  #left-panel {
-    width: 100%;
-    height: auto;
-    max-height: 40vh;
-    border-right: none;
-    border-bottom: 2px solid #ddd;
+  .title-glass {
+    font-size: clamp(2rem, 5vw, 3rem);
   }
 
-  #monitor-container {
-    height: 60vh;
+  .ui-overlay {
+    top: 0.5rem;
+    left: 0.5rem;
   }
 
-  #monitor-overlay-ui {
-    padding: 10px;
-  }
-
-  .monitor-info-item .value {
-    font-size: 14px;
-    min-width: 70px;
-  }
-
-  /* 初始页面移动端适配 */
-  #ui-panel {
-    padding: 20px;
-  }
-
-  .title {
-    font-size: clamp(2rem, 6vw, 4rem);
-  }
-
-  .subtitle {
-    font-size: clamp(0.9rem, 2vw, 1.2rem);
-  }
-
-  .action-buttons {
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-  }
-
-  .primary-btn, .secondary-btn {
-    width: 200px;
-    padding: 12px 30px;
+  .ui-control-panel {
+    padding: 0.75rem;
   }
 }

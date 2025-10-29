@@ -1,8 +1,7 @@
 /**
  * @file main.ts
  * @description 应用主入口 - 系统协调与生命周期管理
- * @✨ 重构: 彻底移除了旧的 ui-material 系统。
- * @✨ 重构: 适配了新的监视器布局，修改了渲染器挂载和尺寸调整逻辑。
+ * @version 7.1 (Clean UI System)
  */
 
 import './style.css';
@@ -125,7 +124,7 @@ class Application {
       // 8. 初始化监视器UI (保留状态显示)
       uiMonitor.init();
 
-      // 11. 初始化核心服务系统
+      // 9. 初始化核心服务系统
       materialSys.init();
       modelSys.init();
 

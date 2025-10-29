@@ -1,7 +1,7 @@
 /**
  * @file user-ui.ts
  * @description 用户友好的简化UI系统 - 仅包含4个核心控件
- * @version 1.0
+ * @version 1.1 (Clean UI System)
  */
 
 import configManager, { type ConfigEvent } from './config';
