@@ -318,9 +318,5 @@ class Application {
 }
 
 const app = new Application();
-app.init().catch((err) => {
-  logger.error('App', `启动失败: ${(err as Error).message}`);
-  console.error(err);
-});
 
 export default app;

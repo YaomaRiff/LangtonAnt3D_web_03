@@ -29,7 +29,7 @@ const DEFAULT_CONFIG = {
   },
 
   exhaust: {
-    // 🔧 新增：调试工具配置
+    // 新增：调试工具配置
     debug: {
       showEmitterAxis: false, // 是否显示发射器坐标轴
       axisSize: 0.6, // 坐标轴大小
@@ -217,6 +217,75 @@ const DEFAULT_CONFIG = {
 
     // 色彩调整效果
     brightnessContrast: { enabled: false, brightness: 0.0, contrast: 0.0 },
+  },
+
+  // 静态页面配置
+  landingPage: {
+    imageUrl: '', // 背景图片URL
+    title: '(OUwNO)Ant', // 主标题
+    subtitle: "Langton's Ant 3D Visualization", // 副标题
+    customText: '', // 自定义文字内容
+    buttonText: 'Start', // 按钮文字
+    jumpUrl: '#main', // 跳转目标URL
+
+    // 布局和位置配置
+    layout: {
+      // 毛玻璃面板位置和大小
+      glassPanelPosition: 'center', // 位置: 'center', 'top', 'bottom', 'left', 'right', 'top-left', 'top-right', 'bottom-left', 'bottom-right'
+      glassPanelWidth: '80%', // 面板宽度
+      glassPanelHeight: 'auto', // 面板高度
+      glassPanelMaxWidth: '600px', // 最大宽度
+      glassPanelMaxHeight: '80vh', // 最大高度
+      fullScreenGlass: false, // 是否全屏毛玻璃
+      glassTop: '50%', // 自定义顶部位置 (当position为自定义时使用)
+      glassLeft: '50%', // 自定义左侧位置
+
+      // 文字布局
+      textAlign: 'center', // 文字对齐: 'left', 'center', 'right'
+      titleMarginBottom: '16px', // 标题下边距
+      subtitleMarginBottom: '20px', // 副标题下边距
+      customTextMarginTop: '20px', // 自定义文字上边距
+      customTextMarginBottom: '30px', // 自定义文字下边距
+
+      // 按钮布局
+      buttonAlign: 'center', // 按钮对齐: 'left', 'center', 'right'
+      buttonMarginTop: '30px', // 按钮上边距
+      buttonGap: '20px', // 按钮间距
+      buttonWrap: 'wrap', // 按钮换行: 'wrap', 'nowrap'
+    },
+
+    // 毛玻璃效果参数
+    glassPanel: {
+      blur: 6, // 模糊程度 (0-50px)
+      backgroundOpacity: 0.1, // 背景透明度 (0-1)
+      borderOpacity: 0.2, // 边框透明度 (0-1)
+      borderRadius: 20, // 圆角大小 (0-50px)
+      padding: 40, // 内边距 (10-100px)
+      backgroundR: 255, // 背景颜色 R (0-255)
+      backgroundG: 255, // 背景颜色 G (0-255)
+      backgroundB: 255, // 背景颜色 B (0-255)
+    },
+
+    // 高级毛玻璃效果
+    advancedGlass: {
+      noiseEnabled: true, // 是否启用噪点效果
+      noiseOpacity: 0.02, // 噪点透明度 (0-0.1)
+      chromaticAberration: 2, // 色差效果 (0-5px)
+      frostedEnabled: true, // 是否启用磨砂效果
+      frostedScale: 0.5, // 磨砂缩放 (0.5-2)
+      reflectionEnabled: true, // 是否启用反射效果
+      reflectionOpacity: 0.1, // 反射透明度 (0-0.3)
+    },
+
+    // 动画毛玻璃效果
+    animatedGlass: {
+      enabled: true, // 是否启用动画效果
+      pulseEnabled: true, // 是否启用脉冲效果
+      pulseSpeed: 5, // 脉冲速度 (0.5-5)
+      pulseIntensity: 0.03, // 脉冲强度 (0-0.3)
+      shimmerEnabled: false, // 是否启用微光效果
+      shimmerSpeed: 10, // 微光速度 (1-10)
+    },
   },
 
   camera: {

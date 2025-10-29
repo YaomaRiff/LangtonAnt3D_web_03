@@ -4,23 +4,25 @@
  * @version 6.0 (Clean Tweakpane)
  */
 
-/* ==================== CSS 变量（为未来准备）==================== */
+/* ==================== 暗色调配色系统 ==================== */
 :root {
-  /* Terminal 配色（监视器 HUD 使用） */
-  --terminal-bg: #273030;
-  --terminal-fg: #eceae5;
-  --terminal-accent: #32858b;
-  --terminal-border: #24222a;
-  --terminal-hover: #252321;
-  
+  /* 暗色灰白色主色调 */
+  --bg-primary: #2a2a2c;
+  --bg-secondary: #353538;
+  --text-primary: #e0e0e0;
+  --text-secondary: #b0b0b0;
+  --accent: #4a7c7e;
+  --border: #4a4a4d;
+
   /* 字体 */
-  --font-mono: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
-  
+  --font-mono: 'Fira Code', 'Consolas', monospace;
+
   /* 间距 */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
+  --spacing-xl: 32px;
 }
 
 /* ==================== 全局重置 ==================== */
@@ -43,8 +45,8 @@ body {
 
 body {
   font-family: var(--font-mono);
-  background: var(--terminal-bg);
-  color: var(--terminal-fg);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   line-height: 1.6;
   font-size: 14px;
 }
@@ -177,6 +179,163 @@ body {
   background: #999;
 }
 
+/* ==================== 简洁初始页面样式 ==================== */
+#landing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    url('/picture/test-01.jpg') center/cover no-repeat;
+
+  /* 全屏毛玻璃效果 */
+  backdrop-filter:
+    blur(8px)
+    saturate(120%)
+    brightness(0.8);
+  -webkit-backdrop-filter:
+    blur(8px)
+    saturate(120%)
+    brightness(0.8);
+
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.8s ease-out;
+}
+
+#landing-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* 背景图片 */
+#background-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  z-index: 1;
+}
+
+/* 毛玻璃内容面板 */
+#glass-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 40px 60px;
+  max-width: 600px;
+  width: 80%;
+  text-align: center;
+  color: white;
+}
+
+/* 标题样式 */
+.title {
+  font-family: 'VT323', var(--font-mono);
+  font-size: clamp(3rem, 8vw, 6rem);
+  color: var(--accent);
+  margin-bottom: 16px;
+  text-shadow: 0 0 20px rgba(74, 124, 126, 0.5);
+  letter-spacing: 2px;
+  font-weight: normal;
+}
+
+.subtitle {
+  font-size: clamp(1rem, 2.5vw, 1.5rem);
+  color: var(--text-secondary);
+  opacity: 0.8;
+  margin-bottom: 20px;
+  font-weight: normal;
+}
+
+.custom-text {
+  font-size: clamp(0.9rem, 2vw, 1.2rem);
+  color: var(--text-primary);
+  opacity: 0.9;
+  line-height: 1.6;
+  margin: 20px 0;
+}
+
+/* 按钮样式 */
+.action-buttons {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.primary-btn {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  padding: 15px 40px;
+  border: 2px solid var(--accent);
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  border-radius: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.primary-btn:hover {
+  background: transparent;
+  color: var(--accent);
+  box-shadow: 0 0 15px rgba(74, 124, 126, 0.5);
+  transform: translateY(-2px);
+}
+
+.primary-btn:active {
+  transform: translateY(0);
+}
+
+/* 简单淡入动画 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-section {
+  animation: fadeInUp 1s ease-out forwards;
+}
+
+.description {
+  animation: fadeInUp 1s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+.action-buttons {
+  animation: fadeInUp 1s ease-out 0.6s forwards;
+  opacity: 0;
+}
+
+/* 隐藏类 */
+.hidden {
+  display: none !important;
+}
+
 /* ==================== 响应式适配 ==================== */
 @media (max-width: 768px) {
   #left-panel {
@@ -186,17 +345,41 @@ body {
     border-right: none;
     border-bottom: 2px solid #ddd;
   }
-  
+
   #monitor-container {
     height: 60vh;
   }
-  
+
   #monitor-overlay-ui {
     padding: 10px;
   }
-  
+
   .monitor-info-item .value {
     font-size: 14px;
     min-width: 70px;
+  }
+
+  /* 初始页面移动端适配 */
+  #ui-panel {
+    padding: 20px;
+  }
+
+  .title {
+    font-size: clamp(2rem, 6vw, 4rem);
+  }
+
+  .subtitle {
+    font-size: clamp(0.9rem, 2vw, 1.2rem);
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .primary-btn, .secondary-btn {
+    width: 200px;
+    padding: 12px 30px;
   }
 }

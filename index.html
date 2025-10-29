@@ -22,12 +22,32 @@
 
   <!-- ✅ 正确的结构: #main-layout 必须在 #app-wrapper 内部 -->
   <div id="app-wrapper">
-        <div id="main-layout">
+    <!-- 新增：简洁静态页面覆盖层 -->
+    <div id="landing-overlay">
+      <div id="landing-content">
+        <!-- 背景图片 -->
+        <img id="background-image" src="" alt="" />
+
+        <!-- 毛玻璃内容面板 -->
+        <div id="glass-panel">
+          <h1 id="main-title" class="title">(OUwNO)Ant</h1>
+          <p id="main-subtitle" class="subtitle">Langton's Ant 3D Visualization</p>
+          <div id="custom-text" class="custom-text"></div>
+
+          <div class="action-buttons">
+            <button id="start-btn" class="primary-btn">进入体验</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 现有3D场景 (初始隐藏) -->
+    <div id="main-layout" class="hidden">
       <!-- 左侧控制面板 -->
       <div id="left-panel">
         <!-- UI 容器将在这里创建其内容 -->
       </div>
-      
+
       <!-- 右侧监视器 -->
       <div id="monitor-container">
         <!-- 3D Canvas 将被添加到这里 -->
@@ -41,5 +61,6 @@
   </div>
 
   <script type="module" src="/src/main.ts"></script>
+  <script type="module" src="/src/landing-page.ts"></script>
 </body>
 </html>
