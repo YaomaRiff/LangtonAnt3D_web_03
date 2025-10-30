@@ -32,10 +32,29 @@ export default [
         // ✅ 核心修复：添加 performance
         performance: 'readonly',
 
-        // DOM API
+        // DOM API - 完整版
         HTMLElement: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLButtonElement: 'readonly',
+        HTMLDivElement: 'readonly',
+        HTMLSpanElement: 'readonly',
+        HTMLImageElement: 'readonly',
+        SVGElement: 'readonly',
         Blob: 'readonly',
         URL: 'readonly',
+
+        // 浏览器存储和导航
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        navigator: 'readonly',
+        location: 'readonly',
+
+        // 事件相关
+        Event: 'readonly',
+        MouseEvent: 'readonly',
+        KeyboardEvent: 'readonly',
+        TouchEvent: 'readonly',
+        WheelEvent: 'readonly',
 
         // 浏览器弹窗
         alert: 'readonly',

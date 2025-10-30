@@ -7,8 +7,9 @@
  */
 import logger from './utils/logger';
 import eventBus from './event-bus';
+import type { AppConfig } from './types';
 
-const DEFAULT_CONFIG = {
+const DEFAULT_CONFIG: AppConfig = {
   // 场景构成定义
   sceneComposition: {
     active: 'modelAnt', // 当前激活的构成方案
@@ -222,7 +223,7 @@ const DEFAULT_CONFIG = {
 
   // 静态页面配置
   landingPage: {
-    imageUrl: '', // 背景图片URL
+    imageUrl: '/picture/test-01.jpg', // 背景图片URL
     title: '(OUwNO)Ant', // 主标题
     subtitle: "Langton's Ant 3D Visualization", // 副标题
     customText: '', // 自定义文字内容
@@ -320,24 +321,24 @@ const DEFAULT_CONFIG = {
   },
 };
 
-function deepClone(obj: any): any {
+function deepClone(obj: unknown): unknown {
   if (obj === null || typeof obj !== 'object') return obj;
   if (Array.isArray(obj)) return obj.map((item) => deepClone(item));
-  const cloned: any = {};
+  const cloned: Record<string, unknown> = {};
   for (const key in obj) {
-    if ((obj as Object).hasOwnProperty.call(obj, key)) {
-      cloned[key] = deepClone(obj[key]);
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      cloned[key] = deepClone((obj as Record<string, unknown>)[key]);
     }
   }
   return cloned;
 }
 
 class ConfigManager {
-  private _config: any;
+  private _config: AppConfig;
   private initialized: boolean;
 
   constructor() {
-    this._config = deepClone(DEFAULT_CONFIG);
+    this._config = deepClone(DEFAULT_CONFIG) as AppConfig;
     this.initialized = false;
   }
 
@@ -348,7 +349,7 @@ class ConfigManager {
     }
 
     try {
-      this._config = deepClone(DEFAULT_CONFIG);
+      this._config = deepClone(DEFAULT_CONFIG) as AppConfig;
       this.initialized = true;
       logger.info('Config', '配置初始化完成');
     } catch (err: unknown) {
@@ -357,7 +358,7 @@ class ConfigManager {
     }
   }
 
-  getRaw(): any {
+  getRaw(): AppConfig {
     return this._config;
   }
 
@@ -365,7 +366,7 @@ class ConfigManager {
     try {
       if (!key) return this._config;
       const keys = key.split('.');
-      let value: any = this._config as any;
+      let value: any = this._config;
       for (const k of keys) {
         if (!k) continue; // ✅ 跳过空字符串
         if (value === null || value === undefined) return null;
@@ -378,14 +379,35 @@ class ConfigManager {
     }
   }
 
-  set(key: string, value: any) {
+  // 类型安全的getter方法
+  getString(key: string, defaultValue: string = ''): string {
+    const value = this.get(key);
+    return typeof value === 'string' ? value : defaultValue;
+  }
+
+  getNumber(key: string, defaultValue: number = 0): number {
+    const value = this.get(key);
+    return typeof value === 'number' ? value : defaultValue;
+  }
+
+  getBoolean(key: string, defaultValue: boolean = false): boolean {
+    const value = this.get(key);
+    return typeof value === 'boolean' ? value : defaultValue;
+  }
+
+  getObject<T = Record<string, unknown>>(key: string, defaultValue: T = {} as T): T {
+    const value = this.get(key);
+    return value && typeof value === 'object' ? (value as T) : defaultValue;
+  }
+
+  set(key: string, value: any): boolean {
     try {
       if (!key) {
         logger.error('Config', '设置配置失败: key 不能为空');
         return false;
       }
       const keys = key.split('.');
-      let target: any = this._config as any;
+      let target: any = this._config;
       for (let i = 0; i < keys.length - 1; i++) {
         const k = keys[i];
         if (!k) continue; // ✅ 跳过 undefined
@@ -415,20 +437,22 @@ class ConfigManager {
     }
   }
 
-  
   reset() {
     const oldConfig = this._config;
-    this._config = deepClone(DEFAULT_CONFIG);
+    this._config = deepClone(DEFAULT_CONFIG) as AppConfig;
     logger.info('Config', '配置已重置为默认值');
 
     // 触发所有顶级key的更新通知
-    Object.keys(DEFAULT_CONFIG as any).forEach((topKey: string) => {
+    Object.keys(DEFAULT_CONFIG).forEach((topKey: string) => {
       // 比较新旧值，只有变化时才发出事件，避免不必要的刷新
       if (
-        JSON.stringify((oldConfig as any)[topKey]) !==
-        JSON.stringify((DEFAULT_CONFIG as any)[topKey])
+        JSON.stringify((oldConfig as Record<string, unknown>)[topKey]) !==
+        JSON.stringify((DEFAULT_CONFIG as Record<string, unknown>)[topKey])
       ) {
-        eventBus.emit('config-changed', { key: topKey, value: (DEFAULT_CONFIG as any)[topKey] });
+        eventBus.emit('config-changed', {
+          key: topKey,
+          value: (DEFAULT_CONFIG as Record<string, unknown>)[topKey],
+        });
       }
     });
   }
@@ -441,5 +465,15 @@ export default configManager;
 export const initConfig = () => configManager.init();
 export const get = (key?: string): any => configManager.get(key);
 export const set = (key: string, value: any) => configManager.set(key, value);
-export const getRaw = (): any => configManager.getRaw();
+export const getRaw = (): AppConfig => configManager.getRaw();
 export const reset = () => configManager.reset();
+
+// 类型安全的getter方法
+export const getString = (key: string, defaultValue?: string) =>
+  configManager.getString(key, defaultValue);
+export const getNumber = (key: string, defaultValue?: number) =>
+  configManager.getNumber(key, defaultValue);
+export const getBoolean = (key: string, defaultValue?: boolean) =>
+  configManager.getBoolean(key, defaultValue);
+export const getObject = <T = Record<string, unknown>>(key: string, defaultValue?: T) =>
+  configManager.getObject<T>(key, defaultValue);

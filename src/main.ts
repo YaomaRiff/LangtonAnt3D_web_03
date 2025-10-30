@@ -15,6 +15,9 @@ import eventBus from './event-bus';
 import { userUI } from './user-ui';
 import uiMonitor from './ui/ui-monitor';
 
+// 新的调试面板
+import simpleDebugPanel from './ui/simple-debug-panel';
+
 // 核心系统
 import coordinateSystem from './systems/coordinates-sys';
 import cameraSys from './systems/camera-sys';
@@ -118,8 +121,11 @@ class Application {
         controls: cameraSys.getControls(),
       });
 
-            // 7. 初始化监视器UI (保留状态显示)
+      // 7. 初始化监视器UI (保留状态显示)
       uiMonitor.init();
+
+      // 7.1. 初始化Simple调试面板 (开发环境)
+      simpleDebugPanel.init();
 
       // 8. 初始化核心服务系统
       materialSys.init();

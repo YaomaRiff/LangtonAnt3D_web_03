@@ -4,16 +4,14 @@
  * @version 2.0 (Modern Player UI)
  */
 
-import configManager, { type ConfigEvent } from './config';
+import configManager from './config';
 import eventBus from './event-bus';
 import logger from './utils/logger';
 import animationSys from './systems/animation-sys';
 import cameraSys from './systems/camera-sys';
 import audioSys from './systems/audio-sys';
-import dataSys from './systems/data-sys';
 
 export class UserUI {
-  private isInitialized = false;
   private currentStep = 0;
   private totalSteps = 0;
   private isPlaying = false;
@@ -40,7 +38,7 @@ export class UserUI {
 
     // 等待DOM加载完成
     if (document.readyState === 'loading') {
-      await new Promise(resolve => {
+      await new Promise((resolve) => {
         document.addEventListener('DOMContentLoaded', resolve);
       });
     }
@@ -48,7 +46,6 @@ export class UserUI {
     this.setupControlElements();
     this.setupEventListeners();
     this.updateUIState();
-    this.isInitialized = true;
     console.log('✅ Modern Player UI initialized');
   }
 
@@ -100,9 +97,10 @@ export class UserUI {
 
     // 进度条点击
     const progressBar = document.querySelector('.progress-bar');
-    progressBar?.addEventListener('click', (e) => {
+    progressBar?.addEventListener('click', (e: Event) => {
       const rect = progressBar.getBoundingClientRect();
-      const percent = ((e.clientX - rect.left) / rect.width) * 100;
+      const mouseEvent = e as MouseEvent;
+      const percent = ((mouseEvent.clientX - rect.left) / rect.width) * 100;
       this.handleProgressChange(percent.toString());
     });
 
@@ -194,7 +192,7 @@ export class UserUI {
     // 触发步数变化事件
     eventBus.emit('step-changed', {
       step: this.currentStep,
-      percent: percent * 100
+      percent: percent * 100,
     });
 
     // 更新动画系统
@@ -215,7 +213,7 @@ export class UserUI {
 
     eventBus.emit('step-changed', {
       step: this.currentStep,
-      percent: percent
+      percent: percent,
     });
 
     animationSys.setStep(this.currentStep);
@@ -242,9 +240,9 @@ export class UserUI {
     }
   }
 
-  private setView(viewName: 'left' | 'front' | 'top' | 'side') {
+  private setView(viewName: 'front' | 'top' | 'side') {
     // 移除所有视角按钮的active状态
-    document.querySelectorAll('.view-btn').forEach(btn => {
+    document.querySelectorAll('.view-btn').forEach((btn) => {
       btn.classList.remove('active');
     });
 
@@ -278,7 +276,7 @@ export class UserUI {
 
   private setPerspectiveView() {
     // 移除所有视角按钮的active状态
-    document.querySelectorAll('.view-btn').forEach(btn => {
+    document.querySelectorAll('.view-btn').forEach((btn) => {
       btn.classList.remove('active');
     });
 
@@ -367,7 +365,6 @@ export class UserUI {
    * 清理资源
    */
   public dispose() {
-    this.isInitialized = false;
     eventBus.off('animation-state-changed', this.updatePlayButton);
     eventBus.off('audio-state-changed', this.updateAudioButton);
     eventBus.off('data-loading-completed', this.updateStepDisplay);

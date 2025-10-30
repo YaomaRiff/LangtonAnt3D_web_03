@@ -33,10 +33,11 @@ class UIMonitor {
   private _createElements() {
     // 动画步数显示
     const stepWrapper = document.createElement('div');
-    stepWrapper.className = 'monitor-info-item';
-    stepWrapper.innerHTML = `<span class="label">STEP:</span>`;
+    stepWrapper.className =
+      'flex items-baseline gap-1 bg-blue-950/80 backdrop-blur-sm px-1 py-0.5 border border-green-500/30 rounded text-xs uppercase shadow-md';
+    stepWrapper.innerHTML = `<span class="text-green-500/80 opacity-80">STEP:</span>`;
     this.stepDisplay = document.createElement('span');
-    this.stepDisplay.className = 'value';
+    this.stepDisplay.className = 'text-green-400 text-xs font-bold min-w-10 text-right opacity-90';
     this.stepDisplay.textContent = '0 / 0';
     stepWrapper.appendChild(this.stepDisplay);
 

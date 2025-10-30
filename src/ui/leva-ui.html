@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leva调试面板</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1e;
+            color: #ffffff;
+            overflow: hidden;
+        }
+
+        #leva-root {
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 9999;
+            background: rgba(20, 20, 25, 0.95);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .controls-container {
+            width: 320px;
+            max-height: 100vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .control-section {
+            margin-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 16px;
+        }
+
+        .control-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #8b5cf6;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .control-item {
+            margin-bottom: 12px;
+        }
+
+        .control-label {
+            font-size: 12px;
+            margin-bottom: 4px;
+            color: rgba(255, 255, 255, 0.7);
+            display: block;
+        }
+
+        .control-input {
+            width: 100%;
+            padding: 6px 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+        }
+
+        .control-input:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .control-input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            padding: 0;
+        }
+
+        .control-input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .control-input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: #8b5cf6;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
+        .control-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .control-checkbox input {
+            width: 16px;
+            height: 16px;
+            accent-color: #8b5cf6;
+        }
+
+        .control-button {
+            width: 100%;
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            border: none;
+            border-radius: 6px;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .control-button:hover {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+            transform: translateY(-1px);
+        }
+
+        .control-button:active {
+            transform: translateY(0);
+        }
+
+        .range-value {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-left: 8px;
+            min-width: 40px;
+            text-align: right;
+        }
+
+        .range-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .controls-container {
+                width: 280px;
+                padding: 16px;
+            }
+        }
+
+        /* 隐藏面板 */
+        .hidden {
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10000;
+            background: #8b5cf6;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+
+        .toggle-button:hover {
+            background: #7c3aed;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="leva-root">
+        <div class="controls-container" id="controls-container">
+            <!-- 控制面板内容将通过JavaScript动态生成 -->
+        </div>
+    </div>
+
+    <button class="toggle-button" id="toggle-panel" onclick="togglePanel()">
+        ⚙️
+    </button>
+
+    <script type="module">
+        import chroma from 'chroma-js'
+        import { debounce, throttle } from 'lodash-es'
+
+        // 全局状态
+        let controlValues = {}
+        let isVisible = true
+
+        // 从父窗口获取配置
+        function getConfigValue(key, defaultValue = null) {
+            try {
+                return window.parent.configManager?.get(key) || defaultValue
+            } catch (error) {
+                return defaultValue
+            }
+        }
+
+        function setConfigValue(key, value) {
+            try {
+                window.parent.configManager?.set(key, value)
+                window.parent.eventBus?.emit('config-changed', { key, value })
+            } catch (error) {
+                console.warn('设置配置失败:', error)
+            }
+        }
+
+        // 初始化控制值
+        function initializeControlValues() {
+            controlValues = {
+                // 动画控制
+                isPlaying: getConfigValue('animation.isPlaying', false),
+                speedFactor: getConfigValue('animation.speedFactor', 0.05),
+                currentStep: 0,
+
+                // 音频控制
+                volume: getConfigValue('audio.volume', 0.5),
+                isMuted: getConfigValue('audio.isMuted', false),
+
+                // 尾焰效果
+                flameBaseColor: getConfigValue('exhaust.flame.baseColor', '#ff0055'),
+                flameTipColor: getConfigValue('exhaust.flame.tipColor', '#d4e83c'),
+                flameIntensity: getConfigValue('exhaust.flame.intensity', 1.0),
+                flameLength: getConfigValue('exhaust.flame.length', 1.6),
+
+                // 粒子效果
+                particleCount: getConfigValue('particles.dustCount', 1900),
+                particleSize: getConfigValue('particles.dustSize', 0.73),
+                particleOpacity: getConfigValue('particles.dustOpacity', 0.47),
+
+                // 后期处理
+                bloomEnabled: getConfigValue('postprocess.bloom.enabled', true),
+                bloomIntensity: getConfigValue('postprocess.bloom.intensity', 1.0),
+                filmEnabled: getConfigValue('postprocess.film.enabled', true),
+                noiseIntensity: getConfigValue('postprocess.film.noiseIntensity', 0.29),
+
+                // 相机控制
+                autoRotate: getConfigValue('camera.autoRotate', true),
+                fov: getConfigValue('camera.fov', 75)
+            }
+        }
+
+        // 创建控制面板
+        function createControlPanel() {
+            const container = document.getElementById('controls-container')
+
+            const controls = [
+                {
+                    title: '🎮 动画控制',
+                    items: [
+                        { type: 'checkbox', key: 'isPlaying', label: '播放状态' },
+                        { type: 'range', key: 'speedFactor', label: '动画速度', min: 0.001, max: 0.2, step: 0.001 },
+                        { type: 'range', key: 'currentStep', label: '当前步数', min: 0, max: 10000, step: 1 }
+                    ]
+                },
+                {
+                    title: '🔊 音频控制',
+                    items: [
+                        { type: 'range', key: 'volume', label: '音量', min: 0, max: 1, step: 0.01 },
+                        { type: 'checkbox', key: 'isMuted', label: '静音' }
+                    ]
+                },
+                {
+                    title: '🚀 尾焰效果',
+                    items: [
+                        { type: 'color', key: 'flameBaseColor', label: '底部颜色' },
+                        { type: 'color', key: 'flameTipColor', label: '顶部颜色' },
+                        { type: 'range', key: 'flameIntensity', label: '强度', min: 0, max: 3, step: 0.1 },
+                        { type: 'range', key: 'flameLength', label: '长度', min: 0.5, max: 5, step: 0.1 }
+                    ]
+                },
+                {
+                    title: '🌟 粒子效果',
+                    items: [
+                        { type: 'range', key: 'particleCount', label: '数量', min: 100, max: 5000, step: 100 },
+                        { type: 'range', key: 'particleSize', label: '大小', min: 0.1, max: 3, step: 0.1 },
+                        { type: 'range', key: 'particleOpacity', label: '透明度', min: 0, max: 1, step: 0.01 }
+                    ]
+                },
+                {
+                    title: '✨ 后期处理',
+                    items: [
+                        { type: 'checkbox', key: 'bloomEnabled', label: '光晕效果' },
+                        { type: 'range', key: 'bloomIntensity', label: '光晕强度', min: 0, max: 3, step: 0.1 },
+                        { type: 'checkbox', key: 'filmEnabled', label: '胶片效果' },
+                        { type: 'range', key: 'noiseIntensity', label: '噪点强度', min: 0, max: 1, step: 0.01 }
+                    ]
+                },
+                {
+                    title: '🎯 相机控制',
+                    items: [
+                        { type: 'checkbox', key: 'autoRotate', label: '自动旋转' },
+                        { type: 'range', key: 'fov', label: '视野角度', min: 30, max: 120, step: 1 }
+                    ]
+                },
+                {
+                    title: '🎨 颜色工具',
+                    items: [
+                        { type: 'button', key: 'generatePalette', label: '生成配色方案' },
+                        { type: 'button', key: 'randomizeFlame', label: '随机尾焰颜色' },
+                        { type: 'button', key: 'complementaryColors', label: '互补色方案' }
+                    ]
+                },
+                {
+                    title: '🔧 实用工具',
+                    items: [
+                        { type: 'button', key: 'resetCamera', label: '重置相机' },
+                        { type: 'button', key: 'resetAnimation', label: '重置动画' },
+                        { type: 'button', key: 'exportConfig', label: '导出配置' },
+                        { type: 'button', key: 'togglePanel', label: '隐藏面板' }
+                    ]
+                }
+            ]
+
+            let html = ''
+            controls.forEach(section => {
+                html += `<div class="control-section">`
+                html += `<h3 class="section-title">${section.title}</h3>`
+
+                section.items.forEach(item => {
+                    html += createControlItem(item)
+                })
+
+                html += `</div>`
+            })
+
+            container.innerHTML = html
+            attachEventListeners()
+        }
+
+        function createControlItem(item) {
+            const value = controlValues[item.key]
+            let html = '<div class="control-item">'
+            html += `<label class="control-label">${item.label}</label>`
+
+            switch (item.type) {
+                case 'checkbox':
+                    html += `
+                        <div class="control-checkbox">
+                            <input type="checkbox"
+                                   id="${item.key}"
+                                   ${value ? 'checked' : ''}
+                                   data-key="${item.key}">
+                            <span>${item.label}</span>
+                        </div>
+                    `
+                    break
+
+                case 'range':
+                    html += `
+                        <div class="range-container">
+                            <input type="range"
+                                   class="control-input"
+                                   id="${item.key}"
+                                   min="${item.min}"
+                                   max="${item.max}"
+                                   step="${item.step}"
+                                   value="${value}"
+                                   data-key="${item.key}">
+                            <span class="range-value">${value}</span>
+                        </div>
+                    `
+                    break
+
+                case 'color':
+                    html += `
+                        <input type="color"
+                               class="control-input"
+                               id="${item.key}"
+                               value="${value}"
+                               data-key="${item.key}">
+                    `
+                    break
+
+                case 'button':
+                    html += `
+                        <button class="control-button"
+                                id="${item.key}"
+                                data-key="${item.key}">
+                            ${item.label}
+                        </button>
+                    `
+                    break
+            }
+
+            html += '</div>'
+            return html
+        }
+
+        function attachEventListeners() {
+            // 复选框事件
+            document.querySelectorAll('input[type="checkbox"]').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const key = e.target.dataset.key
+                    const value = e.target.checked
+                    controlValues[key] = value
+                    setConfigValue(getConfigKey(key), value)
+                })
+            })
+
+            // 范围滑块事件
+            document.querySelectorAll('input[type="range"]').forEach(input => {
+                input.addEventListener('input', throttle((e) => {
+                    const key = e.target.dataset.key
+                    const value = parseFloat(e.target.value)
+                    controlValues[key] = value
+
+                    // 更新显示值
+                    const valueDisplay = e.target.nextElementSibling
+                    if (valueDisplay && valueDisplay.classList.contains('range-value')) {
+                        valueDisplay.textContent = value
+                    }
+
+                    setConfigValue(getConfigKey(key), value)
+                }, 50))
+            })
+
+            // 颜色选择器事件
+            document.querySelectorAll('input[type="color"]').forEach(input => {
+                input.addEventListener('input', debounce((e) => {
+                    const key = e.target.dataset.key
+                    const value = e.target.value
+                    controlValues[key] = value
+                    setConfigValue(getConfigKey(key), value)
+                }, 100))
+            })
+
+            // 按钮事件
+            document.querySelectorAll('.control-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const key = e.target.dataset.key
+                    handleButtonClick(key)
+                })
+            })
+        }
+
+        function getConfigKey(controlKey) {
+            const keyMap = {
+                'isPlaying': 'animation.isPlaying',
+                'speedFactor': 'animation.speedFactor',
+                'currentStep': 'currentStep',
+                'volume': 'audio.volume',
+                'isMuted': 'audio.isMuted',
+                'flameBaseColor': 'exhaust.flame.baseColor',
+                'flameTipColor': 'exhaust.flame.tipColor',
+                'flameIntensity': 'exhaust.flame.intensity',
+                'flameLength': 'exhaust.flame.length',
+                'particleCount': 'particles.dustCount',
+                'particleSize': 'particles.dustSize',
+                'particleOpacity': 'particles.dustOpacity',
+                'bloomEnabled': 'postprocess.bloom.enabled',
+                'bloomIntensity': 'postprocess.bloom.intensity',
+                'filmEnabled': 'postprocess.film.enabled',
+                'noiseIntensity': 'postprocess.film.noiseIntensity',
+                'autoRotate': 'camera.autoRotate',
+                'fov': 'camera.fov'
+            }
+            return keyMap[controlKey] || controlKey
+        }
+
+        function handleButtonClick(key) {
+            switch (key) {
+                case 'generatePalette':
+                    generateColorPalette()
+                    break
+                case 'randomizeFlame':
+                    randomizeFlameColors()
+                    break
+                case 'complementaryColors':
+                    applyComplementaryColors()
+                    break
+                case 'resetCamera':
+                    window.parent.eventBus?.emit('camera-reset')
+                    break
+                case 'resetAnimation':
+                    window.parent.eventBus?.emit('animation-reset')
+                    controlValues.currentStep = 0
+                    document.getElementById('currentStep').value = 0
+                    break
+                case 'exportConfig':
+                    exportConfiguration()
+                    break
+                case 'togglePanel':
+                    togglePanel()
+                    break
+            }
+        }
+
+        function generateColorPalette() {
+            const baseHue = Math.random() * 360
+            const palette = [
+                chroma.hsl(baseHue, 0.8, 0.6).hex(),
+                chroma.hsl(baseHue + 60, 0.7, 0.7).hex(),
+                chroma.hsl(baseHue + 120, 0.6, 0.8).hex(),
+                chroma.hsl(baseHue + 180, 0.7, 0.7).hex(),
+                chroma.hsl(baseHue + 240, 0.6, 0.9).hex()
+            ]
+
+            // 应用配色方案
+            setConfigValue('exhaust.flame.baseColor', palette[0])
+            setConfigValue('exhaust.flame.tipColor', palette[1])
+            setConfigValue('particles.dustColor', palette[2])
+
+            // 更新控制值
+            controlValues.flameBaseColor = palette[0]
+            controlValues.flameTipColor = palette[1]
+            document.getElementById('flameBaseColor').value = palette[0]
+            document.getElementById('flameTipColor').value = palette[1]
+
+            console.log('新配色方案已生成:', palette)
+        }
+
+        function randomizeFlameColors() {
+            const baseHue = Math.random() * 60 + 330
+            const colors = {
+                base: chroma.hsl(baseHue, 0.9, 0.6).hex(),
+                tip: chroma.hsl(baseHue + 30, 0.8, 0.8).hex()
+            }
+
+            setConfigValue('exhaust.flame.baseColor', colors.base)
+            setConfigValue('exhaust.flame.tipColor', colors.tip)
+
+            controlValues.flameBaseColor = colors.base
+            controlValues.flameTipColor = colors.tip
+            document.getElementById('flameBaseColor').value = colors.base
+            document.getElementById('flameTipColor').value = colors.tip
+
+            console.log('尾焰颜色已随机化:', colors)
+        }
+
+        function applyComplementaryColors() {
+            const baseColor = controlValues.flameBaseColor
+            const complement = chroma(baseColor).set('hsl.h', '+180').hex()
+
+            setConfigValue('exhaust.flame.baseColor', baseColor)
+            setConfigValue('exhaust.flame.tipColor', complement)
+            setConfigValue('particles.dustColor', complement)
+
+            controlValues.flameTipColor = complement
+            document.getElementById('flameTipColor').value = complement
+
+            console.log('互补色方案已应用:', { base: baseColor, complement })
+        }
+
+        function exportConfiguration() {
+            try {
+                const config = window.parent.configManager?.getRaw()
+                if (!config) {
+                    alert('无法获取配置数据')
+                    return
+                }
+
+                const dataStr = JSON.stringify(config, null, 2)
+                const dataBlob = new Blob([dataStr], { type: 'application/json' })
+
+                const link = document.createElement('a')
+                link.href = URL.createObjectURL(dataBlob)
+                link.download = `langton-ant-config-${new Date().toISOString().slice(0, 10)}.json`
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+
+                console.log('配置已导出')
+            } catch (error) {
+                console.error('导出配置失败:', error)
+                alert('导出配置失败')
+            }
+        }
+
+        function togglePanel() {
+            const panel = document.getElementById('leva-root')
+            const button = document.getElementById('toggle-panel')
+
+            isVisible = !isVisible
+
+            if (isVisible) {
+                panel.classList.remove('hidden')
+                button.textContent = '⚙️'
+            } else {
+                panel.classList.add('hidden')
+                button.textContent = '👁️'
+            }
+        }
+
+        // 监听来自父窗口的消息
+        window.addEventListener('message', (event) => {
+            if (event.data.type === 'updateControlValue') {
+                const { key, value } = event.data
+                if (controlValues.hasOwnProperty(key)) {
+                    controlValues[key] = value
+                    const element = document.getElementById(key)
+                    if (element) {
+                        if (element.type === 'checkbox') {
+                            element.checked = value
+                        } else if (element.type === 'range') {
+                            element.value = value
+                            const valueDisplay = element.nextElementSibling
+                            if (valueDisplay && valueDisplay.classList.contains('range-value')) {
+                                valueDisplay.textContent = value
+                            }
+                        } else {
+                            element.value = value
+                        }
+                    }
+                }
+            }
+        })
+
+        // 初始化
+        initializeControlValues()
+        createControlPanel()
+
+        // 定期同步状态
+        setInterval(() => {
+            // 这里可以添加与主应用的同步逻辑
+        }, 1000)
+
+        // 全局函数
+        window.togglePanel = togglePanel
+    </script>
+</body>
+</html>

@@ -18,22 +18,19 @@ class DataSystem {
   public camera: THREE.Camera | null = null;
   public rawData: any[] = [];
 
-  private controls: any;
   private initialized: boolean;
 
   private datasets: any[];
 
   constructor() {
     this.eventBus = null;
-
-    this.controls = null;
     this.initialized = false;
 
     this.datasets = []; // 新增：用一个内部变量存储数据集列表
   }
 
   // init 方法保持 async 不变
-  async init({ eventBus, scene, camera, controls }: any) {
+  async init({ eventBus, scene, camera }: any) {
     if (this.initialized) {
       // logger.warn('DataSystem', '数据系统已经初始化过了'); // 暂时注释掉，因为我们修复了重复调用的问题
       return this;
@@ -43,7 +40,6 @@ class DataSystem {
       this.eventBus = eventBus;
       this.scene = scene;
       this.camera = camera;
-      this.controls = controls;
 
       this.eventBus.on('data-load-requested', (csvUrl: string) => {
         this.loadCSV(csvUrl);

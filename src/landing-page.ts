@@ -55,7 +55,7 @@ class LandingPage {
    * 初始化配置监听器
    */
   private initConfigListeners(): void {
-    eventBus.on('config-changed', ({ key }) => {
+    eventBus.on('config-changed', ({ key }: { key: string }) => {
       if (key.startsWith('landingPage.glassPanel')) {
         this.updateGlassPanel();
         console.log('Glass panel updated due to config change:', key);
@@ -154,7 +154,7 @@ class LandingPage {
     // 应用backdrop-filter
     const backdropFilter = `blur(${glassConfig.blur}px)`;
     glassPanel.style.backdropFilter = backdropFilter;
-    glassPanel.style.webkitBackdropFilter = backdropFilter;
+    (glassPanel.style as any).webkitBackdropFilter = backdropFilter;
 
     // 应用背景颜色和透明度
     const backgroundColor = `rgba(${glassConfig.backgroundR}, ${glassConfig.backgroundG}, ${glassConfig.backgroundB}, ${glassConfig.backgroundOpacity})`;
@@ -348,20 +348,6 @@ class LandingPage {
       setTimeout(() => {
         resolve();
       }, 1000);
-    });
-  }
-
-  /**
-   * 快速淡出动画
-   */
-  private async quickFadeOut(): Promise<void> {
-    return new Promise((resolve) => {
-      this.overlay.style.transition = 'opacity 0.3s ease-out';
-      this.overlay.style.opacity = '0';
-
-      setTimeout(() => {
-        resolve();
-      }, 300);
     });
   }
 

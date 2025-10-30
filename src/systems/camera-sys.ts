@@ -373,7 +373,8 @@ class CameraSystem {
    */
   setAutoRotate(enabled: boolean) {
     if (this.controls) {
-      this.controls.autoRotate = enabled;
+      // CameraControls v4 使用不同的API
+      (this.controls as any).autoRotate = enabled;
     }
   }
 
@@ -381,7 +382,7 @@ class CameraSystem {
    * ✅ 获取自动旋转状态
    */
   getAutoRotate(): boolean {
-    return this.controls?.autoRotate || false;
+    return (this.controls as any)?.autoRotate || false;
   }
 
   /**
