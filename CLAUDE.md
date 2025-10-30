@@ -96,51 +96,60 @@ ollama pull [model]   # Download AI models
 
 ### Langton's Ant Three.js Project (Current Project)
 
-This is a **3D Langton's Ant visualization project** built with Three.js and TypeScript. The application renders the mathematical algorithm's path as an interactive 3D visualization with advanced visual effects. This project serves as a reference implementation of the system-based modular architecture used throughout the development environment.
+This is a **3D Langton's Ant visualization project** built with Three.js and TypeScript (v0.4.0). The application renders the mathematical algorithm's path as an interactive 3D visualization with advanced visual effects and modern UI. This project serves as a reference implementation of the system-based modular architecture used throughout the development environment.
 
 ### Core Architecture Pattern
 
 The project follows a **system-based modular architecture** with a centralized event bus for inter-system communication:
 
 1. **Central Application** (`src/main.ts`) - Manages initialization and lifecycle
-2. **Event Bus** (`src/event-bus.ts`) - Decoupled system communication
-3. **Configuration Manager** (`src/config.ts`) - Centralized state management
-4. **18 Independent Systems** - Modular functionality units
-5. **UI Layer** - Tweakpane-based control interfaces
+2. **Event Bus** (`src/event-bus.ts`) - Decoupled system communication with `once()` support
+3. **Configuration Manager** (`src/config.ts`) - Type-safe centralized state management
+4. **Type Definitions** (`src/types/index.ts`) - Comprehensive TypeScript interfaces
+5. **18+ Independent Systems** - Modular functionality units
+6. **Modern UI Layer** - Player-style controls with Tailwind CSS
 
 ### Key Systems Organization
 
 **Core Rendering Systems:**
-- `coordinates-sys.ts` - Unified coordinate space management
+- `coordinates-sys.ts` - Unified coordinate space management with world/data separation
 - `path-sys.ts` - Ant trajectory visualization (main feature)
-- `camera-sys.ts` - 3D camera controls and navigation
-- `postprocess-sys.ts` - Bloom, depth of field, chromatic aberration
-- `material-sys.ts` - Custom shaders and material management
+- `camera-sys.ts` - 3D camera controls with auto-rotation support
+- `postprocess-sys.ts` - Bloom, bokeh, chromatic aberration, film effects
+- `material-sys.ts` - Material management for path and particles
 
 **Visual Effects Systems:**
-- `particles-sys.ts` - Ambient particle effects
+- `particles-sys.ts` - Ambient particle effects with rotation
 - `lighting-sys.ts` - Dynamic scene lighting
 - `visual-effects-sys.ts` - Rocket jitter, flames, exhaust effects
 - `animation-sys.ts` - TWEEN.js-driven animations
+- `environment-sys.ts` - Skybox and atmospheric fog effects
 
 **Data & Content Systems:**
 - `data-sys.ts` - CSV data loading and parsing
 - `model-sys.ts` - 3D model management
-- `environment-sys.ts` - Skybox and atmospheric effects
-- `audio-sys.ts` - Sound management
-
-**Scene Management:**
+- `audio-sys.ts` - Background music with volume control
 - `scene-director-sys.ts` - Scene composition control
 - `light-sys.ts` - Moving light source along path
+
+**UI Systems:**
+- `user-ui.ts` - Modern player-style interface (v2.0)
+- `ui-monitor.ts` - Performance monitoring overlay
+- `simple-debug-panel.ts` - Development debugging tools
+
+**Custom Renderers:**
+- `renderers/math-light-renderer.ts` - Mathematical light visualization
+- `renderers/model-light-renderer.ts` - Model-based lighting
+- `renderers/light-renderer.ts` - Generic light rendering
 
 ### Data Flow Pattern
 
 The application uses **event-driven architecture** with unidirectional data flow:
 
-1. **Config Changes** → `config-changed` event → System updates
-2. **User Interactions** → UI events → System responses
+1. **Config Changes** → `config-changed` event → System updates (with throttled logging)
+2. **User Interactions** → Modern player UI events → System responses
 3. **Data Loading** → CSV parsing → Path generation → Visual updates
-4. **Animation Loop** → System updates → Render calls
+4. **Animation Loop** → System updates → Render calls with post-processing
 
 ### Coordinate System Hierarchy
 
@@ -165,13 +174,14 @@ step,x,y,z,color,direction
 
 ### Configuration System
 
-The config system uses **dot notation** for nested access:
+The config system uses **type-safe dot notation** for nested access:
 ```typescript
 config.get('sceneComposition.active')  // Get current scene
 config.set('animation.speedFactor', 0.1)  // Update animation speed
+config.getString('audio.backgroundMusic.url', '')  // Type-safe getters
 ```
 
-Config changes automatically trigger `config-changed` events that systems listen to.
+Config changes automatically trigger `config-changed` events that systems listen to, with throttled logging to prevent console spam.
 
 ### Scene Composition System
 
@@ -186,39 +196,88 @@ compositions: {
 }
 ```
 
+### Modern UI System
+
+**Player-Style Interface (v2.0):**
+- Play/pause animation controls
+- Progress slider for step navigation
+- Audio controls with visual feedback
+- Responsive design with Tailwind CSS
+- Modern glassmorphism effects for static pages
+
 ### Development Notes
 
-- **TypeScript Migration**: The project is gradually migrating to TypeScript - some files may still be `.js`
-- **Performance Focus**: Uses drawRange optimization for path rendering, efficient particle systems
-- **Visual Effects Pipeline**: Post-processing effects chain can be enabled/disabled individually
-- **Preset System**: Configurations can be saved/loaded via `presetManager`
-- **Logger System**: Uses `src/utils/logger.ts` with throttling to prevent console spam
+- **Complete TypeScript Implementation**: Full type safety with comprehensive interfaces
+- **Performance Optimized**: Uses drawRange optimization, efficient particle systems, throttled logging
+- **Advanced Visual Effects**: Complete post-processing pipeline (bloom, bokeh, chromatic aberration, film)
+- **Modern Audio System**: Background music with volume controls and mute functionality
+- **Enhanced Debugging**: Multiple debugging panels and monitoring tools
+- **Static Page Support**: Configurable landing pages with advanced glassmorphism effects
 
 ### File Organization
 
 ```
 src/
-├── main.ts              # Application entry point
-├── event-bus.ts         # System communication
-├── config.ts            # Global configuration
-├── preset-manager.ts    # Preset management
-├── core/                # (Planned core classes)
-├── systems/             # 18 modular systems
-├── ui/                  # UI components
-├── utils/               # Utilities (logger, helpers)
-├── types/               # TypeScript definitions
-├── shaders/             # GLSL shader files
-└── renderers/           # Custom renderers
+├── main.ts                    # Application entry point (v7.1)
+├── event-bus.ts               # System communication with once() support
+├── config.ts                  # Type-safe global configuration
+├── user-ui.ts                 # Modern player-style UI (v2.0)
+├── landing-page.ts            # Static landing page system
+├── systems/                   # 18+ modular systems
+│   ├── renderers/             # Custom rendering components
+│   ├── coordinates-sys.ts     # Unified coordinate management
+│   ├── path-sys.ts            # Main ant path visualization
+│   ├── visual-effects-sys.ts  # Rocket effects and animations
+│   └── [other systems...]     # Camera, audio, particles, etc.
+├── ui/                        # UI components and monitors
+│   ├── ui-monitor.ts          # Performance overlay
+│   └── simple-debug-panel.ts  # Development tools
+├── utils/                     # Utility functions
+│   ├── logger.ts              # Throttled logging system
+│   ├── enhanced-utils.ts      # Helper functions
+│   └── [other utils...]       # Various utilities
+├── types/                     # Complete TypeScript definitions
+│   └── index.ts               # Comprehensive interfaces
+└── style.css                  # Tailwind CSS styling
 ```
 
 ### Build Configuration
 
-- **Vite** for development and building
-- **Production base path**: `/LangtonAnt3D_dist/` (configured in `vite.config.ts`)
-- **TypeScript strict mode** enabled
-- **ESLint + Prettier** for code quality
+- **Vite 5.4** for development and building
+- **TypeScript 5.9** with strict mode enabled
+- **Tailwind CSS 4.1** for modern styling
+- **ESLint 9.37 + Prettier** for code quality
+- **Production base path**: `/LangtonAnt3D_dist/`
+- **Path aliases**: `@/*` maps to `src/*`
 
-The project deploys to a separate repository's gh-pages branch - after building, copy `dist/` contents to the `LangtonAnt3D_dist` folder.
+### Deployment
+
+The project deploys to a separate repository's gh-pages branch:
+1. Run `npm run build` to create `dist/` folder
+2. Manually copy `dist/` contents to `LangtonAnt3D_dist` folder
+3. Push to trigger deployment
+
+### Key Features
+
+**Visual Effects:**
+- Advanced post-processing pipeline
+- Rocket exhaust simulation with flames and smoke
+- Dynamic particle systems with rotation
+- Atmospheric fog and skybox effects
+
+**User Experience:**
+- Modern player-style controls
+- Real-time step navigation
+- Audio integration with visual feedback
+- Responsive design
+- Performance monitoring
+
+**Development Tools:**
+- Comprehensive TypeScript support
+- Multiple debugging interfaces
+- Throttled logging to prevent spam
+- Hot reload during development
+- Code formatting and linting
 
 ---
 
